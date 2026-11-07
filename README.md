@@ -50,7 +50,30 @@ flutter build apk --release \
 
 The app shows a setup screen if values are missing. For a distributable release configure `android/key.properties` with `storeFile` (absolute path), `storePassword`, `keyAlias` and `keyPassword` for a securely retained release keystore. Keep the keystore and passwords private and backed up; future updates require the same signing key. Without this file the release is unsigned. The package name is `com.growthcircle.growth_circle`.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cd37f3b5cf27005467ce51dba5ef788d107000199de4aba6890481c57bfa8db9 -->
+
+## Windows administrator app
+
+The Windows administrator app lists/searches accounts, shows coin balances, and blocks/restores app data access. It uses normal Supabase email/password authentication and the publishable/anon key; no service-role key is used or stored in the client. Blocking is enforced in database RLS and RPCs even for previously issued sessions; requests already in progress can finish before a block commits, and cached data may remain visible. Blocking app data does not ban the user from Supabase Auth itself.
+
+Apply migrations in order, including `supabase/migrations/20261107020000_admin_access.sql`, in the intended Supabase project. Then create a confirmed admin account through the existing app, and as the project owner run this in the Supabase SQL Editor after replacing the placeholder with that account's email:
+
+```sql
+insert into public.admin_members (user_id)
+select id from auth.users
+where lower(email) = lower('ADMIN_EMAIL_HERE') and email_confirmed_at is not null
+on conflict (user_id) do nothing;
+```
+
+Only a database owner can provision administrators. The admin UI cannot block administrator accounts. Admin changes are recorded in `public.admin_access_audit`; that table and the admin allowlist are not directly readable or writable by app clients. No delete-account or coin-edit feature is provided.
+
+On Windows with Flutter 3.47.9 and Visual Studio C++ tools, run `flutter pub get` and `flutter build windows --release -t lib/admin_main.dart`. Run `build\windows\x64\runner\Release\growth_circle_admin.exe` with the entire Release directory. A GitHub Actions workflow also produces a Windows ZIP artifact. On first launch enter the project URL and publishable/anon key, then sign in as the provisioned admin. The public project configuration is stored locally; passwords and service-role keys are not stored by the app. Supabase SQL deployment and a real Windows build must be verified on the target environment.
+
 ## Tests
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated:v1 -->
 

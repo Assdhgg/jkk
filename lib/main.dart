@@ -61,6 +61,10 @@ const words = <String, List<String>>{
     'Grow together, one connection at a time.',
     'ഒരുമിച്ച് വളരാം, ഓരോ ബന്ധത്തിലൂടെയും.',
   ],
+  'accountBlocked': [
+    'Your app access is blocked. Contact the administrator.',
+    'നിങ്ങളുടെ app access തടഞ്ഞിരിക്കുന്നു. Administrator-നെ ബന്ധപ്പെടുക.',
+  ],
   'email': ['Email', 'ഇമെയിൽ'],
   'authWelcome': ['Welcome back', 'വീണ്ടും സ്വാഗതം'],
   'authWelcomeDesc': [
@@ -406,6 +410,9 @@ String friendlyError(BuildContext context, Object e) {
   }
   if (e is TimeoutException) return tr(context, 'connectionError');
   if (e is PostgrestException) {
+    if (e.message.contains('Account access is blocked')) {
+      return tr(context, 'accountBlocked');
+    }
     if (e.message.contains('already claimed') ||
         e.message.contains('already submitted')) {
       return tr(context, 'already');
@@ -619,7 +626,7 @@ class _AccountGateState extends State<AccountGate> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(tr(context, 'error')),
+                Text(friendlyError(context, snapshot.error!)),
                 TextButton(
                   onPressed: () => setState(() => initialize = load()),
                   child: Text(tr(context, 'retry')),

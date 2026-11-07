@@ -85,6 +85,20 @@ void main() {
     expect(find.textContaining('smtp password'), findsNothing);
   });
 
+  testWidgets('blocked app access explains the restriction', (tester) async {
+    const error = PostgrestException(message: 'Account access is blocked.');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Text(friendlyError(context, error)),
+          ),
+        ),
+      ),
+    );
+    expect(find.text(words['accountBlocked']![0]), findsOneWidget);
+  });
+
   testWidgets('unknown errors show safe code without server message', (
     tester,
   ) async {
