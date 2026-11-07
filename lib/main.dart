@@ -146,6 +146,10 @@ const words = <String, List<String>>{
     'അയച്ചു. ഉടമ അംഗീകരിച്ച ശേഷം coin ലഭിക്കും.',
   ],
   'pending': ['Awaiting review', 'പരിശോധനയ്ക്കായി കാത്തിരിക്കുന്നു'],
+  'adminReviewing': [
+    'AI is checking your submission',
+    'AI നിങ്ങളുടെ submission പരിശോധിക്കുന്നു',
+  ],
   'approved': ['Approved', 'അംഗീകരിച്ചു'],
   'rejected': ['Rejected · you can resubmit', 'നിരസിച്ചു · വീണ്ടും അയയ്ക്കാം'],
   'reviewCancelled': ['Campaign cancelled', 'Campaign റദ്ദാക്കി'],
@@ -172,8 +176,8 @@ const words = <String, List<String>>{
   ],
   'withdrawDone': ['Submission withdrawn.', 'സമർപ്പിച്ചത് പിൻവലിച്ചു.'],
   'proofNoPrivate': [
-    'Share only the relevant screenshot. It is visible to you and the campaign owner until review.',
-    'ആവശ്യമായ screenshot മാത്രം നൽകുക. പരിശോധന വരെ അത് നിങ്ങൾക്കും campaign ഉടമയ്ക്കും കാണാം.',
+    'Share only the relevant screenshot. You, the campaign owner, and administrators can view it until review.',
+    'ആവശ്യമായ screenshot മാത്രം നൽകുക. പരിശോധന വരെ അത് നിങ്ങൾക്കും campaign ഉടമയ്ക്കും administrators-നും കാണാം.',
   ],
   'earnDesc': [
     'Open Instagram, complete an action and submit it for review.',
@@ -235,6 +239,65 @@ const words = <String, List<String>>{
   'cancelledMessage': [
     'Campaign cancelled and unused coins refunded.',
     'Campaign റദ്ദാക്കി; ബാക്കി coins തിരികെ നൽകി.',
+  ],
+  'instagramAccounts': ['Instagram accounts', 'Instagram അക്കൗണ്ടുകൾ'],
+  'addAccount': ['Add Instagram username', 'Instagram username ചേർക്കുക'],
+  'noAccounts': [
+    'No Instagram usernames added yet.',
+    'Instagram username ചേർത്തിട്ടില്ല.',
+  ],
+  'removeAccount': ['Remove', 'നീക്കം ചെയ്യുക'],
+  'referrals': ['Referral program', 'Referral പദ്ധതി'],
+  'referralCode': ['Your referral code', 'നിങ്ങളുടെ referral കോഡ്'],
+  'referralCount': ['People referred', 'Referral വഴി ചേർന്നവർ'],
+  'referralEnter': ['Enter a referral code', 'Referral കോഡ് നൽകുക'],
+  'referralApplied': ['Referral code applied.', 'Referral കോഡ് ചേർത്തു.'],
+  'invalidReferral': ['Invalid referral code.', 'Referral കോഡ് തെറ്റാണ്.'],
+  'duplicateAccount': [
+    'This username is already added.',
+    'ഈ username ചേർത്തിട്ടുണ്ട്.',
+  ],
+  'referralJoined': [
+    'Referral code already applied.',
+    'Referral കോഡ് ചേർത്തിട്ടുണ്ട്.',
+  ],
+  'referralNoReward': [
+    'Referrals are tracked without a coin reward.',
+    'Referral രേഖപ്പെടുത്തും; coin പ്രതിഫലമില്ല.',
+  ],
+  'copyCode': ['Copy code', 'കോഡ് പകർത്തുക'],
+  'copied': ['Code copied.', 'കോഡ് പകർത്തി.'],
+  'apply': ['Apply', 'ചേർക്കുക'],
+  'releasePin': ['Coin release PIN', 'Coin release PIN'],
+  'setupPin': ['Set up 4-digit PIN', '4 അക്ക PIN സജ്ജമാക്കുക'],
+  'changePin': ['Change PIN', 'PIN മാറ്റുക'],
+  'enterPin': [
+    'Enter your 4-digit PIN to release the coin.',
+    'Coin നൽകാൻ 4 അക്ക PIN നൽകുക.',
+  ],
+  'currentPin': ['Current PIN', 'നിലവിലെ PIN'],
+  'newPin': ['New 4-digit PIN', 'പുതിയ 4 അക്ക PIN'],
+  'confirmPin': ['Confirm PIN', 'PIN സ്ഥിരീകരിക്കുക'],
+  'pinMismatch': ['Enter matching 4-digit PINs.', 'ഒരേ 4 അക്ക PIN നൽകുക.'],
+  'pinSaved': ['PIN saved.', 'PIN സേവ് ചെയ്തു.'],
+  'pin_missing': [
+    'Set up a coin release PIN in your profile first.',
+    'ആദ്യം പ്രൊഫൈലിൽ coin release PIN സജ്ജമാക്കുക.',
+  ],
+  'invalid_pin': [
+    'Incorrect PIN. Try again.',
+    'PIN തെറ്റാണ്. വീണ്ടും ശ്രമിക്കുക.',
+  ],
+  'pin_locked': [
+    'Too many attempts. Try again in 15 minutes.',
+    'ശ്രമങ്ങൾ കൂടുതലാണ്. 15 മിനിറ്റിന് ശേഷം ശ്രമിക്കുക.',
+  ],
+  'invalid_format': ['Enter a 4-digit PIN.', '4 അക്ക PIN നൽകുക.'],
+  'save': ['Save', 'സേവ് ചെയ്യുക'],
+  'processing': ['In progress', 'പുരോഗമിക്കുന്നു'],
+  'actionDisabled': [
+    'This action is temporarily disabled by an administrator.',
+    'ഈ action administrator താൽക്കാലികമായി തടഞ്ഞിരിക്കുന്നു.',
   ],
   'history': ['Coin history', 'Coin ചരിത്രം'],
   'emptyHistory': ['No transactions yet.', 'ഇതുവരെ ഇടപാടുകളില്ല.'],
@@ -419,6 +482,12 @@ String friendlyError(BuildContext context, Object e) {
     }
     if (e.message.contains('awaiting review')) {
       return tr(context, 'reviewCapacity');
+    }
+    if (e.message.contains('action is disabled')) {
+      return tr(context, 'actionDisabled');
+    }
+    if (e.message.contains('Invalid referral code')) {
+      return tr(context, 'invalidReferral');
     }
     if (e.message.contains('Instagram username')) {
       return tr(context, 'proofBadHandle');
@@ -1512,7 +1581,7 @@ class ClaimReviewDialog extends StatefulWidget {
   });
   final String handle;
   final Future<Map<String, dynamic>> Function() loadEvidence;
-  final Future<void> Function(bool approve) onDecision;
+  final Future<void> Function(bool approve, String? pin) onDecision;
   @override
   State<ClaimReviewDialog> createState() => _ClaimReviewDialogState();
 }
@@ -1545,15 +1614,29 @@ class _ClaimReviewDialogState extends State<ClaimReviewDialog> {
 
   Future<void> decide(bool approve) async {
     if (busy) return;
+    String? pin;
+    if (approve) {
+      pin = await showDialog<String>(
+        context: context,
+        builder: (_) => const ReleasePinDialog(),
+      );
+      if (pin == null || !mounted) return;
+    }
     setState(() {
       busy = true;
       error = null;
     });
     try {
-      await widget.onDecision(approve);
+      await widget.onDecision(approve, pin);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      if (mounted) setState(() => error = friendlyError(context, e));
+      if (mounted) {
+        setState(
+          () => error = e is PinException
+              ? tr(context, e.code)
+              : friendlyError(context, e),
+        );
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -1699,17 +1782,20 @@ class ReviewApi {
     String campaign,
     String participant,
     String submission,
-    bool approve,
-  ) async {
-    await client.rpc(
-      'review_claim',
+    bool approve, [
+    String? pin,
+  ]) async {
+    final result = await client.rpc(
+      'review_claim_with_pin',
       params: {
         'p_campaign_id': campaign,
         'p_user_id': participant,
         'p_submission_id': submission,
         'p_approve': approve,
+        'p_pin': pin,
       },
     );
+    if (result != 'ok') throw PinException(result.toString());
   }
 }
 
@@ -1738,8 +1824,42 @@ class TaskList extends StatelessWidget {
   }
 
   @override
-  Widget build(
+  Widget build(BuildContext context) =>
+      StreamBuilder<List<Map<String, dynamic>>>(
+        stream: db.from('action_controls').stream(primaryKey: ['action_type']),
+        builder: (context, controls) {
+          if (controls.hasError) {
+            return Center(child: Text(tr(context, 'error')));
+          }
+          if (!controls.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final actionStates = {
+            for (final row in controls.data!)
+              row['action_type'] as String: row['enabled'] == true,
+          };
+          return StreamBuilder<List<Map<String, dynamic>>>(
+            stream: db
+                .from('admin_review_presence')
+                .stream(primaryKey: ['session_id'])
+                .eq('user_id', uid),
+            builder: (context, presence) {
+              if (presence.hasError) {
+                return Center(child: Text(tr(context, 'error')));
+              }
+              if (!presence.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return buildTasks(context, actionStates, presence.data!);
+            },
+          );
+        },
+      );
+
+  Widget buildTasks(
     BuildContext context,
+    Map<String, bool> controls,
+    List<Map<String, dynamic>> presence,
   ) => StreamBuilder<List<Map<String, dynamic>>>(
     stream: db.from('campaigns').stream(primaryKey: ['id']),
     builder: (context, campaigns) {
@@ -1801,13 +1921,9 @@ class TaskList extends StatelessWidget {
                         allCampaigns[entry['campaign_id']]?['type'] ?? 'type',
                       ),
                     ),
-                    subtitle: Text(
-                      tr(
-                        context,
-                        entry['status'] == 'cancelled'
-                            ? 'reviewCancelled'
-                            : entry['status'],
-                      ),
+                    subtitle: SubmissionStatus(
+                      claim: entry,
+                      presence: presence,
                     ),
                   ),
                 const SizedBox(height: 12),
@@ -1821,6 +1937,7 @@ class TaskList extends StatelessWidget {
                 Builder(
                   builder: (context) {
                     final status = byCampaign[task['id']]?['status'];
+                    final enabled = controls[task['type']] == true;
                     return Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -1857,14 +1974,20 @@ class TaskList extends StatelessWidget {
                                 status == 'legacy')
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
-                                child: Text(tr(context, status)),
+                                child: SubmissionStatus(
+                                  claim: byCampaign[task['id']]!,
+                                  presence: presence,
+                                ),
                               ),
+                            if (!enabled) Text(tr(context, 'actionDisabled')),
                             Wrap(
                               spacing: 8,
                               children: [
                                 OutlinedButton(
-                                  onPressed: () =>
-                                      openInstagram(context, task['link']),
+                                  onPressed: enabled
+                                      ? () =>
+                                            openInstagram(context, task['link'])
+                                      : null,
                                   child: Text(tr(context, 'open')),
                                 ),
                                 if (status == 'pending')
@@ -1875,7 +1998,8 @@ class TaskList extends StatelessWidget {
                                   ),
                                 FilledButton(
                                   onPressed:
-                                      status == 'pending' ||
+                                      !enabled ||
+                                          status == 'pending' ||
                                           status == 'approved' ||
                                           status == 'legacy'
                                       ? null
@@ -1901,6 +2025,79 @@ class TaskList extends StatelessWidget {
   );
 }
 
+class SubmissionStatus extends StatefulWidget {
+  const SubmissionStatus({
+    super.key,
+    required this.claim,
+    required this.presence,
+  });
+  final Map<String, dynamic> claim;
+  final List<Map<String, dynamic>> presence;
+  @override
+  State<SubmissionStatus> createState() => _SubmissionStatusState();
+}
+
+class _SubmissionStatusState extends State<SubmissionStatus> {
+  Timer? timer;
+  DateTime? expiry() {
+    if (widget.claim['status'] != 'pending') return null;
+    DateTime? latest;
+    for (final row in widget.presence) {
+      if (row['campaign_id'] != widget.claim['campaign_id'] ||
+          row['user_id'] != widget.claim['user_id'] ||
+          row['submission_id'] != widget.claim['submission_id']) {
+        continue;
+      }
+      final until = DateTime.tryParse(row['expires_at'] as String? ?? '');
+      if (until != null && (latest == null || until.isAfter(latest))) {
+        latest = until;
+      }
+    }
+    return latest;
+  }
+
+  void scheduleExpiry() {
+    timer?.cancel();
+    final until = expiry();
+    if (until != null && until.isAfter(DateTime.now())) {
+      timer = Timer(
+        until.difference(DateTime.now()) + const Duration(milliseconds: 50),
+        () {
+          if (mounted) setState(() {});
+        },
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    scheduleExpiry();
+  }
+
+  @override
+  void didUpdateWidget(covariant SubmissionStatus oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    scheduleExpiry();
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final until = expiry();
+    final active = until != null && until.isAfter(DateTime.now());
+    final status = widget.claim['status'] == 'cancelled'
+        ? 'reviewCancelled'
+        : widget.claim['status'] as String;
+    return Text(tr(context, active ? 'adminReviewing' : status));
+  }
+}
+
 class PendingReviews extends StatelessWidget {
   const PendingReviews({super.key, required this.campaignId});
   final String campaignId;
@@ -1913,8 +2110,9 @@ class PendingReviews extends StatelessWidget {
         handle: claim['instagram_handle'] as String? ?? '',
         loadEvidence: () =>
             ReviewApi(db).evidence(campaignId, participant, submission),
-        onDecision: (approve) =>
-            ReviewApi(db).decide(campaignId, participant, submission, approve),
+        onDecision: (approve, pin) =>
+            ReviewApi(db)
+                .decide(campaignId, participant, submission, approve, pin),
       ),
     );
     if (result == true && context.mounted) {
@@ -2074,6 +2272,22 @@ class Campaigns extends StatelessWidget {
                             Chip(label: Text(tr(context, data['status']))),
                           ],
                         ),
+                        if (data['status'] == 'active') ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(tr(context, 'processing')),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         Text(
                           data['link'],
@@ -2153,69 +2367,85 @@ class _CreateCampaignState extends State<CreateCampaign> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(tr(context, 'create'))),
-    body: Form(
-      key: form,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text(
-            tr(context, 'create'),
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          DropdownButtonFormField<String>(
-            initialValue: type,
-            decoration: InputDecoration(labelText: tr(context, 'type')),
-            items: ['follow', 'like', 'comment', 'share']
-                .map(
-                  (t) =>
-                      DropdownMenuItem(value: t, child: Text(tr(context, t))),
-                )
-                .toList(),
-            onChanged: busy ? null : (v) => setState(() => type = v!),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: link,
-            keyboardType: TextInputType.url,
-            decoration: InputDecoration(
-              labelText: tr(context, 'link'),
-              hintText: tr(
-                context,
-                type == 'follow' ? 'profileHint' : 'postHint',
+    body: StreamBuilder<List<Map<String, dynamic>>>(
+      stream: db.from('action_controls').stream(primaryKey: ['action_type']),
+      builder: (context, controls) {
+        if (controls.hasError) return Center(child: Text(tr(context, 'error')));
+        if (!controls.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final enabled = controls.data!.any(
+          (row) => row['action_type'] == type && row['enabled'] == true,
+        );
+        return Form(
+          key: form,
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Text(
+                tr(context, 'create'),
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? tr(context, 'required') : null,
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                initialValue: type,
+                decoration: InputDecoration(labelText: tr(context, 'type')),
+                items: ['follow', 'like', 'comment', 'share']
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(tr(context, t)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: busy ? null : (v) => setState(() => type = v!),
+              ),
+              if (!enabled) Text(tr(context, 'actionDisabled')),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: link,
+                keyboardType: TextInputType.url,
+                decoration: InputDecoration(
+                  labelText: tr(context, 'link'),
+                  hintText: tr(
+                    context,
+                    type == 'follow' ? 'profileHint' : 'postHint',
+                  ),
+                ),
+                validator: (v) => v == null || v.trim().isEmpty
+                    ? tr(context, 'required')
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: count,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: tr(context, 'count'),
+                  helperText: tr(context, 'cost'),
+                ),
+                validator: (v) {
+                  final n = int.tryParse(v ?? '');
+                  return n == null || n < 1 || n > 100
+                      ? tr(context, 'validCount')
+                      : null;
+                },
+              ),
+              const SizedBox(height: 24),
+              const Notice(),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: busy || !enabled ? null : submit,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Text(tr(context, 'submit')),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: count,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: tr(context, 'count'),
-              helperText: tr(context, 'cost'),
-            ),
-            validator: (v) {
-              final n = int.tryParse(v ?? '');
-              return n == null || n < 1 || n > 100
-                  ? tr(context, 'validCount')
-                  : null;
-            },
-          ),
-          const SizedBox(height: 24),
-          const Notice(),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: busy ? null : submit,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Text(tr(context, 'submit')),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     ),
   );
 }
@@ -2252,66 +2482,424 @@ class Profile extends StatelessWidget {
       const SizedBox(height: 20),
       BalanceCard(uid: user.id),
       const SizedBox(height: 24),
-      Text(
-        tr(context, 'history'),
-        style: Theme.of(context).textTheme.titleLarge
-            ?.copyWith(fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 8),
-      StreamBuilder<List<Map<String, dynamic>>>(
-        stream: db
-            .from('coin_ledger')
-            .stream(primaryKey: ['id'])
-            .eq('user_id', user.id),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) return Text(tr(context, 'error'));
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final docs = snapshot.data!.toList()
-            ..sort(
-              (a, b) => (b['createdAt'] as String).compareTo(
-                a['createdAt'] as String,
-              ),
-            );
-          if (docs.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(tr(context, 'emptyHistory')),
-            );
-          }
-          return Column(
-            children: [
-              for (final doc in docs)
-                Builder(
-                  builder: (context) {
-                    final data = doc;
-                    final amount = data['amount'] as int;
-                    final reason = switch (data['reason']) {
-                      'welcome' => 'welcomeReason',
-                      'campaign' => 'campaignReason',
-                      'task' => 'taskReason',
-                      'refund' => 'refundReason',
-                      _ => 'history',
-                    };
-                    return Card(
-                      child: ListTile(
-                        title: Text(tr(context, reason)),
-                        trailing: Text(
-                          '${amount > 0 ? '+' : ''}$amount',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: amount > 0 ? Colors.green.shade700 : null,
+      ProfileFeatures(uid: user.id),
+    ],
+  );
+}
+
+class CoinHistoryPage extends StatelessWidget {
+  const CoinHistoryPage({super.key, required this.uid});
+  final String uid;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(tr(context, 'history'))),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          tr(context, 'history'),
+          style: Theme.of(context).textTheme.titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        StreamBuilder<List<Map<String, dynamic>>>(
+          stream: db
+              .from('coin_ledger')
+              .stream(primaryKey: ['id'])
+              .eq('user_id', uid),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) return Text(tr(context, 'error'));
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final docs = snapshot.data!.toList()
+              ..sort(
+                (a, b) => (b['createdAt'] as String).compareTo(
+                  a['createdAt'] as String,
+                ),
+              );
+            if (docs.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(tr(context, 'emptyHistory')),
+              );
+            }
+            return Column(
+              children: [
+                for (final doc in docs)
+                  Builder(
+                    builder: (context) {
+                      final data = doc;
+                      final amount = data['amount'] as int;
+                      final reason = switch (data['reason']) {
+                        'welcome' => 'welcomeReason',
+                        'campaign' => 'campaignReason',
+                        'task' => 'taskReason',
+                        'refund' => 'refundReason',
+                        _ => 'history',
+                      };
+                      return Card(
+                        child: ListTile(
+                          title: Text(tr(context, reason)),
+                          trailing: Text(
+                            '${amount > 0 ? '+' : ''}$amount',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: amount > 0 ? Colors.green.shade700 : null,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-            ],
-          );
+                      );
+                    },
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+class PinException implements Exception {
+  const PinException(this.code);
+  final String code;
+}
+
+class ReleasePinDialog extends StatefulWidget {
+  const ReleasePinDialog({
+    super.key,
+    this.setup = false,
+    this.changing = false,
+  });
+  final bool setup;
+  final bool changing;
+  @override
+  State<ReleasePinDialog> createState() => _ReleasePinDialogState();
+}
+
+class _ReleasePinDialogState extends State<ReleasePinDialog> {
+  final pin = TextEditingController();
+  final confirm = TextEditingController();
+  final current = TextEditingController();
+  String? error;
+  bool busy = false;
+  @override
+  void dispose() {
+    pin.dispose();
+    confirm.dispose();
+    current.dispose();
+    super.dispose();
+  }
+
+  Future<void> submit() async {
+    if (!RegExp(r'^\d{4}$').hasMatch(pin.text) ||
+        (widget.setup &&
+            (pin.text != confirm.text ||
+                (widget.changing &&
+                    !RegExp(r'^\d{4}$').hasMatch(current.text))))) {
+      setState(
+        () => error = tr(
+          context,
+          widget.setup ? 'pinMismatch' : 'invalid_format',
+        ),
+      );
+      return;
+    }
+    if (!widget.setup) {
+      Navigator.pop(context, pin.text);
+      return;
+    }
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      final result = await db.rpc(
+        'set_release_pin',
+        params: {
+          'p_pin': pin.text,
+          'p_current_pin': widget.changing ? current.text : null,
         },
+      );
+      if (!mounted) return;
+      if (result == 'ok') {
+        Navigator.pop(context, 'ok');
+      } else {
+        setState(() => error = tr(context, result.toString()));
+      }
+    } catch (e) {
+      if (mounted) setState(() => error = friendlyError(context, e));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Widget pinField(TextEditingController controller, String label) => TextField(
+    controller: controller,
+    obscureText: true,
+    keyboardType: TextInputType.number,
+    inputFormatters: [
+      FilteringTextInputFormatter.digitsOnly,
+      LengthLimitingTextInputFormatter(4),
+    ],
+    decoration: InputDecoration(labelText: tr(context, label)),
+  );
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(
+      tr(
+        context,
+        widget.setup
+            ? (widget.changing ? 'changePin' : 'setupPin')
+            : 'releasePin',
+      ),
+    ),
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!widget.setup) Text(tr(context, 'enterPin')),
+          if (widget.changing) pinField(current, 'currentPin'),
+          pinField(pin, widget.setup ? 'newPin' : 'releasePin'),
+          if (widget.setup) pinField(confirm, 'confirmPin'),
+          if (error != null)
+            Text(
+              error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: busy ? null : () => Navigator.pop(context),
+        child: Text(tr(context, 'cancel')),
+      ),
+      FilledButton(
+        onPressed: busy ? null : submit,
+        child: Text(tr(context, widget.setup ? 'save' : 'yesConfirm')),
       ),
     ],
+  );
+}
+
+class ProfileFeatures extends StatefulWidget {
+  const ProfileFeatures({super.key, required this.uid});
+  final String uid;
+  @override
+  State<ProfileFeatures> createState() => _ProfileFeaturesState();
+}
+
+class _ProfileFeaturesState extends State<ProfileFeatures> {
+  late Future<List<dynamic>> data = load();
+  Future<List<dynamic>> load() => Future.wait([
+    db
+        .from('instagram_accounts')
+        .select('username')
+        .eq('user_id', widget.uid)
+        .order('created_at'),
+    db.rpc('referral_info'),
+    db.rpc('release_pin_is_set'),
+  ]);
+  void reload() => setState(() {
+    data = load();
+  });
+
+  Future<void> input(String title, String rpc, String param) async {
+    final controller = TextEditingController();
+    String? value;
+    try {
+      value = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(tr(context, title)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(labelText: tr(context, title)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr(context, 'cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: Text(tr(context, 'apply')),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+    if (value == null || value.isEmpty || !mounted) return;
+    try {
+      await db.rpc(rpc, params: {param: value});
+      if (!mounted) return;
+      if (rpc == 'apply_referral') {
+        toast(context, tr(context, 'referralApplied'));
+      }
+      reload();
+    } catch (e) {
+      if (mounted) {
+        final message = e is PostgrestException && e.code == '23505'
+            ? tr(
+                context,
+                rpc == 'apply_referral' ? 'referralJoined' : 'duplicateAccount',
+              )
+            : friendlyError(context, e);
+        toast(context, message);
+      }
+    }
+  }
+
+  Future<void> remove(String username) async {
+    try {
+      await db.rpc(
+        'remove_instagram_account',
+        params: {'p_username': username},
+      );
+      if (mounted) reload();
+    } catch (e) {
+      if (mounted) toast(context, friendlyError(context, e));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<dynamic>>(
+    future: data,
+    builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        return Column(
+          children: [
+            Text(tr(context, 'error')),
+            TextButton(onPressed: reload, child: Text(tr(context, 'retry'))),
+          ],
+        );
+      }
+      if (!snapshot.hasData) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      final accounts = snapshot.data![0] as List;
+      final referral = Map<String, dynamic>.from(snapshot.data![1] as Map);
+      final hasPin = snapshot.data![2] as bool;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.history),
+              title: Text(tr(context, 'history')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => CoinHistoryPage(uid: widget.uid),
+                ),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.lock_outline),
+              title: Text(tr(context, 'releasePin')),
+              subtitle: Text(tr(context, hasPin ? 'changePin' : 'setupPin')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final result = await showDialog<String>(
+                  context: context,
+                  builder: (_) =>
+                      ReleasePinDialog(setup: true, changing: hasPin),
+                );
+                if (result == 'ok' && context.mounted) {
+                  toast(context, tr(context, 'pinSaved'));
+                  reload();
+                }
+              },
+            ),
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr(context, 'instagramAccounts'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  if (accounts.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(tr(context, 'noAccounts')),
+                    ),
+                  for (final account in accounts)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('@${account['username']}'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: tr(context, 'removeAccount'),
+                        onPressed: () => remove(account['username'] as String),
+                      ),
+                    ),
+                  TextButton.icon(
+                    onPressed: () => input(
+                      'addAccount',
+                      'add_instagram_account',
+                      'p_username',
+                    ),
+                    icon: const Icon(Icons.add),
+                    label: Text(tr(context, 'addAccount')),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr(context, 'referrals'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(tr(context, 'referralNoReward')),
+                  const SizedBox(height: 8),
+                  Text(tr(context, 'referralCode')),
+                  SelectableText(referral['code'] as String),
+                  TextButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: referral['code'] as String),
+                      );
+                      if (context.mounted) {
+                        toast(context, tr(context, 'copied'));
+                      }
+                    },
+                    icon: const Icon(Icons.copy),
+                    label: Text(tr(context, 'copyCode')),
+                  ),
+                  Text('${tr(context, 'referralCount')}: ${referral['count']}'),
+                  if (referral['joined'] == true)
+                    Text(tr(context, 'referralJoined'))
+                  else
+                    TextButton(
+                      onPressed: () =>
+                          input('referralEnter', 'apply_referral', 'p_code'),
+                      child: Text(tr(context, 'referralEnter')),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    },
   );
 }

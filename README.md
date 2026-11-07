@@ -83,13 +83,73 @@ Run `flutter analyze` and `flutter test`. PostgreSQL tests mock Supabase `auth.u
 
 <!-- /coderabbit-ai-generated:v1 -->
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:f2f17671c506c58af26acf8ab677d734ecaa328e0bab90e83fda3cbcdf5c828f -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:dd8737c9688b580259fd2d3f80adfd03b0afd0c1f3f266a036775b7109ba6356 -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:907444502ca19dd120b7a8274d64fd7fe01235a134066b9b475dda7122ddef4b -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:00d23226cd9b44dff7373890f13416954c466ed19f96947df380fc36e9e8f145 -->
+
+## Administrator submission inspection
+
+Apply `supabase/migrations/20261107060000_admin_submission_review.sql` after the preceding migrations. Administrators can inspect pending usernames and screenshots; each inspection is recorded in a private audit table. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:3ceeea8a6f7add72f8994cabee4291ff7327c84afdd653ca3f0705c0dd1a589c -->
+
+Participants see “AI is checking your submission” while an administrator is checking it.
+
+<!-- /coderabbit-ai-generated:v1 --> The indicator expires after two minutes without a connection and is refreshed while the inspection is open. Campaign owners continue to make approval decisions using their PIN. No AI review is performed.
+
+## Administrator campaign overview
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+Apply `supabase/migrations/20261107050000_admin_campaigns.sql` after the preceding migrations. The administrator app can list campaigns by action and status, including their owner email and task progress. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:7c61c051ab47f1de730559a2c54dd6684a9a255f8ac029ed45a33523f35a20a6 -->
+
+The campaign owner retains the approval decision; administrators can inspect pending evidence as described above.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+## Administrator action controls
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+Apply `supabase/migrations/20261107040000_admin_action_controls.sql` after the preceding migrations and distribute updated user and administrator apps. In the administrator app, open Action controls to enable or disable Follow, Like, Share and Comment independently. Disabling an action blocks new campaigns and submissions for that action on the server, including requests from older clients. Operations already in progress can finish before the change commits. Existing submissions remain available for owner review or withdrawal, and campaign cancellation still refunds unused coins. These controls apply inside Growth Circle; they cannot control actions directly on Instagram.
+
+## Profile and release PIN upgrade
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+Apply `supabase/migrations/20261107030000_profile_pin_referrals.sql` after the administrator migration. Distribute the updated app at the same time: older clients cannot review submissions after this upgrade. Owners must set a four-digit PIN in Profile before approving and releasing a coin. Five incorrect attempts lock the PIN for 15 minutes. PIN changes require the current PIN; there is no in-app forgotten-PIN reset.
+
+Profile supports multiple Instagram usernames, a separate coin history page and referral codes. A user can apply one other user's code; referrals are tracked without coin rewards.
+
 ## Coin model
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:c64faf45931f12ec47d077d6d2401381342ff7988e233c74cb245f02e21f94de -->
 
-Accounts receive 10 coins once. Campaigns reserve one coin per requested task. A participant submits an Instagram username and a JPEG or PNG screenshot (maximum 512 KiB); the owner sees a pending submission, reviews the screenshot and approves or rejects it. Approving pays one coin and consumes one reserved task. Rejecting or withdrawing reopens the slot. Cancellation refunds all unapproved slots, including pending submissions. Only campaign owners and the claimant can access pending evidence, and evidence is deleted on review, withdrawal or cancellation. A submission identifier prevents approving a replacement using stale evidence. Row locks serialize submission, decisions and cancellation. <!-- coderabbit-ai-generated:v1 -->
+Accounts receive 10 coins once. Campaigns reserve one coin per requested task. A participant submits an Instagram username and a JPEG or PNG screenshot (maximum 512 KiB); the owner sees a pending submission, reviews the screenshot and approves or rejects it. Approving pays one coin and consumes one reserved task. Rejecting or withdrawing reopens the slot. Cancellation refunds all unapproved slots, including pending submissions. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:fe5d94089b88fd5520ac3eac467b5dcf4d301cd218dd3803a58442b0e7928c07 -->
+
+Campaign owners, the claimant and administrators can access pending evidence. Evidence is deleted on review, withdrawal or cancellation.
+
+<!-- /coderabbit-ai-generated:v1 --> A submission identifier prevents approving a replacement using stale evidence. Row locks serialize submission, decisions and cancellation. <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:23ba3e61e44ea6b383e78113db5aba087f9dd4a8226ec86c5c1503e9d774b855 -->
 

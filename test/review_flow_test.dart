@@ -70,7 +70,7 @@ void main() {
                   builder: (_) => ClaimReviewDialog(
                     handle: 'person',
                     loadEvidence: () async => {'data': imageBase64},
-                    onDecision: (approve) async {
+                    onDecision: (approve, pin) async {
                       choice = approve;
                       throw const PostgrestException(
                         message: 'Campaign is no longer active.',
@@ -99,6 +99,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Approve'));
       await tester.pumpAndSettle();
+      expect(choice, isNull);
+      await tester.enterText(find.byType(TextField).last, '1234');
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
       expect(choice, isTrue);
       expect(find.text(words['inactive']![0]), findsOneWidget);
       expect(find.byType(ClaimReviewDialog), findsOneWidget);
@@ -118,7 +122,7 @@ void main() {
                 builder: (_) => ClaimReviewDialog(
                   handle: 'person',
                   loadEvidence: () async => {},
-                  onDecision: (_) async {},
+                  onDecision: (_, _) async {},
                 ),
               ),
               child: const Text('Open review'),
