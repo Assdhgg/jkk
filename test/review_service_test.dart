@@ -23,7 +23,7 @@ void main() {
             jsonEncode({'mime': 'image/png', 'data': 'aW1hZ2U='}),
           );
         } else {
-          request.response.write('null');
+          request.response.write(jsonEncode('ok'));
         }
         await request.response.close();
       });
@@ -45,13 +45,14 @@ void main() {
           'participant-id',
           'submission-id',
           true,
+          '1234',
         );
         await api.withdraw('campaign-id');
         expect(evidence['data'], 'aW1hZ2U=');
         expect(requests.map((r) => r['path']), [
           '/rest/v1/rpc/submit_claim',
           '/rest/v1/rpc/get_claim_evidence',
-          '/rest/v1/rpc/review_claim',
+          '/rest/v1/rpc/review_claim_with_pin',
           '/rest/v1/rpc/withdraw_claim',
         ]);
         expect(requests[0]['p_evidence'], 'AQID');
@@ -59,6 +60,7 @@ void main() {
         expect(requests[1]['p_submission_id'], 'submission-id');
         expect(requests[2]['p_submission_id'], 'submission-id');
         expect(requests[2]['p_approve'], true);
+        expect(requests[2]['p_pin'], '1234');
       } finally {
         await client.dispose();
         await server.close(force: true);

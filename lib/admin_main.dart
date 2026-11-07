@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -37,6 +39,54 @@ const labels = <String, List<String>>{
     'ലോഗിൻ പരാജയപ്പെട്ടു. വിവരങ്ങളും internet-ഉം പരിശോധിക്കുക.',
   ],
   'users': ['Users', 'ഉപയോക്താക്കൾ'],
+  'campaigns': ['Campaigns', 'Campaign-ുകൾ'],
+  'submissions': ['Pending submissions', 'പരിശോധിക്കാനുള്ള submissions'],
+  'inspect': ['Inspect', 'പരിശോധിക്കുക'],
+  'inspecting': ['Inspect submission', 'Submission പരിശോധിക്കുക'],
+  'reviewNotice': [
+    'The participant sees when an administrator is checking. The campaign owner makes the decision.',
+    'Administrator പരിശോധിക്കുമ്പോൾ participant-ന് കാണാം. തീരുമാനം campaign ഉടമയാണ് എടുക്കുന്നത്.',
+  ],
+  'submissionEmpty': [
+    'No pending submissions.',
+    'പരിശോധിക്കാനുള്ള submissions ഇല്ല.',
+  ],
+  'submissionFailure': [
+    'Unable to load the submission. It may no longer be pending.',
+    'Submission ലഭ്യമല്ല. അത് പരിശോധിച്ചു കഴിഞ്ഞിരിക്കാം.',
+  ],
+  'close': ['Close', 'അടയ്ക്കുക'],
+  'instagramUsername': ['Instagram username', 'Instagram username'],
+  'allActions': ['All actions', 'എല്ലാ actions'],
+  'allStatuses': ['All statuses', 'എല്ലാ നിലകളും'],
+  'completed': ['Completed', 'പൂർത്തിയായി'],
+  'cancelled': ['Cancelled', 'റദ്ദാക്കി'],
+  'campaignEmpty': ['No campaigns found.', 'Campaign-ുകൾ കണ്ടെത്തിയില്ല.'],
+  'campaignFailure': [
+    'Unable to load campaigns.',
+    'Campaign-ുകൾ ലഭ്യമാക്കാനായില്ല.',
+  ],
+  'owner': ['Owner', 'ഉടമ'],
+  'progress': ['Tasks completed', 'പൂർത്തിയായ tasks'],
+  'campaignInfo': [
+    'Campaign activity is self-reported and is not verified by Instagram.',
+    'Campaign പ്രവർത്തനങ്ങൾ സ്വയം റിപ്പോർട്ട് ചെയ്തതാണ്; Instagram പരിശോധിച്ചിട്ടില്ല.',
+  ],
+  'actionControls': ['Action controls', 'Action നിയന്ത്രണങ്ങൾ'],
+  'actionHelp': [
+    'Disable an action to pause new campaigns and submissions. Existing submissions can still be reviewed, withdrawn or cancelled.',
+    'Action തടഞ്ഞാൽ പുതിയ campaigns-ഉം submissions-ഉം നിർത്തും. നിലവിലുള്ള submissions പരിശോധിക്കാനും പിൻവലിക്കാനും റദ്ദാക്കാനും കഴിയും.',
+  ],
+  'follow': ['Follow', 'Follow'],
+  'like': ['Like', 'Like'],
+  'share': ['Share', 'Share'],
+  'comment': ['Comment', 'Comment'],
+  'enabled': ['Enabled', 'പ്രവർത്തനക്ഷമം'],
+  'disabled': ['Disabled', 'തടഞ്ഞു'],
+  'actionFailure': [
+    'Unable to load or update action controls.',
+    'Action നിയന്ത്രണങ്ങൾ ലഭ്യമാക്കാനോ മാറ്റാനോ കഴിഞ്ഞില്ല.',
+  ],
   'search': ['Search email or name', 'ഇമെയിൽ അല്ലെങ്കിൽ പേര് തിരയുക'],
   'searchButton': ['Search', 'തിരയുക'],
   'refresh': ['Refresh', 'പുതുക്കുക'],
@@ -127,11 +177,66 @@ class AdminUser {
   );
 }
 
+class AdminCampaign {
+  const AdminCampaign({
+    required this.id,
+    required this.ownerId,
+    required this.ownerEmail,
+    required this.type,
+    required this.link,
+    required this.status,
+    required this.requested,
+    required this.remaining,
+  });
+  final String id, ownerId, ownerEmail, type, link, status;
+  final int requested, remaining;
+  factory AdminCampaign.fromJson(Map<String, dynamic> row) => AdminCampaign(
+    id: row['id'] as String,
+    ownerId: row['owner_id'] as String,
+    ownerEmail: row['owner_email'] as String? ?? '',
+    type: row['type'] as String,
+    link: row['link'] as String,
+    status: row['status'] as String,
+    requested: row['requested'] as int,
+    remaining: row['remaining'] as int,
+  );
+}
+
+class AdminSubmission {
+  const AdminSubmission({
+    required this.campaignId,
+    required this.userId,
+    required this.submissionId,
+    required this.type,
+    required this.link,
+  });
+  final String campaignId, userId, submissionId, type, link;
+  factory AdminSubmission.fromJson(Map<String, dynamic> row) => AdminSubmission(
+    campaignId: row['campaign_id'] as String,
+    userId: row['user_id'] as String,
+    submissionId: row['submission_id'] as String,
+    type: row['action_type'] as String,
+    link: row['campaign_link'] as String,
+  );
+}
+
 abstract class AdminGateway {
   Future<void> signIn(String email, String password);
   Future<bool> isAdmin();
   Future<List<AdminUser>> users(String query, int offset, int limit);
   Future<void> setBlocked(String userId, bool blocked);
+  Future<List<AdminSubmission>> submissions(int offset, int limit);
+  Future<Map<String, dynamic>> beginReview(AdminSubmission submission);
+  Future<bool> renewReview(String sessionId);
+  Future<void> endReview(String sessionId);
+  Future<List<AdminCampaign>> campaigns(
+    String? type,
+    String? status,
+    int offset,
+    int limit,
+  );
+  Future<Map<String, bool>> actions();
+  Future<void> setActionEnabled(String type, bool enabled);
   Future<void> signOut();
   Future<void> dispose();
 }
@@ -156,9 +261,88 @@ class SupabaseAdminGateway implements AdminGateway {
   }
 
   @override
+  Future<List<AdminCampaign>> campaigns(
+    String? type,
+    String? status,
+    int offset,
+    int limit,
+  ) async {
+    final rows = await client.rpc(
+      'admin_list_campaigns',
+      params: {
+        'p_type': type,
+        'p_status': status,
+        'p_offset': offset,
+        'p_limit': limit,
+      },
+    ) as List;
+    return rows
+        .map(
+          (row) =>
+              AdminCampaign.fromJson(Map<String, dynamic>.from(row as Map)),
+        )
+        .toList();
+  }
+
+  @override
+  Future<List<AdminSubmission>> submissions(int offset, int limit) async {
+    final rows = await client.rpc(
+      'admin_pending_submissions',
+      params: {'p_offset': offset, 'p_limit': limit},
+    ) as List;
+    return rows
+        .map(
+          (row) =>
+              AdminSubmission.fromJson(Map<String, dynamic>.from(row as Map)),
+        )
+        .toList();
+  }
+
+  @override
+  Future<Map<String, dynamic>> beginReview(AdminSubmission submission) async =>
+      Map<String, dynamic>.from(
+        await client.rpc(
+          'admin_begin_submission_review',
+          params: {
+            'p_campaign_id': submission.campaignId,
+            'p_user_id': submission.userId,
+            'p_submission_id': submission.submissionId,
+          },
+        ) as Map,
+      );
+  @override
+  Future<bool> renewReview(String sessionId) async =>
+      (await client.rpc(
+        'admin_renew_submission_review',
+        params: {'p_session_id': sessionId},
+      )) ==
+      true;
+  @override
+  Future<void> endReview(String sessionId) async => client.rpc(
+    'admin_end_submission_review',
+    params: {'p_session_id': sessionId},
+  );
+
+  @override
   Future<void> setBlocked(String userId, bool blocked) async => client.rpc(
     'admin_set_blocked',
     params: {'p_user_id': userId, 'p_blocked': blocked},
+  );
+  @override
+  Future<Map<String, bool>> actions() async {
+    final rows =
+        await client.from('action_controls').select('action_type,enabled')
+            as List;
+    return {
+      for (final row in rows)
+        row['action_type'] as String: row['enabled'] as bool,
+    };
+  }
+
+  @override
+  Future<void> setActionEnabled(String type, bool enabled) async => client.rpc(
+    'admin_set_action_enabled',
+    params: {'p_type': type, 'p_enabled': enabled},
   );
   @override
   Future<void> signOut() => client.auth.signOut();
@@ -603,6 +787,36 @@ class _AdminDashboardState extends State<AdminDashboard> {
     appBar: AppBar(
       title: const Text('Growth Circle Admin'),
       actions: [
+        IconButton(
+          tooltip: at(context, 'submissions'),
+          icon: const Icon(Icons.fact_check_outlined),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => AdminSubmissions(gateway: widget.gateway),
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: at(context, 'campaigns'),
+          icon: const Icon(Icons.campaign_outlined),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => AdminCampaigns(gateway: widget.gateway),
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: at(context, 'actionControls'),
+          icon: const Icon(Icons.tune),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => AdminActionControls(gateway: widget.gateway),
+            ),
+          ),
+        ),
         TextButton(
           onPressed: widget.onLanguage,
           child: Text(
@@ -794,5 +1008,527 @@ class AdminUserCard extends StatelessWidget {
         ],
       ),
     ),
+  );
+}
+
+class AdminActionControls extends StatefulWidget {
+  const AdminActionControls({super.key, required this.gateway});
+  final AdminGateway gateway;
+  @override
+  State<AdminActionControls> createState() => _AdminActionControlsState();
+}
+
+class _AdminActionControlsState extends State<AdminActionControls> {
+  late Future<Map<String, bool>> result;
+  bool changing = false;
+  @override
+  void initState() {
+    super.initState();
+    result = widget.gateway.actions();
+  }
+
+  void reload() => setState(() {
+    result = widget.gateway.actions();
+  });
+  Future<void> change(String type, bool enabled) async {
+    if (changing) return;
+    setState(() => changing = true);
+    try {
+      await widget.gateway.setActionEnabled(type, enabled);
+      if (mounted) reload();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(at(context, 'actionFailure'))));
+      }
+    } finally {
+      if (mounted) setState(() => changing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(at(context, 'actionControls'))),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 650),
+        child: FutureBuilder<Map<String, bool>>(
+          future: result,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(at(context, 'actionFailure')),
+                  TextButton(
+                    onPressed: reload,
+                    child: Text(at(context, 'refresh')),
+                  ),
+                ],
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final values = snapshot.data!;
+            return ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                Text(at(context, 'actionHelp')),
+                const SizedBox(height: 16),
+                for (final type in ['follow', 'like', 'share', 'comment'])
+                  Card(
+                    child: SwitchListTile(
+                      key: Key('action_$type'),
+                      title: Text(at(context, type)),
+                      subtitle: Text(
+                        at(
+                          context,
+                          values[type] == true ? 'enabled' : 'disabled',
+                        ),
+                      ),
+                      value: values[type] == true,
+                      onChanged: changing || !values.containsKey(type)
+                          ? null
+                          : (enabled) => change(type, enabled),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
+
+class AdminCampaigns extends StatefulWidget {
+  const AdminCampaigns({super.key, required this.gateway});
+  final AdminGateway gateway;
+  @override
+  State<AdminCampaigns> createState() => _AdminCampaignsState();
+}
+
+class _AdminCampaignsState extends State<AdminCampaigns> {
+  String? type, status;
+  int offset = 0;
+  static const pageSize = 30;
+  late Future<List<AdminCampaign>> result;
+  @override
+  void initState() {
+    super.initState();
+    result = widget.gateway.campaigns(type, status, offset, pageSize);
+  }
+
+  void reload({bool reset = false}) => setState(() {
+    if (reset) offset = 0;
+    result = widget.gateway.campaigns(type, status, offset, pageSize);
+  });
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: Text(at(context, 'campaigns')),
+      actions: [
+        IconButton(
+          onPressed: reload,
+          tooltip: at(context, 'refresh'),
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
+    ),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 850),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(at(context, 'campaignInfo')),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  DropdownButton<String>(
+                    key: const Key('campaign_type'),
+                    value: type,
+                    hint: Text(at(context, 'allActions')),
+                    items: [
+                      DropdownMenuItem<String>(
+                        value: null,
+                        child: Text(at(context, 'allActions')),
+                      ),
+                      for (final item in ['follow', 'like', 'share', 'comment'])
+                        DropdownMenuItem(
+                          value: item,
+                          child: Text(at(context, item)),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      type = value;
+                      reload(reset: true);
+                    },
+                  ),
+                  DropdownButton<String>(
+                    key: const Key('campaign_status'),
+                    value: status,
+                    hint: Text(at(context, 'allStatuses')),
+                    items: [
+                      DropdownMenuItem<String>(
+                        value: null,
+                        child: Text(at(context, 'allStatuses')),
+                      ),
+                      for (final item in ['active', 'completed', 'cancelled'])
+                        DropdownMenuItem(
+                          value: item,
+                          child: Text(at(context, item)),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      status = value;
+                      reload(reset: true);
+                    },
+                  ),
+                ],
+              ),
+              Expanded(
+                child: FutureBuilder<List<AdminCampaign>>(
+                  future: result,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(at(context, 'campaignFailure')),
+                            TextButton(
+                              onPressed: reload,
+                              child: Text(at(context, 'refresh')),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final campaigns = snapshot.data!;
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: campaigns.isEmpty
+                              ? Center(
+                                  child: Text(at(context, 'campaignEmpty')),
+                                )
+                              : ListView.builder(
+                                  itemCount: campaigns.length,
+                                  itemBuilder: (context, index) {
+                                    final campaign = campaigns[index];
+                                    return Card(
+                                      child: ListTile(
+                                        title: Text(
+                                          '${at(context, campaign.type)} · ${at(context, campaign.status)}',
+                                        ),
+                                        subtitle: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            SelectableText(campaign.link),
+                                            SelectableText(
+                                              '${at(context, 'owner')}: ${campaign.ownerEmail.isEmpty ? campaign.ownerId : campaign.ownerEmail}',
+                                            ),
+                                            Text(
+                                              '${at(context, 'progress')}: ${campaign.requested - campaign.remaining}/${campaign.requested}',
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: offset > 0
+                                  ? () {
+                                      offset -= pageSize;
+                                      reload();
+                                    }
+                                  : null,
+                              child: Text(at(context, 'previous')),
+                            ),
+                            Text(
+                              '${offset + (campaigns.isEmpty ? 0 : 1)}–${offset + campaigns.length}',
+                            ),
+                            TextButton(
+                              onPressed: campaigns.length == pageSize
+                                  ? () {
+                                      offset += pageSize;
+                                      reload();
+                                    }
+                                  : null,
+                              child: Text(at(context, 'next')),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class AdminSubmissions extends StatefulWidget {
+  const AdminSubmissions({super.key, required this.gateway});
+  final AdminGateway gateway;
+  @override
+  State<AdminSubmissions> createState() => _AdminSubmissionsState();
+}
+
+class _AdminSubmissionsState extends State<AdminSubmissions> {
+  static const pageSize = 30;
+  int offset = 0;
+  late Future<List<AdminSubmission>> result;
+  @override
+  void initState() {
+    super.initState();
+    result = widget.gateway.submissions(offset, pageSize);
+  }
+
+  void reload() => setState(() {
+    result = widget.gateway.submissions(offset, pageSize);
+  });
+  Future<void> inspect(AdminSubmission submission) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AdminInspectionDialog(
+        gateway: widget.gateway,
+        submission: submission,
+      ),
+    );
+    if (mounted) reload();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: Text(at(context, 'submissions')),
+      actions: [
+        IconButton(
+          onPressed: reload,
+          tooltip: at(context, 'refresh'),
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
+    ),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 850),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Text(at(context, 'reviewNotice')),
+              Expanded(
+                child: FutureBuilder<List<AdminSubmission>>(
+                  future: result,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return Center(
+                        child: Text(at(context, 'submissionFailure')),
+                      );
+                    }
+                    final items = snapshot.data!;
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: items.isEmpty
+                              ? Center(
+                                  child: Text(at(context, 'submissionEmpty')),
+                                )
+                              : ListView.builder(
+                                  itemCount: items.length,
+                                  itemBuilder: (context, index) {
+                                    final item = items[index];
+                                    return Card(
+                                      child: ListTile(
+                                        title: Text(at(context, item.type)),
+                                        subtitle: Text(
+                                          item.link,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        trailing: OutlinedButton(
+                                          onPressed: () => inspect(item),
+                                          child: Text(at(context, 'inspect')),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: offset > 0
+                                  ? () {
+                                      offset -= pageSize;
+                                      reload();
+                                    }
+                                  : null,
+                              child: Text(at(context, 'previous')),
+                            ),
+                            Text(
+                              '${offset + (items.isEmpty ? 0 : 1)}–${offset + items.length}',
+                            ),
+                            TextButton(
+                              onPressed: items.length == pageSize
+                                  ? () {
+                                      offset += pageSize;
+                                      reload();
+                                    }
+                                  : null,
+                              child: Text(at(context, 'next')),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class AdminInspectionDialog extends StatefulWidget {
+  const AdminInspectionDialog({
+    super.key,
+    required this.gateway,
+    required this.submission,
+  });
+  final AdminGateway gateway;
+  final AdminSubmission submission;
+  @override
+  State<AdminInspectionDialog> createState() => _AdminInspectionDialogState();
+}
+
+class _AdminInspectionDialogState extends State<AdminInspectionDialog> {
+  String? session, username, error;
+  Uint8List? bytes;
+  Timer? heartbeat;
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  Future<void> load() async {
+    try {
+      final value = await widget.gateway.beginReview(widget.submission);
+      final id = value['session_id'] as String;
+      if (!mounted) {
+        await widget.gateway.endReview(id);
+        return;
+      }
+      session = id;
+      final image = base64Decode(value['data'] as String);
+      if (image.isEmpty || image.length > 524288) {
+        throw const FormatException('Invalid image');
+      }
+      setState(() {
+        username = value['username'] as String;
+        bytes = image;
+      });
+      heartbeat = Timer.periodic(const Duration(seconds: 30), (_) async {
+        try {
+          if (!await widget.gateway.renewReview(id) && mounted) {
+            failInspection();
+          }
+        } catch (_) {
+          if (mounted) failInspection();
+        }
+      });
+    } catch (_) {
+      if (mounted) failInspection();
+    }
+  }
+
+  void stopSession() {
+    heartbeat?.cancel();
+    final id = session;
+    session = null;
+    if (id != null) unawaited(widget.gateway.endReview(id).catchError((_) {}));
+  }
+
+  void failInspection() {
+    stopSession();
+    setState(() {
+      username = null;
+      bytes = null;
+      error = at(context, 'submissionFailure');
+    });
+  }
+
+  @override
+  void dispose() {
+    stopSession();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(at(context, 'inspecting')),
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(at(context, 'reviewNotice')),
+          if (error != null) Text(error!),
+          if (bytes == null && error == null)
+            const Center(child: CircularProgressIndicator()),
+          if (username != null)
+            Text('${at(context, 'instagramUsername')}: @$username'),
+          if (bytes != null)
+            Image.memory(
+              bytes!,
+              height: 300,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => Text(at(context, 'submissionFailure')),
+            ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(at(context, 'close')),
+      ),
+    ],
   );
 }
