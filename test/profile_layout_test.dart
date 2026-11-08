@@ -83,6 +83,7 @@ Future<void> showProfile(
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(
     MaterialApp(
+      theme: growthTheme(),
       home: Scaffold(
         body: Profile(user: user, gateway: gateway),
       ),
@@ -178,6 +179,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       MaterialApp(
+        theme: growthTheme(),
         locale: const Locale('ml'),
         supportedLocales: const [Locale('en'), Locale('ml')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
