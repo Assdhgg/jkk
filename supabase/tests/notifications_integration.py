@@ -1,6 +1,8 @@
 """Run only against a disposable database with bootstrap and all migrations."""
 import base64
+import json
 import subprocess
+import time
 import sys
 import unittest
 
@@ -13,10 +15,12 @@ ADMIN = '60000000-0000-4000-8000-000000000004'
 PNG = base64.b64encode(bytes.fromhex('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c6360000000020001e221bc330000000049454e44ae426082')).decode()
 
 
-def sql(query, user=None, role='authenticated', fails=False):
+def sql(query, user=None, role='authenticated', fails=False, claims=None):
     prefix = f'set role {role}; '
     if user:
         prefix += f"select set_config('request.jwt.claim.sub','{user}',false); "
+    if claims is not None:
+        prefix += f"select set_config('request.jwt.claims','{json.dumps(claims)}',false); "
     result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', prefix + query], capture_output=True, text=True)
     if fails:
         if result.returncode == 0:
@@ -37,7 +41,7 @@ class NotificationsTests(unittest.TestCase):
         self.assertEqual(pub.stdout.strip(), '1')
         subprocess.run(['psql', '-X', '-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', f"begin; insert into public.coin_ledger(user_id,amount,reason) values ('{ACTOR}', 8, 'welcome'); rollback"], check=True, capture_output=True)
         self.assertEqual(sql("select count(*) from public.notifications where amount=8", ACTOR), '0')
-        sql("select public.set_release_pin('1234',null)", OWNER)
+        sql("select public.set_release_pin('1234',null)", OWNER, claims={'amr':[{'method':'otp','timestamp':int(time.time())}]})
         campaign = sql("select public.create_campaign('like','https://instagram.com/p/ABC/',2)", OWNER)
         self.assertEqual(sql("select count(*) from public.notifications", OWNER), '1')  # spend creates no notification
         def submit():

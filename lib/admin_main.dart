@@ -221,6 +221,8 @@ class AdminSubmission {
 }
 
 abstract class AdminGateway {
+  Future<List<Map<String, dynamic>>> coinSettings();
+  Future<void> setCoinSetting(String key, int amount);
   Future<void> signIn(String email, String password);
   Future<bool> isAdmin();
   Future<List<AdminUser>> users(String query, int offset, int limit);
@@ -244,6 +246,19 @@ abstract class AdminGateway {
 class SupabaseAdminGateway implements AdminGateway {
   SupabaseAdminGateway(this.client);
   final SupabaseClient client;
+  @override
+  Future<List<Map<String, dynamic>>> coinSettings() async =>
+      List<Map<String, dynamic>>.from(
+        await client.from('coin_settings').select().order('key'),
+      );
+  @override
+  Future<void> setCoinSetting(String key, int amount) async {
+    await client.rpc(
+      'admin_set_coin_setting',
+      params: {'p_key': key, 'p_amount': amount},
+    );
+  }
+
   @override
   Future<void> signIn(String email, String password) async =>
       client.auth.signInWithPassword(email: email, password: password);
@@ -843,6 +858,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 at(context, 'users'),
                 style: Theme.of(context).textTheme.headlineMedium
                     ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.toll_outlined),
+                  label: const Text('Coin settings'),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          AdminCoinSettings(gateway: widget.gateway),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               Text(at(context, 'accessInfo')),
@@ -1528,6 +1557,158 @@ class _AdminInspectionDialogState extends State<AdminInspectionDialog> {
       TextButton(
         onPressed: () => Navigator.pop(context),
         child: Text(at(context, 'close')),
+      ),
+    ],
+  );
+}
+
+class AdminCoinSettings extends StatefulWidget {
+  const AdminCoinSettings({super.key, required this.gateway});
+  final AdminGateway gateway;
+  @override
+  State<AdminCoinSettings> createState() => _AdminCoinSettingsState();
+}
+
+class _AdminCoinSettingsState extends State<AdminCoinSettings> {
+  late Future<List<Map<String, dynamic>>> data = widget.gateway.coinSettings();
+  bool busy = false;
+  String label(String key) {
+    final ml = Localizations.localeOf(context).languageCode == 'ml';
+    return switch (key) {
+      'registration' => ml ? 'Registration bonus' : 'Registration bonus',
+      'invite' => ml ? 'ഓരോ invite-നും' : 'Each referral',
+      'milestone_5' => ml ? '5 invites അധിക bonus' : '5 referrals: extra bonus',
+      'milestone_10' =>
+        ml ? '10 invites അധിക bonus' : '10 referrals: extra bonus',
+      'milestone_15' =>
+        ml ? '15 invites അധിക bonus' : '15 referrals: extra bonus',
+      _ => at(context, key),
+    };
+  }
+
+  Future<void> edit(Map<String, dynamic> row) async {
+    final amount = await showDialog<int>(
+      context: context,
+      builder: (_) => CoinAmountDialog(
+        title: label(row['key']),
+        value: row['amount'],
+        minimum: ['follow', 'like', 'comment', 'share'].contains(row['key'])
+            ? 1
+            : 0,
+      ),
+    );
+    if (amount == null || !mounted) return;
+    setState(() => busy = true);
+    try {
+      await widget.gateway.setCoinSetting(row['key'], amount);
+      if (mounted) {
+        setState(() {
+          data = widget.gateway.coinSettings();
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(at(context, 'actionFailure'))));
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Coin settings')),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 650),
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: data,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return TextButton(
+                onPressed: () => setState(() {
+                  data = widget.gateway.coinSettings();
+                }),
+                child: Text(at(context, 'refresh')),
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                const Text(
+                  'Changes apply to future registrations, new campaigns and future referral events. Existing campaign rewards stay fixed. Referral rewards require an initialized inviter wallet.',
+                ),
+                for (final row in snapshot.data!)
+                  Card(
+                    child: ListTile(
+                      title: Text(label(row['key'])),
+                      subtitle: Text("${row['amount']} coins"),
+                      trailing: const Icon(Icons.edit_outlined),
+                      onTap: busy ? null : () => edit(row),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
+
+class CoinAmountDialog extends StatefulWidget {
+  const CoinAmountDialog({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.minimum,
+  });
+  final String title;
+  final int value, minimum;
+  @override
+  State<CoinAmountDialog> createState() => _CoinAmountDialogState();
+}
+
+class _CoinAmountDialogState extends State<CoinAmountDialog> {
+  late final controller = TextEditingController(text: widget.value.toString());
+  String? error;
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.title),
+    content: TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: 'Coins (${widget.minimum}–10000)',
+        errorText: error,
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () {
+          final value = int.tryParse(controller.text);
+          if (value == null || value < widget.minimum || value > 10000) {
+            setState(() => error = 'Enter a valid amount');
+            return;
+          }
+          Navigator.pop(context, value);
+        },
+        child: const Text('Save'),
       ),
     ],
   );

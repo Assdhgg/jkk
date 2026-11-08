@@ -53,6 +53,8 @@ class FakeProfileGateway implements ProfileGateway {
   }
 
   @override
+  Future<void> sendPinOtp() async {}
+  @override
   Future<String> setPin(String pin, String? currentPin) async {
     pinSet = true;
     return 'ok';
@@ -113,12 +115,15 @@ void main() {
       await tester.tap(find.text('Coin release PIN'));
       await tester.pumpAndSettle();
       expect(find.text('New 4-digit PIN'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).at(0), '1234');
+      await tester.tap(find.text('Send email OTP'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(0), '123456');
       await tester.enterText(find.byType(TextField).at(1), '1234');
+      await tester.enterText(find.byType(TextField).at(2), '1234');
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
       expect(gateway.pinSet, isTrue);
-      expect(find.text('Change PIN'), findsOneWidget);
+      expect(find.text('Change / reset PIN'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

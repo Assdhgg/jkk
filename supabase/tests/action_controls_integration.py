@@ -1,4 +1,5 @@
 """Isolated disposable PostgreSQL only, after all five migrations."""
+import json
 import subprocess
 import sys
 import time
@@ -11,8 +12,10 @@ OWNER = '30000000-0000-4000-8000-000000000002'
 PARTICIPANT = '30000000-0000-4000-8000-000000000003'
 PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGPcHdrBwMDAxMDAwMDAAAATfQGcYGP+awAAAABJRU5ErkJggg=='
 
-def sql(query, user=ADMIN, fails=False):
+def sql(query, user=ADMIN, fails=False, claims=None):
     prefix = f"set role authenticated; select set_config('request.jwt.claim.sub','{user}',false); "
+    if claims is not None:
+        prefix += f"select set_config('request.jwt.claims','{json.dumps(claims)}',false); "
     result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', prefix + query], text=True, capture_output=True)
     if fails:
         if result.returncode == 0: raise AssertionError('Unexpected success: ' + query)
@@ -57,7 +60,7 @@ class ActionTests(unittest.TestCase):
         cid = sql(create('like'), OWNER)
         sql(f"select public.submit_claim('{cid}','sample','image/png','{PNG}')", PARTICIPANT)
         sid = sql(f"select submission_id from public.campaign_claims where campaign_id='{cid}'", OWNER)
-        self.assertEqual(sql("select public.set_release_pin('1234',null)", OWNER), 'ok')
+        self.assertEqual(sql("select public.set_release_pin('1234',null)", OWNER, claims={'amr':[{'method':'otp','timestamp':int(time.time())}]}), 'ok')
         sql("select public.admin_set_action_enabled('like',false)")
         self.assertEqual(sql(f"select public.review_claim_with_pin('{cid}','{PARTICIPANT}','{sid}',true,'1234')", OWNER), 'ok')
         self.assertEqual(sql('select balance from public.wallets', PARTICIPANT), '11')

@@ -8,6 +8,21 @@ import 'package:growth_circle/admin_main.dart';
 class FakeAdmin implements AdminGateway {
   FakeAdmin({this.allowed = true});
   final bool allowed;
+  final amounts = {
+    'registration': 10,
+    'follow': 1,
+    'invite': 0,
+    'milestone_5': 0,
+  };
+  @override
+  Future<List<Map<String, dynamic>>> coinSettings() async => [
+    for (final e in amounts.entries) {'key': e.key, 'amount': e.value},
+  ];
+  @override
+  Future<void> setCoinSetting(String key, int amount) async {
+    amounts[key] = amount;
+  }
+
   int signOuts = 0;
   String search = '';
   final changes = <String>[];
