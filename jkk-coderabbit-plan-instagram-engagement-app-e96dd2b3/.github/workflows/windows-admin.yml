@@ -1,0 +1,30 @@
+name: Build Windows admin app
+on:
+  push:
+    branches: ["coderabbit/plan-instagram-engagement-app/e96dd2b3"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build windows --release -t lib/admin_main.dart
+      - name: Package Windows application
+        shell: pwsh
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath growth-circle-admin-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: growth-circle-admin-windows
+          path: growth-circle-admin-windows.zip
+          if-no-files-found: error

@@ -1,0 +1,22 @@
+node_modules/
+.dart_tool/
+.flutter-plugins*
+build/
+.pub-cache/
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+.idea/
+*.iml
+
+# Keep local credentials and release-signing material out of Git.
+.env
+.env.*
+*.p12
+*.pfx
