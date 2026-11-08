@@ -48,13 +48,40 @@ flutter build apk --release \
   --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
 ```
 
-The app shows a setup screen if values are missing. For a distributable release configure `android/key.properties` with `storeFile` (absolute path), `storePassword`, `keyAlias` and `keyPassword` for a securely retained release keystore. Keep the keystore and passwords private and backed up; future updates require the same signing key. Without this file the release is unsigned. The package name is `com.growthcircle.growth_circle`.
+The app shows a setup screen if values are missing. For a distributable release configure `android/key.properties` with `storeFile` (absolute path), `storePassword`, `keyAlias` and `keyPassword` for a securely retained release keystore. Keep the keystore and passwords private and backed up; future updates require the same signing key. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:de61abf7b131aaf3ae5fc1ac0e48c9b4080ecd739f5954886f4d1ca672357792 -->
+
+Release APK and app bundle packaging fails with an actionable error when signing configuration is missing or incomplete, rather than creating an uninstallable unsigned package. Debug builds do not require this file. Keep using the same signing key for updates; an APK signed with a different key cannot update an installed app. To diagnose an existing APK, run `apksigner verify --verbose --print-certs app-release.apk` from Android SDK Build-Tools and compare the certificate with the installed release.
+
+<!-- /coderabbit-ai-generated:v1 --> The package name is `com.growthcircle.growth_circle`.
 
 <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:cd37f3b5cf27005467ce51dba5ef788d107000199de4aba6890481c57bfa8db9 -->
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:a98e37d76ff9563248a081ae337b40f87d0960362413007ec2bebd1247e4907f -->
+
+## Android release signing
+
+If you have an existing release keystore, use that same keystore and alias. If this app has never been distributed with a retained signing key, create one with `keytool -genkeypair -v -keystore ~/growth-circle-release.jks -alias growth-circle -keyalg RSA -keysize 2048 -validity 10000` and securely retain the keystore and passwords. A newly created key cannot update an app signed with another key.
+
+Create `android/key.properties` locally (do not commit it):
+
+```properties
+storeFile=/absolute/path/to/growth-circle-release.jks
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyAlias=growth-circle
+keyPassword=YOUR_KEY_PASSWORD
+```
+
+Build with the Supabase project URL and public key shown above. Before sharing the APK, run `apksigner verify --verbose --print-certs build/app/outputs/flutter-apk/app-release.apk`. To investigate an installation error, check the exact APK's signature, app ID, version code, and device architecture; the same message can have more than one cause.
+
 ## Windows administrator app
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 The Windows administrator app lists/searches accounts, shows coin balances, and blocks/restores app data access. It uses normal Supabase email/password authentication and the publishable/anon key; no service-role key is used or stored in the client. Blocking is enforced in database RLS and RPCs even for previously issued sessions; requests already in progress can finish before a block commits, and cached data may remain visible. Blocking app data does not ban the user from Supabase Auth itself.
 

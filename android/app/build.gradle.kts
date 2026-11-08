@@ -8,8 +8,32 @@ plugins {
 
 val keyProperties = Properties()
 val keyPropertiesFile = rootProject.file("key.properties")
-if (keyPropertiesFile.exists()) { keyPropertiesFile.inputStream().use { keyProperties.load(it) } }
+if (keyPropertiesFile.isFile) { keyPropertiesFile.inputStream().use { keyProperties.load(it) } }
+val requiredSigningProperties = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+val missingSigningProperties = requiredSigningProperties.filter { keyProperties.getProperty(it).isNullOrBlank() }
+val hasSigningProperties = keyPropertiesFile.isFile && missingSigningProperties.isEmpty()
 
+// Never produce an unsigned artifact for distribution. Debug builds do not
+// require a release keystore.
+fun requireReleaseSigning() {
+    if (!keyPropertiesFile.isFile) {
+        throw GradleException("Release signing is required. Configure android/key.properties and a release keystore; see README.md.")
+    }
+    if (missingSigningProperties.isNotEmpty()) {
+        throw GradleException("Release signing configuration is incomplete: ${missingSigningProperties.joinToString()}. See README.md.")
+    }
+    if (!file(keyProperties.getProperty("storeFile")).isFile) {
+        throw GradleException("Release keystore file does not exist. Check storeFile in android/key.properties.")
+    }
+}
+val releasePackagingTasks = setOf("packageRelease", "packageReleaseBundle", "signReleaseBundle")
+// Check the entire task graph so aggregate tasks such as `build` cannot bypass
+// the check, and fail before compiling a release that cannot be distributed.
+gradle.taskGraph.whenReady {
+    if (allTasks.any { it.project == project && it.name in releasePackagingTasks }) {
+        requireReleaseSigning()
+    }
+}
 
 android {
     namespace = "com.growthcircle.growth_circle"
@@ -37,7 +61,7 @@ android {
     }
 
     signingConfigs {
-        if (keyPropertiesFile.exists()) {
+        if (hasSigningProperties) {
             create("release") {
                 keyAlias = keyProperties["keyAlias"] as String
                 keyPassword = keyProperties["keyPassword"] as String
@@ -48,7 +72,7 @@ android {
     }
     buildTypes {
         release {
-            if (keyPropertiesFile.exists()) signingConfig = signingConfigs.getByName("release")
+            if (hasSigningProperties) signingConfig = signingConfigs.getByName("release")
         }
     }
 }
