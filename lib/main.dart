@@ -240,8 +240,52 @@ const words = <String, List<String>>{
     'Campaign cancelled and unused coins refunded.',
     'Campaign റദ്ദാക്കി; ബാക്കി coins തിരികെ നൽകി.',
   ],
+  'accountSection': ['ACCOUNT', 'അക്കൗണ്ട്'],
+  'profileJoined': ['Joined', 'ചേർന്നത്'],
+  'profileAccounts': ['Accounts', 'അക്കൗണ്ടുകൾ'],
+  'profileReferrals': ['Referrals', 'Referrals'],
+  'profileReferralDesc': [
+    'Share your code with friends',
+    'നിങ്ങളുടെ code സുഹൃത്തുക്കളുമായി പങ്കിടൂ',
+  ],
+  'profileSettings': ['Profile settings', 'Profile settings'],
+  'profileDataError': [
+    'Could not load profile details.',
+    'Profile വിവരങ്ങൾ ലഭ്യമായില്ല.',
+  ],
   'instagramAccounts': ['Instagram accounts', 'Instagram അക്കൗണ്ടുകൾ'],
-  'addAccount': ['Add Instagram username', 'Instagram username ചേർക്കുക'],
+  'addAccount': [
+    'Add Instagram username manually',
+    'Instagram username നേരിട്ട് ചേർക്കുക',
+  ],
+  'instagramSearch': ['Search Instagram username', 'Instagram username തിരയുക'],
+  'instagramSearchHelp': [
+    'Enter the full username of a Business or Creator account. Personal and age-restricted accounts are not supported.',
+    'Business അല്ലെങ്കിൽ Creator account-ന്റെ മുഴുവൻ username നൽകുക. Personal, പ്രായപരിധിയുള്ള accounts ലഭ്യമല്ല.',
+  ],
+  'instagramSearchHint': ['Exact username', 'മുഴുവൻ username'],
+  'instagramSearchAction': ['Search', 'തിരയുക'],
+  'instagramSearchAdd': ['Add account', 'Account ചേർക്കുക'],
+  'instagramSearchNotFound': [
+    'No supported account found. Check the full username; personal and age-restricted accounts may not appear.',
+    'Account കണ്ടെത്തിയില്ല. മുഴുവൻ username പരിശോധിക്കുക; personal, പ്രായപരിധിയുള്ള accounts ലഭ്യമാകണമെന്നില്ല.',
+  ],
+  'instagramSearchUnavailable': [
+    'Search is unavailable. Ask the app owner to configure Instagram access.',
+    'Search ലഭ്യമല്ല. Instagram access ക്രമീകരിക്കാൻ app ഉടമയോട് പറയുക.',
+  ],
+  'instagramSearchLimited': [
+    'Too many searches. Please try again later.',
+    'തിരച്ചിലുകൾ കൂടുതലാണ്. കുറച്ച് കഴിഞ്ഞ് ശ്രമിക്കുക.',
+  ],
+  'instagramSearchDenied': [
+    'Sign in again or contact the administrator.',
+    'വീണ്ടും login ചെയ്യുക അല്ലെങ്കിൽ administrator-നെ ബന്ധപ്പെടുക.',
+  ],
+  'instagramSearchOwnership': [
+    'This result does not verify account ownership.',
+    'ഈ ഫലം account ഉടമസ്ഥാവകാശം സ്ഥിരീകരിക്കുന്നില്ല.',
+  ],
   'noAccounts': [
     'No Instagram usernames added yet.',
     'Instagram username ചേർത്തിട്ടില്ല.',
@@ -1221,18 +1265,20 @@ class _HomeShellState extends State<HomeShell> {
     ];
     final labels = ['home', 'earn', 'campaigns', 'profile'];
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Growth Circle',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        actions: [
-          TextButton(
-            onPressed: toggleLanguage,
-            child: Text(tr(context, 'language')),
-          ),
-        ],
-      ),
+      appBar: selected == 3
+          ? null
+          : AppBar(
+              title: const Text(
+                'Growth Circle',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: toggleLanguage,
+                  child: Text(tr(context, 'language')),
+                ),
+              ],
+            ),
       body: SafeArea(child: pages[selected]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selected,
@@ -2456,40 +2502,18 @@ String? profileName(User user) {
 }
 
 class Profile extends StatelessWidget {
-  const Profile({super.key, required this.user});
+  const Profile({super.key, required this.user, this.gateway});
   final User user;
+  final ProfileGateway? gateway;
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(20),
-    children: [
-      Text(
-        tr(context, 'profile'),
-        style: Theme.of(context).textTheme.headlineSmall
-            ?.copyWith(fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 20),
-      Card(
-        child: ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-          title: Text(profileName(user) ?? user.email ?? ''),
-          subtitle: profileName(user) == null ? null : Text(user.email ?? ''),
-          trailing: TextButton(
-            onPressed: () => db.auth.signOut(),
-            child: Text(tr(context, 'signout')),
-          ),
-        ),
-      ),
-      const SizedBox(height: 20),
-      BalanceCard(uid: user.id),
-      const SizedBox(height: 24),
-      ProfileFeatures(uid: user.id),
-    ],
-  );
+  Widget build(BuildContext context) =>
+      ProfileFeatures(user: user, gateway: gateway);
 }
 
 class CoinHistoryPage extends StatelessWidget {
-  const CoinHistoryPage({super.key, required this.uid});
+  const CoinHistoryPage({super.key, required this.uid, this.historyStream});
   final String uid;
+  final Stream<List<Map<String, dynamic>>>? historyStream;
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(tr(context, 'history'))),
@@ -2503,10 +2527,12 @@ class CoinHistoryPage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         StreamBuilder<List<Map<String, dynamic>>>(
-          stream: db
-              .from('coin_ledger')
-              .stream(primaryKey: ['id'])
-              .eq('user_id', uid),
+          stream:
+              historyStream ??
+              db
+                  .from('coin_ledger')
+                  .stream(primaryKey: ['id'])
+                  .eq('user_id', uid),
           builder: (context, snapshot) {
             if (snapshot.hasError) return Text(tr(context, 'error'));
             if (!snapshot.hasData) {
@@ -2571,9 +2597,11 @@ class ReleasePinDialog extends StatefulWidget {
     super.key,
     this.setup = false,
     this.changing = false,
+    this.savePin,
   });
   final bool setup;
   final bool changing;
+  final Future<String> Function(String pin, String? currentPin)? savePin;
   @override
   State<ReleasePinDialog> createState() => _ReleasePinDialogState();
 }
@@ -2615,13 +2643,13 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
       error = null;
     });
     try {
-      final result = await db.rpc(
-        'set_release_pin',
-        params: {
-          'p_pin': pin.text,
-          'p_current_pin': widget.changing ? current.text : null,
-        },
-      );
+      final currentPin = widget.changing ? current.text : null;
+      final result = widget.savePin == null
+          ? await db.rpc(
+              'set_release_pin',
+              params: {'p_pin': pin.text, 'p_current_pin': currentPin},
+            )
+          : await widget.savePin!(pin.text, currentPin);
       if (!mounted) return;
       if (result == 'ok') {
         Navigator.pop(context, 'ok');
@@ -2684,70 +2712,638 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
   );
 }
 
+class InstagramLookupException implements Exception {
+  const InstagramLookupException(this.code);
+  final String code;
+}
+
+class ProfileInfo {
+  const ProfileInfo({
+    required this.usernames,
+    required this.referralCode,
+    required this.referralCount,
+    required this.referralJoined,
+    required this.pinSet,
+  });
+  final List<String> usernames;
+  final String referralCode;
+  final int referralCount;
+  final bool referralJoined, pinSet;
+}
+
+abstract class ProfileGateway {
+  Future<ProfileInfo> load(String uid);
+  Stream<int?> balance(String uid);
+  Stream<List<Map<String, dynamic>>> history(String uid);
+  Future<void> addAccount(String username);
+  Future<String> searchInstagram(String username);
+  Future<void> removeAccount(String username);
+  Future<void> applyReferral(String code);
+  Future<String> setPin(String pin, String? currentPin);
+  Future<void> signOut();
+}
+
+class SupabaseProfileGateway implements ProfileGateway {
+  const SupabaseProfileGateway(this.client);
+  final SupabaseClient client;
+  @override
+  Future<ProfileInfo> load(String uid) async {
+    final values = await Future.wait<dynamic>([
+      client
+          .from('instagram_accounts')
+          .select('username')
+          .eq('user_id', uid)
+          .order('created_at'),
+      client.rpc('referral_info'),
+      client.rpc('release_pin_is_set'),
+    ]);
+    final accounts = values[0] as List;
+    final referral = Map<String, dynamic>.from(values[1] as Map);
+    return ProfileInfo(
+      usernames: [
+        for (final account in accounts) account['username'] as String,
+      ],
+      referralCode: referral['code'] as String,
+      referralCount: referral['count'] as int,
+      referralJoined: referral['joined'] as bool,
+      pinSet: values[2] as bool,
+    );
+  }
+
+  @override
+  Stream<int?> balance(String uid) => client
+      .from('wallets')
+      .stream(primaryKey: ['id'])
+      .eq('id', uid)
+      .map((rows) => rows.isEmpty ? null : rows.first['balance'] as int?);
+  @override
+  Stream<List<Map<String, dynamic>>> history(String uid) =>
+      client.from('coin_ledger').stream(primaryKey: ['id']).eq('user_id', uid);
+  @override
+  Future<void> addAccount(String username) async =>
+      client.rpc('add_instagram_account', params: {'p_username': username});
+  @override
+  Future<String> searchInstagram(String username) async {
+    try {
+      final response = await client.functions.invoke(
+        'instagram-lookup',
+        body: {'username': username},
+      );
+      final data = response.data;
+      if (data is! Map || data['username'] is! String) {
+        throw const InstagramLookupException('lookup_unavailable');
+      }
+      final result = data['username'] as String;
+      final query = username.trim().replaceFirst(RegExp(r'^@'), '');
+      if (!RegExp(r'^[A-Za-z0-9._]{1,30}$').hasMatch(result) ||
+          result.toLowerCase() != query.toLowerCase()) {
+        throw const InstagramLookupException('lookup_unavailable');
+      }
+      return result;
+    } on FunctionException catch (e) {
+      final details = e.details;
+      final code = details is Map ? details['error'] : null;
+      if (code == 'not_found_or_unsupported' ||
+          code == 'rate_limited' ||
+          code == 'access_denied' ||
+          code == 'unauthorized') {
+        throw InstagramLookupException(code as String);
+      }
+      if (e.status == 401) throw const InstagramLookupException('unauthorized');
+      if (e.status == 403) {
+        throw const InstagramLookupException('access_denied');
+      }
+      if (e.status == 429) throw const InstagramLookupException('rate_limited');
+      throw const InstagramLookupException('lookup_unavailable');
+    }
+  }
+
+  @override
+  Future<void> removeAccount(String username) async =>
+      client.rpc('remove_instagram_account', params: {'p_username': username});
+  @override
+  Future<void> applyReferral(String code) async =>
+      client.rpc('apply_referral', params: {'p_code': code});
+  @override
+  Future<String> setPin(String pin, String? currentPin) async =>
+      await client.rpc(
+        'set_release_pin',
+        params: {'p_pin': pin, 'p_current_pin': currentPin},
+      ) as String;
+  @override
+  Future<void> signOut() => client.auth.signOut();
+}
+
+String profileInitials(String value) {
+  final parts = value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length > 1) {
+    return '${parts.first.characters.first}${parts.last.characters.first}'
+        .toUpperCase();
+  }
+  return parts.first.characters.take(2).toString().toUpperCase();
+}
+
 class ProfileFeatures extends StatefulWidget {
-  const ProfileFeatures({super.key, required this.uid});
-  final String uid;
+  const ProfileFeatures({super.key, required this.user, this.gateway});
+  final User user;
+  final ProfileGateway? gateway;
   @override
   State<ProfileFeatures> createState() => _ProfileFeaturesState();
 }
 
 class _ProfileFeaturesState extends State<ProfileFeatures> {
-  late Future<List<dynamic>> data = load();
-  Future<List<dynamic>> load() => Future.wait([
-    db
-        .from('instagram_accounts')
-        .select('username')
-        .eq('user_id', widget.uid)
-        .order('created_at'),
-    db.rpc('referral_info'),
-    db.rpc('release_pin_is_set'),
-  ]);
+  late final ProfileGateway gateway =
+      widget.gateway ?? SupabaseProfileGateway(db);
+  late final Stream<int?> balance = gateway.balance(widget.user.id);
+  late Future<ProfileInfo> data = gateway.load(widget.user.id);
   void reload() => setState(() {
-    data = load();
+    data = gateway.load(widget.user.id);
   });
-
-  Future<void> input(String title, String rpc, String param) async {
-    final controller = TextEditingController();
-    String? value;
-    try {
-      value = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(tr(context, title)),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(labelText: tr(context, title)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(tr(context, 'cancel')),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, controller.text.trim()),
-              child: Text(tr(context, 'apply')),
-            ),
-          ],
+  Future<void> openDetails(bool accounts) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ProfileDetailsPage(
+          uid: widget.user.id,
+          gateway: gateway,
+          accounts: accounts,
         ),
-      );
-    } finally {
-      controller.dispose();
+      ),
+    );
+    if (mounted) reload();
+  }
+
+  Future<void> openPin(bool pinSet) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => ReleasePinDialog(
+        setup: true,
+        changing: pinSet,
+        savePin: gateway.setPin,
+      ),
+    );
+    if (result == 'ok' && mounted) {
+      toast(context, tr(context, 'pinSaved'));
+      reload();
     }
+  }
+
+  Future<void> signOut() async {
+    try {
+      await gateway.signOut();
+    } catch (e) {
+      if (mounted) toast(context, friendlyError(context, e));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<ProfileInfo>(
+    future: data,
+    builder: (context, details) => StreamBuilder<int?>(
+      stream: balance,
+      builder: (context, wallet) => ProfileLayout(
+        user: widget.user,
+        info: details.data,
+        balance: wallet.data,
+        loading: details.connectionState != ConnectionState.done,
+        error: details.hasError,
+        onRetry: reload,
+        onAccounts: () => openDetails(true),
+        onReferrals: () => openDetails(false),
+        onHistory: () => Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => CoinHistoryPage(
+              uid: widget.user.id,
+              historyStream: gateway.history(widget.user.id),
+            ),
+          ),
+        ),
+        onPin: details.hasData ? () => openPin(details.data!.pinSet) : null,
+        onSignOut: signOut,
+        onLanguage: toggleLanguage,
+      ),
+    ),
+  );
+}
+
+class ProfileLayout extends StatelessWidget {
+  const ProfileLayout({
+    super.key,
+    required this.user,
+    required this.info,
+    required this.balance,
+    required this.loading,
+    required this.error,
+    required this.onRetry,
+    required this.onAccounts,
+    required this.onReferrals,
+    required this.onHistory,
+    required this.onPin,
+    required this.onSignOut,
+    required this.onLanguage,
+  });
+  final User user;
+  final ProfileInfo? info;
+  final int? balance;
+  final bool loading, error;
+  final VoidCallback onRetry,
+      onAccounts,
+      onReferrals,
+      onHistory,
+      onSignOut,
+      onLanguage;
+  final VoidCallback? onPin;
+  @override
+  Widget build(BuildContext context) {
+    final name = profileName(user) ?? user.email ?? tr(context, 'profile');
+    final created = DateTime.tryParse(user.createdAt);
+    final joined = created == null
+        ? null
+        : '${tr(context, 'profileJoined')} ${MaterialLocalizations.of(context).formatMonthYear(created.toLocal())}';
+    return Container(
+      color: const Color(0xfff5f4f7),
+      child: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    tr(context, 'profile'),
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  tooltip: tr(context, 'profileSettings'),
+                  icon: const Icon(Icons.settings_outlined),
+                  onSelected: (value) {
+                    if (value == 'language') {
+                      onLanguage();
+                    } else if (value == 'signout') {
+                      onSignOut();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'language',
+                      child: Text(tr(context, 'language')),
+                    ),
+                    PopupMenuItem(
+                      value: 'signout',
+                      child: Text(tr(context, 'signout')),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+                  children: [
+                    Center(
+                      child: CircleAvatar(
+                        radius: 40,
+                        backgroundColor: const Color(0xffc5f64b),
+                        child: Text(
+                          profileInitials(name),
+                          style: const TextStyle(
+                            fontSize: 27,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xff171a13),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xff17171b),
+                      ),
+                    ),
+                    if (profileName(user) != null && user.email != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        user.email!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Color(0xff62647a)),
+                      ),
+                    ],
+                    if (joined != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        joined,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xff62647a),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          ProfileStat(
+                            value: balance?.toString() ?? '—',
+                            label: tr(context, 'coins'),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 34,
+                            color: const Color(0xfff0eff4),
+                          ),
+                          ProfileStat(
+                            value: info?.usernames.length.toString() ?? '—',
+                            label: tr(context, 'profileAccounts'),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 34,
+                            color: const Color(0xfff0eff4),
+                          ),
+                          ProfileStat(
+                            value: info?.referralCount.toString() ?? '—',
+                            label: tr(context, 'profileReferrals'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Material(
+                      color: const Color(0xff1e211e),
+                      borderRadius: BorderRadius.circular(18),
+                      child: InkWell(
+                        key: const Key('profile_referral_banner'),
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: onReferrals,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xff343d24),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.people_alt_outlined,
+                                  color: Color(0xffc5f64b),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      tr(context, 'referrals'),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      tr(context, 'profileReferralDesc'),
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right,
+                                color: Colors.white70,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(8, 14, 8, 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                            child: Text(
+                              tr(context, 'accountSection'),
+                              style: const TextStyle(
+                                color: Color(0xff6a6f8b),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                                letterSpacing: .5,
+                              ),
+                            ),
+                          ),
+                          ProfileMenuTile(
+                            icon: Icons.alternate_email,
+                            title: tr(context, 'instagramAccounts'),
+                            onTap: onAccounts,
+                            trailingText: info?.usernames.length.toString(),
+                          ),
+                          ProfileMenuTile(
+                            icon: Icons.history,
+                            title: tr(context, 'history'),
+                            onTap: onHistory,
+                          ),
+                          ProfileMenuTile(
+                            icon: Icons.people_outline,
+                            title: tr(context, 'referrals'),
+                            onTap: onReferrals,
+                          ),
+                          ProfileMenuTile(
+                            icon: Icons.lock_outline,
+                            title: tr(context, 'releasePin'),
+                            subtitle: info == null
+                                ? null
+                                : tr(
+                                    context,
+                                    info!.pinSet ? 'changePin' : 'setupPin',
+                                  ),
+                            onTap: onPin,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (error)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(tr(context, 'profileDataError')),
+                            ),
+                            TextButton(
+                              onPressed: onRetry,
+                              child: Text(tr(context, 'retry')),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (loading)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: LinearProgressIndicator(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ProfileStat extends StatelessWidget {
+  const ProfileStat({super.key, required this.value, required this.label});
+  final String value, label;
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Color(0xff62647a), fontSize: 11),
+        ),
+      ],
+    ),
+  );
+}
+
+class ProfileMenuTile extends StatelessWidget {
+  const ProfileMenuTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailingText,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String title;
+  final String? subtitle, trailingText;
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: ListTile(
+      enabled: onTap != null,
+      onTap: onTap,
+      dense: true,
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: const Color(0xfff4f3f7),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Icon(icon, size: 19, color: const Color(0xff676889)),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+      subtitle: subtitle == null ? null : Text(subtitle!),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (trailingText != null)
+            Text(
+              trailingText!,
+              style: const TextStyle(color: Color(0xff71748b)),
+            ),
+          const SizedBox(width: 4),
+          const Icon(Icons.chevron_right, size: 20),
+        ],
+      ),
+    ),
+  );
+}
+
+class ProfileDetailsPage extends StatefulWidget {
+  const ProfileDetailsPage({
+    super.key,
+    required this.uid,
+    required this.gateway,
+    required this.accounts,
+  });
+  final String uid;
+  final ProfileGateway gateway;
+  final bool accounts;
+  @override
+  State<ProfileDetailsPage> createState() => _ProfileDetailsPageState();
+}
+
+class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
+  late Future<ProfileInfo> data = widget.gateway.load(widget.uid);
+  void reload() => setState(() {
+    data = widget.gateway.load(widget.uid);
+  });
+  Future<void> input() async {
+    final title = widget.accounts ? 'addAccount' : 'referralEnter';
+    final value = await showDialog<String>(
+      context: context,
+      builder: (_) => ProfileInputDialog(titleKey: title),
+    );
     if (value == null || value.isEmpty || !mounted) return;
     try {
-      await db.rpc(rpc, params: {param: value});
-      if (!mounted) return;
-      if (rpc == 'apply_referral') {
-        toast(context, tr(context, 'referralApplied'));
+      if (widget.accounts) {
+        await widget.gateway.addAccount(value);
+      } else {
+        await widget.gateway.applyReferral(value);
       }
+      if (!mounted) return;
+      if (!widget.accounts) toast(context, tr(context, 'referralApplied'));
       reload();
     } catch (e) {
       if (mounted) {
         final message = e is PostgrestException && e.code == '23505'
             ? tr(
                 context,
-                rpc == 'apply_referral' ? 'referralJoined' : 'duplicateAccount',
+                widget.accounts ? 'duplicateAccount' : 'referralJoined',
               )
             : friendlyError(context, e);
         toast(context, message);
@@ -2755,12 +3351,30 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
     }
   }
 
+  Future<void> search() async {
+    final username = await showDialog<String>(
+      context: context,
+      builder: (_) => InstagramSearchDialog(gateway: widget.gateway),
+    );
+    if (username == null || !mounted) return;
+    try {
+      await widget.gateway.addAccount(username);
+      if (mounted) reload();
+    } catch (e) {
+      if (mounted) {
+        toast(
+          context,
+          e is PostgrestException && e.code == '23505'
+              ? tr(context, 'duplicateAccount')
+              : friendlyError(context, e),
+        );
+      }
+    }
+  }
+
   Future<void> remove(String username) async {
     try {
-      await db.rpc(
-        'remove_instagram_account',
-        params: {'p_username': username},
-      );
+      await widget.gateway.removeAccount(username);
       if (mounted) reload();
     } catch (e) {
       if (mounted) toast(context, friendlyError(context, e));
@@ -2768,138 +3382,246 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
   }
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<List<dynamic>>(
-    future: data,
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return Column(
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: Text(
+        tr(context, widget.accounts ? 'instagramAccounts' : 'referrals'),
+      ),
+    ),
+    body: FutureBuilder<ProfileInfo>(
+      future: data,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(tr(context, 'profileDataError')),
+                TextButton(
+                  onPressed: reload,
+                  child: Text(tr(context, 'retry')),
+                ),
+              ],
+            ),
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final info = snapshot.data!;
+        return ListView(
+          padding: const EdgeInsets.all(20),
           children: [
-            Text(tr(context, 'error')),
-            TextButton(onPressed: reload, child: Text(tr(context, 'retry'))),
+            if (widget.accounts) ...[
+              FilledButton.icon(
+                onPressed: search,
+                icon: const Icon(Icons.search),
+                label: Text(tr(context, 'instagramSearch')),
+              ),
+              const SizedBox(height: 12),
+              if (info.usernames.isEmpty) Text(tr(context, 'noAccounts')),
+              for (final username in info.usernames)
+                Card(
+                  child: ListTile(
+                    title: Text('@$username'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: tr(context, 'removeAccount'),
+                      onPressed: () => remove(username),
+                    ),
+                  ),
+                ),
+              TextButton.icon(
+                onPressed: input,
+                icon: const Icon(Icons.add),
+                label: Text(tr(context, 'addAccount')),
+              ),
+            ] else ...[
+              Text(tr(context, 'referralNoReward')),
+              const SizedBox(height: 16),
+              Text(tr(context, 'referralCode')),
+              SelectableText(
+                info.referralCode,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: info.referralCode),
+                  );
+                  if (context.mounted) toast(context, tr(context, 'copied'));
+                },
+                icon: const Icon(Icons.copy),
+                label: Text(tr(context, 'copyCode')),
+              ),
+              Text('${tr(context, 'referralCount')}: ${info.referralCount}'),
+              if (info.referralJoined)
+                Text(tr(context, 'referralJoined'))
+              else
+                TextButton(
+                  onPressed: input,
+                  child: Text(tr(context, 'referralEnter')),
+                ),
+            ],
           ],
         );
+      },
+    ),
+  );
+}
+
+class ProfileInputDialog extends StatefulWidget {
+  const ProfileInputDialog({super.key, required this.titleKey});
+  final String titleKey;
+  @override
+  State<ProfileInputDialog> createState() => _ProfileInputDialogState();
+}
+
+class _ProfileInputDialogState extends State<ProfileInputDialog> {
+  final controller = TextEditingController();
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(tr(context, widget.titleKey)),
+    content: TextField(
+      controller: controller,
+      autofocus: true,
+      decoration: InputDecoration(labelText: tr(context, widget.titleKey)),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(tr(context, 'cancel')),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, controller.text.trim()),
+        child: Text(tr(context, 'apply')),
+      ),
+    ],
+  );
+}
+
+class InstagramSearchDialog extends StatefulWidget {
+  const InstagramSearchDialog({super.key, required this.gateway});
+  final ProfileGateway gateway;
+  @override
+  State<InstagramSearchDialog> createState() => _InstagramSearchDialogState();
+}
+
+class _InstagramSearchDialogState extends State<InstagramSearchDialog> {
+  final controller = TextEditingController();
+  bool busy = false;
+  String? result, error;
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> search() async {
+    if (busy) return;
+    final handle = controller.text.trim().replaceFirst(RegExp(r'^@'), '');
+    if (!RegExp(r'^[A-Za-z0-9._]{1,30}$').hasMatch(handle)) {
+      setState(() {
+        result = null;
+        error = tr(context, 'proofBadHandle');
+      });
+      return;
+    }
+    setState(() {
+      busy = true;
+      result = null;
+      error = null;
+    });
+    try {
+      final username = await widget.gateway.searchInstagram(handle);
+      if (mounted) setState(() => result = username);
+    } on InstagramLookupException catch (e) {
+      if (mounted) {
+        final key = switch (e.code) {
+          'not_found_or_unsupported' => 'instagramSearchNotFound',
+          'rate_limited' => 'instagramSearchLimited',
+          'access_denied' || 'unauthorized' => 'instagramSearchDenied',
+          _ => 'instagramSearchUnavailable',
+        };
+        setState(() => error = tr(context, key));
       }
-      if (!snapshot.hasData) {
-        return const Center(child: CircularProgressIndicator());
+    } catch (_) {
+      if (mounted) {
+        setState(() => error = tr(context, 'instagramSearchUnavailable'));
       }
-      final accounts = snapshot.data![0] as List;
-      final referral = Map<String, dynamic>.from(snapshot.data![1] as Map);
-      final hasPin = snapshot.data![2] as bool;
-      return Column(
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(tr(context, 'instagramSearch')),
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.history),
-              title: Text(tr(context, 'history')),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => CoinHistoryPage(uid: widget.uid),
-                ),
-              ),
+          Text(tr(context, 'instagramSearchHelp')),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            enabled: !busy,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: tr(context, 'instagramSearchHint'),
+              hintText: '@username',
             ),
+            onChanged: (_) => setState(() {
+              result = null;
+              error = null;
+            }),
+            onSubmitted: (_) => search(),
           ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.lock_outline),
-              title: Text(tr(context, 'releasePin')),
-              subtitle: Text(tr(context, hasPin ? 'changePin' : 'setupPin')),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () async {
-                final result = await showDialog<String>(
-                  context: context,
-                  builder: (_) =>
-                      ReleasePinDialog(setup: true, changing: hasPin),
-                );
-                if (result == 'ok' && context.mounted) {
-                  toast(context, tr(context, 'pinSaved'));
-                  reload();
-                }
-              },
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: busy ? null : search,
+            icon: const Icon(Icons.search),
+            label: Text(tr(context, 'instagramSearchAction')),
+          ),
+          if (busy) const Center(child: CircularProgressIndicator()),
+          if (error != null)
+            Text(
+              error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
-          ),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tr(context, 'instagramAccounts'),
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  if (accounts.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(tr(context, 'noAccounts')),
-                    ),
-                  for (final account in accounts)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('@${account['username']}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: tr(context, 'removeAccount'),
-                        onPressed: () => remove(account['username'] as String),
-                      ),
-                    ),
-                  TextButton.icon(
-                    onPressed: () => input(
-                      'addAccount',
-                      'add_instagram_account',
-                      'p_username',
-                    ),
-                    icon: const Icon(Icons.add),
-                    label: Text(tr(context, 'addAccount')),
-                  ),
-                ],
-              ),
+          if (result != null) ...[
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.account_circle_outlined),
+              title: Text('@$result'),
             ),
-          ),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tr(context, 'referrals'),
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(tr(context, 'referralNoReward')),
-                  const SizedBox(height: 8),
-                  Text(tr(context, 'referralCode')),
-                  SelectableText(referral['code'] as String),
-                  TextButton.icon(
-                    onPressed: () async {
-                      await Clipboard.setData(
-                        ClipboardData(text: referral['code'] as String),
-                      );
-                      if (context.mounted) {
-                        toast(context, tr(context, 'copied'));
-                      }
-                    },
-                    icon: const Icon(Icons.copy),
-                    label: Text(tr(context, 'copyCode')),
-                  ),
-                  Text('${tr(context, 'referralCount')}: ${referral['count']}'),
-                  if (referral['joined'] == true)
-                    Text(tr(context, 'referralJoined'))
-                  else
-                    TextButton(
-                      onPressed: () =>
-                          input('referralEnter', 'apply_referral', 'p_code'),
-                      child: Text(tr(context, 'referralEnter')),
-                    ),
-                ],
-              ),
+            Text(
+              tr(context, 'instagramSearchOwnership'),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-          ),
+          ],
         ],
-      );
-    },
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: busy ? null : () => Navigator.pop(context),
+        child: Text(tr(context, 'cancel')),
+      ),
+      FilledButton(
+        onPressed: busy || result == null
+            ? null
+            : () => Navigator.pop(context, result),
+        child: Text(tr(context, 'instagramSearchAdd')),
+      ),
+    ],
   );
 }

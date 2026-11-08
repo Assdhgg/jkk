@@ -68,7 +68,16 @@ Supabase SQL Editor-ൽ `supabase/migrations/`-ലെ SQL files താഴെ ക
 4. `20261107030000_profile_pin_referrals.sql`
 5. `20261107040000_admin_action_controls.sql`
 6. `20261107050000_admin_campaigns.sql`
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:447632e64b4e814629213d1b1e2727d4c6f2a7447a09b99e442f3adf6a52ee17 -->
+
 7. `20261107060000_admin_submission_review.sql`
+8. `20261107070000_instagram_lookup_rate.sql`
+
+Instagram username lookup-ന് Meta Business Discovery credentials Supabase Edge Function-ൽ configure ചെയ്യുകയും `instagram-lookup` function deploy ചെയ്യുകയും വേണം. ഇത് full username ഉള്ള Business/Creator accounts മാത്രം പരിശോധിക്കും. Personal accounts-ന് manual add ഉപയോഗിക്കാം. വിശദമായ setup-ന് [Instagram username lookup](../README.md#instagram-username-lookup) കാണുക.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ഇതിനകം ഉപയോഗിക്കുന്ന project ആണെങ്കിൽ മുൻപ് പ്രയോഗിച്ച migrations വീണ്ടും run ചെയ്യരുത്. Project-ന്റെ migration history പരിശോധിച്ച് പ്രയോഗിക്കാത്ത അടുത്ത migration മുതൽ മാത്രം തുടരുക. SQL Editor വഴി കൈകൊണ്ട് പ്രയോഗിച്ചാൽ അത് നിങ്ങളുടെ migration record-ൽ സൂക്ഷിക്കുക. Campaign, claim, wallet, ledger, action-control, admin-review presence updates-ന് Supabase Realtime publication/configuration പ്രവർത്തിക്കുന്നുണ്ടെന്ന് പരിശോധിക്കുക.
 
