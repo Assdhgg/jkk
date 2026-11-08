@@ -73,7 +73,14 @@ Supabase SQL Editor-ൽ `supabase/migrations/`-ലെ SQL files താഴെ ക
 <!-- coderabbit-ai-generated-section:v1:447632e64b4e814629213d1b1e2727d4c6f2a7447a09b99e442f3adf6a52ee17 -->
 
 7. `20261107060000_admin_submission_review.sql`
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:019eecc0633cc58dc7a1226682d738cf147684cad89c5c1fdfe2f6905c734230 -->
+
 8. `20261107070000_instagram_lookup_rate.sql`
+9. `20261107080000_notifications.sql`
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Instagram username lookup-ന് Meta Business Discovery credentials Supabase Edge Function-ൽ configure ചെയ്യുകയും `instagram-lookup` function deploy ചെയ്യുകയും വേണം. ഇത് full username ഉള്ള Business/Creator accounts മാത്രം പരിശോധിക്കും. Personal accounts-ന് manual add ഉപയോഗിക്കാം. വിശദമായ setup-ന് [Instagram username lookup](../README.md#instagram-username-lookup) കാണുക.
 

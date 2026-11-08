@@ -154,7 +154,17 @@ Apply `supabase/migrations/20261107070000_instagram_lookup_rate.sql` after all e
 
 Deploy `supabase/functions/instagram-lookup` to the same Supabase project. Set the Edge Function secrets `META_INSTAGRAM_USER_ID` and `META_INSTAGRAM_ACCESS_TOKEN` in Supabase's secret manager; the platform supplies `SUPABASE_URL` and `SUPABASE_ANON_KEY`. For example, after installing and authenticating the [Supabase CLI](https://supabase.com/docs/guides/functions/deploy), link the intended project and use `supabase secrets set --env-file <secure-file-outside-repository>` followed by `supabase functions deploy instagram-lookup`. The secure file contains those two `NAME=value` entries and must be protected and excluded from version control. Keep JWT verification enabled. Invalid/expired credentials show an unavailable message; rotate them through Meta and update the Supabase secrets. The server validates the user session, rejects blocked users and limits lookups to 20 per user per minute.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:0c829ef2a10d0ac13f82b0a314d87ef3ebcce2934d0131ccdccf13b5c84f8763 -->
+
+## Task filters and notifications
+
+Earn tasks can be filtered by Follow, Like, Comment or Share; submission history stays visible. Apply `supabase/migrations/20261107080000_notifications.sql` after the earlier migrations and enable the `notifications` table in Supabase Realtime if it is not already published. The new migration records future approvals, rejections and positive coin ledger entries transactionally; earlier events are not backfilled. Signed-in active users can view only their own notifications and mark them read. An unread indicator and list update while the app is open and connected. These are in-app notifications; no device push notification service is configured.
+
 ## Administrator submission inspection
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 

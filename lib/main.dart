@@ -123,6 +123,24 @@ const words = <String, List<String>>{
     'Tasks are reviewed by campaign owners. Instagram activity is not automatically verified or guaranteed.',
     'Task campaign ഉടമ പരിശോധിക്കും. Instagram പ്രവർത്തനം സ്വയമേവ പരിശോധിക്കുകയോ ഉറപ്പുനൽകുകയോ ചെയ്യുന്നില്ല.',
   ],
+  'allTasks': ['All', 'എല്ലാം'],
+  'noFilteredTasks': [
+    'No tasks in this category.',
+    'ഈ വിഭാഗത്തിൽ task-ുകൾ ഇല്ല.',
+  ],
+  'notifications': ['Notifications', 'അറിയിപ്പുകൾ'],
+  'noNotifications': ['No notifications yet.', 'ഇതുവരെ അറിയിപ്പുകളൊന്നുമില്ല.'],
+  'notificationApproved': [
+    'Your submission was approved.',
+    'നിങ്ങളുടെ submission അംഗീകരിച്ചു.',
+  ],
+  'notificationRejected': [
+    'Your submission was rejected.',
+    'നിങ്ങളുടെ submission നിരസിച്ചു.',
+  ],
+  'notificationCoins': ['Coins received', 'Coins ലഭിച്ചു'],
+  'notificationUnread': ['Unread', 'വായിച്ചിട്ടില്ല'],
+  'markRead': ['Mark as read', 'വായിച്ചതായി അടയാളപ്പെടുത്തുക'],
   'earnTitle': ['Explore tasks', 'Task-ുകൾ കണ്ടെത്തുക'],
   'submitProof': ['Submit for review', 'പരിശോധനയ്ക്ക് അയയ്ക്കുക'],
   'proofTitle': ['Submit your task', 'Task പരിശോധനയ്ക്ക് അയയ്ക്കുക'],
@@ -1321,6 +1339,135 @@ class BrandIcon extends StatelessWidget {
   );
 }
 
+List<Map<String, dynamic>> filterTasks(
+  List<Map<String, dynamic>> tasks,
+  String type,
+) => type == 'all'
+    ? tasks
+    : tasks.where((task) => task['type'] == type).toList();
+
+class TaskTypePicker extends StatelessWidget {
+  const TaskTypePicker({
+    super.key,
+    required this.selected,
+    required this.onSelected,
+  });
+  final String selected;
+  final ValueChanged<String> onSelected;
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 4,
+    children: [
+      for (final type in ['all', 'follow', 'like', 'comment', 'share'])
+        ChoiceChip(
+          label: Text(tr(context, type == 'all' ? 'allTasks' : type)),
+          selected: selected == type,
+          onSelected: (_) => onSelected(type),
+        ),
+    ],
+  );
+}
+
+class NotificationsButton extends StatelessWidget {
+  const NotificationsButton({
+    super.key,
+    required this.stream,
+    required this.onPressed,
+  });
+  final Stream<List<Map<String, dynamic>>> stream;
+  final VoidCallback onPressed;
+  @override
+  Widget build(BuildContext context) =>
+      StreamBuilder<List<Map<String, dynamic>>>(
+        stream: stream,
+        builder: (context, snapshot) => IconButton(
+          tooltip: tr(context, 'notifications'),
+          onPressed: onPressed,
+          icon: Badge(
+            isLabelVisible:
+                snapshot.data?.any((item) => item['read_at'] == null) ?? false,
+            child: const Icon(Icons.notifications_none_outlined),
+          ),
+        ),
+      );
+}
+
+class NotificationsPage extends StatelessWidget {
+  const NotificationsPage({
+    super.key,
+    required this.stream,
+    required this.markRead,
+  });
+  final Stream<List<Map<String, dynamic>>> stream;
+  final Future<void> Function(String id) markRead;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(tr(context, 'notifications'))),
+    body: StreamBuilder<List<Map<String, dynamic>>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return Center(child: Text(tr(context, 'error')));
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final items = snapshot.data!;
+        if (items.isEmpty) {
+          return Center(child: Text(tr(context, 'noNotifications')));
+        }
+        return AppListView(
+          children: [
+            for (final item in items)
+              Card(
+                child: ListTile(
+                  leading: Icon(
+                    item['kind'] == 'coins_received'
+                        ? Icons.toll_outlined
+                        : Icons.fact_check_outlined,
+                  ),
+                  title: Text(switch (item['kind']) {
+                    'approved' => tr(context, 'notificationApproved'),
+                    'rejected' => tr(context, 'notificationRejected'),
+                    'coins_received' =>
+                      '${tr(context, 'notificationCoins')}: +${item['amount']}',
+                    _ => tr(context, 'notifications'),
+                  }),
+                  subtitle: Text(
+                    [
+                      if (item['read_at'] == null)
+                        tr(context, 'notificationUnread'),
+                      if (DateTime.tryParse(
+                            item['created_at']?.toString() ?? '',
+                          )
+                          case final date?)
+                        MaterialLocalizations.of(context)
+                            .formatShortDate(date.toLocal()),
+                    ].join(' · '),
+                  ),
+                  trailing: item['read_at'] == null
+                      ? IconButton(
+                          tooltip: tr(context, 'markRead'),
+                          icon: const Icon(Icons.mark_email_read_outlined),
+                          onPressed: () async {
+                            try {
+                              await markRead(item['id'] as String);
+                            } catch (_) {
+                              if (context.mounted) {
+                                toast(context, tr(context, 'error'));
+                              }
+                            }
+                          },
+                        )
+                      : null,
+                ),
+              ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, required this.user});
   final User user;
@@ -1330,6 +1477,25 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int selected = 0;
+  late final Stream<List<Map<String, dynamic>>> notifications = db
+      .from('notifications')
+      .stream(primaryKey: ['id'])
+      .eq('user_id', widget.user.id)
+      .order('created_at', ascending: false);
+  void openNotifications() => Navigator.push(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => NotificationsPage(
+        stream: notifications,
+        markRead: (id) async {
+          await db
+              .from('notifications')
+              .update({'read_at': DateTime.now().toUtc().toIso8601String()})
+              .eq('id', id);
+        },
+      ),
+    ),
+  );
   @override
   Widget build(BuildContext context) {
     final pages = [
@@ -1343,7 +1509,11 @@ class _HomeShellState extends State<HomeShell> {
       ),
       TaskList(uid: widget.user.id),
       Campaigns(uid: widget.user.id),
-      Profile(user: widget.user),
+      Profile(
+        user: widget.user,
+        onNotifications: openNotifications,
+        notifications: notifications,
+      ),
     ];
     final labels = ['home', 'earn', 'campaigns', 'profile'];
     return Scaffold(
@@ -1352,6 +1522,10 @@ class _HomeShellState extends State<HomeShell> {
           : AppBar(
               title: Text(tr(context, labels[selected])),
               actions: [
+                NotificationsButton(
+                  stream: notifications,
+                  onPressed: openNotifications,
+                ),
                 TextButton(
                   onPressed: toggleLanguage,
                   child: Text(tr(context, 'language')),
@@ -1930,9 +2104,15 @@ class ReviewApi {
   }
 }
 
-class TaskList extends StatelessWidget {
+class TaskList extends StatefulWidget {
   const TaskList({super.key, required this.uid});
   final String uid;
+  @override
+  State<TaskList> createState() => _TaskListState();
+}
+
+class _TaskListState extends State<TaskList> {
+  String selectedType = 'all';
   Future<void> claim(BuildContext context, String id) async {
     final result = await showDialog<bool>(
       context: context,
@@ -1973,7 +2153,7 @@ class TaskList extends StatelessWidget {
             stream: db
                 .from('admin_review_presence')
                 .stream(primaryKey: ['session_id'])
-                .eq('user_id', uid),
+                .eq('user_id', widget.uid),
             builder: (context, presence) {
               if (presence.hasError) {
                 return Center(child: Text(tr(context, 'error')));
@@ -2002,7 +2182,7 @@ class TaskList extends StatelessWidget {
         stream: db
             .from('campaign_claims')
             .stream(primaryKey: ['campaign_id', 'user_id'])
-            .eq('user_id', uid),
+            .eq('user_id', widget.uid),
         builder: (context, claims) {
           if (claims.hasError) return Center(child: Text(tr(context, 'error')));
           if (!claims.hasData) {
@@ -2016,8 +2196,11 @@ class TaskList extends StatelessWidget {
             for (final campaign in campaigns.data!) campaign['id']: campaign,
           };
           final tasks = campaigns.data!
-              .where((d) => d['ownerId'] != uid && d['status'] == 'active')
+              .where(
+                (d) => d['ownerId'] != widget.uid && d['status'] == 'active',
+              )
               .toList();
+          final filteredTasks = filterTasks(tasks, selectedType);
           final history = mine.toList()
             ..sort(
               (a, b) => (b['created_at'] as String).compareTo(
@@ -2059,12 +2242,26 @@ class TaskList extends StatelessWidget {
                   ),
                 const SizedBox(height: 12),
               ],
-              if (tasks.isEmpty)
+              TaskTypePicker(
+                selected: selectedType,
+                onSelected: (value) => setState(() => selectedType = value),
+              ),
+              const SizedBox(height: 12),
+              if (filteredTasks.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(28),
-                  child: Center(child: Text(tr(context, 'emptyTasks'))),
+                  child: Center(
+                    child: Text(
+                      tr(
+                        context,
+                        selectedType == 'all'
+                            ? 'emptyTasks'
+                            : 'noFilteredTasks',
+                      ),
+                    ),
+                  ),
                 ),
-              for (final task in tasks)
+              for (final task in filteredTasks)
                 Builder(
                   builder: (context) {
                     final status = byCampaign[task['id']]?['status'];
@@ -2589,12 +2786,24 @@ String? profileName(User user) {
 }
 
 class Profile extends StatelessWidget {
-  const Profile({super.key, required this.user, this.gateway});
+  const Profile({
+    super.key,
+    required this.user,
+    this.gateway,
+    this.onNotifications,
+    this.notifications,
+  });
   final User user;
   final ProfileGateway? gateway;
+  final VoidCallback? onNotifications;
+  final Stream<List<Map<String, dynamic>>>? notifications;
   @override
-  Widget build(BuildContext context) =>
-      ProfileFeatures(user: user, gateway: gateway);
+  Widget build(BuildContext context) => ProfileFeatures(
+    user: user,
+    gateway: gateway,
+    onNotifications: onNotifications,
+    notifications: notifications,
+  );
 }
 
 class CoinHistoryPage extends StatelessWidget {
@@ -2936,9 +3145,17 @@ String profileInitials(String value) {
 }
 
 class ProfileFeatures extends StatefulWidget {
-  const ProfileFeatures({super.key, required this.user, this.gateway});
+  const ProfileFeatures({
+    super.key,
+    required this.user,
+    this.gateway,
+    this.onNotifications,
+    this.notifications,
+  });
   final User user;
   final ProfileGateway? gateway;
+  final VoidCallback? onNotifications;
+  final Stream<List<Map<String, dynamic>>>? notifications;
   @override
   State<ProfileFeatures> createState() => _ProfileFeaturesState();
 }
@@ -3014,6 +3231,8 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
         onPin: details.hasData ? () => openPin(details.data!.pinSet) : null,
         onSignOut: signOut,
         onLanguage: toggleLanguage,
+        onNotifications: widget.onNotifications,
+        notifications: widget.notifications,
       ),
     ),
   );
@@ -3034,7 +3253,11 @@ class ProfileLayout extends StatelessWidget {
     required this.onPin,
     required this.onSignOut,
     required this.onLanguage,
+    this.onNotifications,
+    this.notifications,
   });
+  final VoidCallback? onNotifications;
+  final Stream<List<Map<String, dynamic>>>? notifications;
   final User user;
   final ProfileInfo? info;
   final int? balance;
@@ -3071,6 +3294,11 @@ class ProfileLayout extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onNotifications != null && notifications != null)
+                  NotificationsButton(
+                    stream: notifications!,
+                    onPressed: onNotifications!,
+                  ),
                 PopupMenuButton<String>(
                   tooltip: tr(context, 'profileSettings'),
                   icon: const Icon(Icons.settings_outlined),
