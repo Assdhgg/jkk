@@ -10,7 +10,15 @@
 
 Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagram engagement campaigns. Claims are not verified Instagram actions. Instagram passwords are never collected.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:1c07e2717a8f2f9782074e698bf8261404c2dec1f9c1f703699aa1999c8a939a -->
+
+[Visual Studio setup and build guide (Malayalam)](docs/VISUAL_STUDIO_BUILD_GUIDE.md)
+
 ## Supabase setup
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated:v1 -->
 
