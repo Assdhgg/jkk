@@ -9,3 +9,8 @@ $$;
 grant usage on schema auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
 create publication supabase_realtime;
+
+-- Mock only: production auth.jwt() is provided by Supabase and verifies signed JWTs.
+create function auth.jwt() returns jsonb language sql stable as $$
+ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
+$$;

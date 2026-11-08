@@ -35,6 +35,12 @@ void main() {
             } else {
               request.response.write(jsonEncode({'username': 'Example'}));
             }
+          case '/rest/v1/coin_settings':
+            request.response.write(
+              jsonEncode([
+                {'key': 'invite', 'amount': 100},
+              ]),
+            );
           case '/rest/v1/instagram_accounts':
             request.response.write(
               jsonEncode([
@@ -66,6 +72,7 @@ void main() {
         expect(info.referralCode, 'invite');
         expect(info.referralCount, 3);
         expect(info.pinSet, isTrue);
+        expect(info.referralRewards, {'invite': 100});
         expect(await api.searchInstagram('example'), 'Example');
         await expectLater(
           api.searchInstagram('missing'),
@@ -107,13 +114,7 @@ void main() {
         await api.addAccount('@third');
         await api.removeAccount('first');
         await api.applyReferral('code');
-        expect(await api.setPin('1234', '4567'), 'ok');
-        expect(
-          requests.singleWhere(
-            (r) => r['path'] == '/rest/v1/rpc/set_release_pin',
-          )['body'],
-          {'p_pin': '1234', 'p_current_pin': '4567'},
-        );
+        expect(await api.setPin('1234', '123456'), 'otp_required');
         final accountRequest = requests.singleWhere(
           (r) => r['path'] == '/rest/v1/instagram_accounts',
         );

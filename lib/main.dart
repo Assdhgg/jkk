@@ -24,6 +24,15 @@ Future<void> main() async {
 }
 
 const words = <String, List<String>>{
+  'otp_required': [
+    'Send and verify a fresh email OTP.',
+    'പുതിയ email OTP അയച്ച് സ്ഥിരീകരിക്കുക.',
+  ],
+  'sendPinOtp': ['Send email OTP', 'Email OTP അയയ്ക്കുക'],
+  'otpSentPin': [
+    'OTP sent to your signed-in email. Enter it to verify and save your PIN.',
+    'നിങ്ങളുടെ email-ലേക്ക് OTP അയച്ചു. അത് നൽകി PIN സ്ഥിരീകരിച്ച് സേവ് ചെയ്യുക.',
+  ],
   'otpTitle': ['Verify your email', 'ഇമെയിൽ സ്ഥിരീകരിക്കുക'],
   'otpHint': ['Enter the 6-digit code sent to', '6 അക്ക കോഡ് അയച്ച ഇമെയിൽ'],
   'otp': ['6-digit code', '6 അക്ക കോഡ്'],
@@ -123,11 +132,29 @@ const words = <String, List<String>>{
     'Tasks are reviewed by campaign owners. Instagram activity is not automatically verified or guaranteed.',
     'Task campaign ഉടമ പരിശോധിക്കും. Instagram പ്രവർത്തനം സ്വയമേവ പരിശോധിക്കുകയോ ഉറപ്പുനൽകുകയോ ചെയ്യുന്നില്ല.',
   ],
+  'allTasks': ['All', 'എല്ലാം'],
+  'noFilteredTasks': [
+    'No tasks in this category.',
+    'ഈ വിഭാഗത്തിൽ task-ുകൾ ഇല്ല.',
+  ],
+  'notifications': ['Notifications', 'അറിയിപ്പുകൾ'],
+  'noNotifications': ['No notifications yet.', 'ഇതുവരെ അറിയിപ്പുകളൊന്നുമില്ല.'],
+  'notificationApproved': [
+    'Your submission was approved.',
+    'നിങ്ങളുടെ submission അംഗീകരിച്ചു.',
+  ],
+  'notificationRejected': [
+    'Your submission was rejected.',
+    'നിങ്ങളുടെ submission നിരസിച്ചു.',
+  ],
+  'notificationCoins': ['Coins received', 'Coins ലഭിച്ചു'],
+  'notificationUnread': ['Unread', 'വായിച്ചിട്ടില്ല'],
+  'markRead': ['Mark as read', 'വായിച്ചതായി അടയാളപ്പെടുത്തുക'],
   'earnTitle': ['Explore tasks', 'Task-ുകൾ കണ്ടെത്തുക'],
   'submitProof': ['Submit for review', 'പരിശോധനയ്ക്ക് അയയ്ക്കുക'],
   'proofTitle': ['Submit your task', 'Task പരിശോധനയ്ക്ക് അയയ്ക്കുക'],
   'proofInfo': [
-    'Enter your Instagram username and choose a screenshot. The campaign owner will review it before you earn a coin.',
+    'Enter your Instagram username and choose a screenshot. The campaign owner will review it before you earn coins.',
     'Instagram username-ഉം screenshot-ഉം നൽകുക. Campaign ഉടമ പരിശോധിച്ച ശേഷമേ coin ലഭിക്കൂ.',
   ],
   'proofHandle': ['Instagram username', 'Instagram username'],
@@ -194,8 +221,8 @@ const words = <String, List<String>>{
   'cancel': ['Cancel', 'റദ്ദാക്കുക'],
   'yesConfirm': ['Confirm', 'സ്ഥിരീകരിക്കുക'],
   'claimed': [
-    'Claim recorded. You earned 1 coin.',
-    'സ്ഥിരീകരിച്ചു. നിങ്ങൾക്ക് ഒരു coin ലഭിച്ചു.',
+    'Claim recorded. Coins received.',
+    'സ്ഥിരീകരിച്ചു. Coins ലഭിച്ചു.',
   ],
   'type': ['Action', 'പ്രവർത്തനം'],
   'follow': ['Follow', 'Follow'],
@@ -212,10 +239,9 @@ const words = <String, List<String>>{
     'https://www.instagram.com/p/.../',
   ],
   'count': ['Number of tasks', 'Task എണ്ണം'],
-  'cost': [
-    '1 coin per task · 1–100 tasks',
-    'ഓരോ task-നും 1 coin · 1–100 task-ുകൾ',
-  ],
+  'perTask': ['per task', 'ഓരോ task-നും'],
+  'totalCost': ['Total cost', 'ആകെ ചെലവ്'],
+  'cost': ['1–100 tasks', '1–100 task-ുകൾ'],
   'submit': ['Create campaign', 'Campaign തുടങ്ങുക'],
   'created': ['Campaign created.', 'Campaign ആരംഭിച്ചു.'],
   'myCampaigns': ['Your campaigns', 'നിങ്ങളുടെ campaign-ുകൾ'],
@@ -306,15 +332,15 @@ const words = <String, List<String>>{
     'Referral കോഡ് ചേർത്തിട്ടുണ്ട്.',
   ],
   'referralNoReward': [
-    'Referrals are tracked without a coin reward.',
-    'Referral രേഖപ്പെടുത്തും; coin പ്രതിഫലമില്ല.',
+    'Referral rewards follow the current administrator settings.',
+    'Admin settings അനുസരിച്ച് referral reward ലഭിക്കും.',
   ],
   'copyCode': ['Copy code', 'കോഡ് പകർത്തുക'],
   'copied': ['Code copied.', 'കോഡ് പകർത്തി.'],
   'apply': ['Apply', 'ചേർക്കുക'],
   'releasePin': ['Coin release PIN', 'Coin release PIN'],
   'setupPin': ['Set up 4-digit PIN', '4 അക്ക PIN സജ്ജമാക്കുക'],
-  'changePin': ['Change PIN', 'PIN മാറ്റുക'],
+  'changePin': ['Change / reset PIN', 'PIN മാറ്റുക / reset ചെയ്യുക'],
   'enterPin': [
     'Enter your 4-digit PIN to release the coin.',
     'Coin നൽകാൻ 4 അക്ക PIN നൽകുക.',
@@ -541,6 +567,11 @@ String friendlyError(BuildContext context, Object e) {
     }
     if (e.message.contains('Invalid Instagram')) {
       return tr(context, 'invalidLink');
+    }
+    if (e.message.contains('Reward changed')) {
+      return Localizations.localeOf(context).languageCode == 'ml'
+          ? 'Coin നിരക്ക് മാറി. പുതിയ നിരക്ക് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.'
+          : 'Reward changed. Check the updated price and try again.';
     }
     if (e.message.contains('Not enough coins')) return tr(context, 'notEnough');
     if (e.message.contains('no longer active')) return tr(context, 'inactive');
@@ -1321,6 +1352,135 @@ class BrandIcon extends StatelessWidget {
   );
 }
 
+List<Map<String, dynamic>> filterTasks(
+  List<Map<String, dynamic>> tasks,
+  String type,
+) => type == 'all'
+    ? tasks
+    : tasks.where((task) => task['type'] == type).toList();
+
+class TaskTypePicker extends StatelessWidget {
+  const TaskTypePicker({
+    super.key,
+    required this.selected,
+    required this.onSelected,
+  });
+  final String selected;
+  final ValueChanged<String> onSelected;
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 4,
+    children: [
+      for (final type in ['all', 'follow', 'like', 'comment', 'share'])
+        ChoiceChip(
+          label: Text(tr(context, type == 'all' ? 'allTasks' : type)),
+          selected: selected == type,
+          onSelected: (_) => onSelected(type),
+        ),
+    ],
+  );
+}
+
+class NotificationsButton extends StatelessWidget {
+  const NotificationsButton({
+    super.key,
+    required this.stream,
+    required this.onPressed,
+  });
+  final Stream<List<Map<String, dynamic>>> stream;
+  final VoidCallback onPressed;
+  @override
+  Widget build(BuildContext context) =>
+      StreamBuilder<List<Map<String, dynamic>>>(
+        stream: stream,
+        builder: (context, snapshot) => IconButton(
+          tooltip: tr(context, 'notifications'),
+          onPressed: onPressed,
+          icon: Badge(
+            isLabelVisible:
+                snapshot.data?.any((item) => item['read_at'] == null) ?? false,
+            child: const Icon(Icons.notifications_none_outlined),
+          ),
+        ),
+      );
+}
+
+class NotificationsPage extends StatelessWidget {
+  const NotificationsPage({
+    super.key,
+    required this.stream,
+    required this.markRead,
+  });
+  final Stream<List<Map<String, dynamic>>> stream;
+  final Future<void> Function(String id) markRead;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(tr(context, 'notifications'))),
+    body: StreamBuilder<List<Map<String, dynamic>>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return Center(child: Text(tr(context, 'error')));
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final items = snapshot.data!;
+        if (items.isEmpty) {
+          return Center(child: Text(tr(context, 'noNotifications')));
+        }
+        return AppListView(
+          children: [
+            for (final item in items)
+              Card(
+                child: ListTile(
+                  leading: Icon(
+                    item['kind'] == 'coins_received'
+                        ? Icons.toll_outlined
+                        : Icons.fact_check_outlined,
+                  ),
+                  title: Text(switch (item['kind']) {
+                    'approved' => tr(context, 'notificationApproved'),
+                    'rejected' => tr(context, 'notificationRejected'),
+                    'coins_received' =>
+                      '${tr(context, 'notificationCoins')}: +${item['amount']}',
+                    _ => tr(context, 'notifications'),
+                  }),
+                  subtitle: Text(
+                    [
+                      if (item['read_at'] == null)
+                        tr(context, 'notificationUnread'),
+                      if (DateTime.tryParse(
+                            item['created_at']?.toString() ?? '',
+                          )
+                          case final date?)
+                        MaterialLocalizations.of(context)
+                            .formatShortDate(date.toLocal()),
+                    ].join(' · '),
+                  ),
+                  trailing: item['read_at'] == null
+                      ? IconButton(
+                          tooltip: tr(context, 'markRead'),
+                          icon: const Icon(Icons.mark_email_read_outlined),
+                          onPressed: () async {
+                            try {
+                              await markRead(item['id'] as String);
+                            } catch (_) {
+                              if (context.mounted) {
+                                toast(context, tr(context, 'error'));
+                              }
+                            }
+                          },
+                        )
+                      : null,
+                ),
+              ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key, required this.user});
   final User user;
@@ -1330,6 +1490,25 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int selected = 0;
+  late final Stream<List<Map<String, dynamic>>> notifications = db
+      .from('notifications')
+      .stream(primaryKey: ['id'])
+      .eq('user_id', widget.user.id)
+      .order('created_at', ascending: false);
+  void openNotifications() => Navigator.push(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => NotificationsPage(
+        stream: notifications,
+        markRead: (id) async {
+          await db
+              .from('notifications')
+              .update({'read_at': DateTime.now().toUtc().toIso8601String()})
+              .eq('id', id);
+        },
+      ),
+    ),
+  );
   @override
   Widget build(BuildContext context) {
     final pages = [
@@ -1343,7 +1522,11 @@ class _HomeShellState extends State<HomeShell> {
       ),
       TaskList(uid: widget.user.id),
       Campaigns(uid: widget.user.id),
-      Profile(user: widget.user),
+      Profile(
+        user: widget.user,
+        onNotifications: openNotifications,
+        notifications: notifications,
+      ),
     ];
     final labels = ['home', 'earn', 'campaigns', 'profile'];
     return Scaffold(
@@ -1352,6 +1535,10 @@ class _HomeShellState extends State<HomeShell> {
           : AppBar(
               title: Text(tr(context, labels[selected])),
               actions: [
+                NotificationsButton(
+                  stream: notifications,
+                  onPressed: openNotifications,
+                ),
                 TextButton(
                   onPressed: toggleLanguage,
                   child: Text(tr(context, 'language')),
@@ -1930,9 +2117,15 @@ class ReviewApi {
   }
 }
 
-class TaskList extends StatelessWidget {
+class TaskList extends StatefulWidget {
   const TaskList({super.key, required this.uid});
   final String uid;
+  @override
+  State<TaskList> createState() => _TaskListState();
+}
+
+class _TaskListState extends State<TaskList> {
+  String selectedType = 'all';
   Future<void> claim(BuildContext context, String id) async {
     final result = await showDialog<bool>(
       context: context,
@@ -1973,7 +2166,7 @@ class TaskList extends StatelessWidget {
             stream: db
                 .from('admin_review_presence')
                 .stream(primaryKey: ['session_id'])
-                .eq('user_id', uid),
+                .eq('user_id', widget.uid),
             builder: (context, presence) {
               if (presence.hasError) {
                 return Center(child: Text(tr(context, 'error')));
@@ -2002,7 +2195,7 @@ class TaskList extends StatelessWidget {
         stream: db
             .from('campaign_claims')
             .stream(primaryKey: ['campaign_id', 'user_id'])
-            .eq('user_id', uid),
+            .eq('user_id', widget.uid),
         builder: (context, claims) {
           if (claims.hasError) return Center(child: Text(tr(context, 'error')));
           if (!claims.hasData) {
@@ -2016,8 +2209,11 @@ class TaskList extends StatelessWidget {
             for (final campaign in campaigns.data!) campaign['id']: campaign,
           };
           final tasks = campaigns.data!
-              .where((d) => d['ownerId'] != uid && d['status'] == 'active')
+              .where(
+                (d) => d['ownerId'] != widget.uid && d['status'] == 'active',
+              )
               .toList();
+          final filteredTasks = filterTasks(tasks, selectedType);
           final history = mine.toList()
             ..sort(
               (a, b) => (b['created_at'] as String).compareTo(
@@ -2059,12 +2255,26 @@ class TaskList extends StatelessWidget {
                   ),
                 const SizedBox(height: 12),
               ],
-              if (tasks.isEmpty)
+              TaskTypePicker(
+                selected: selectedType,
+                onSelected: (value) => setState(() => selectedType = value),
+              ),
+              const SizedBox(height: 12),
+              if (filteredTasks.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(28),
-                  child: Center(child: Text(tr(context, 'emptyTasks'))),
+                  child: Center(
+                    child: Text(
+                      tr(
+                        context,
+                        selectedType == 'all'
+                            ? 'emptyTasks'
+                            : 'noFilteredTasks',
+                      ),
+                    ),
+                  ),
                 ),
-              for (final task in tasks)
+              for (final task in filteredTasks)
                 Builder(
                   builder: (context) {
                     final status = byCampaign[task['id']]?['status'];
@@ -2090,7 +2300,11 @@ class TaskList extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                const Chip(label: Text('+1 coin')),
+                                Chip(
+                                  label: Text(
+                                    '+${task['reward_per_task'] ?? 1} ${tr(context, 'coins')}',
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -2454,7 +2668,16 @@ class Campaigns extends StatelessWidget {
 }
 
 class CreateCampaign extends StatefulWidget {
-  const CreateCampaign({super.key});
+  const CreateCampaign({
+    super.key,
+    this.loadRates,
+    this.controls,
+    this.reserve,
+  });
+  final Future<List<Map<String, dynamic>>> Function()? loadRates;
+  final Stream<List<Map<String, dynamic>>>? controls;
+  final Future<void> Function(String type, String link, int count, int reward)?
+  reserve;
   @override
   State<CreateCampaign> createState() => _CreateCampaignState();
 }
@@ -2465,6 +2688,14 @@ class _CreateCampaignState extends State<CreateCampaign> {
   final count = TextEditingController(text: '1');
   String type = 'follow';
   bool busy = false;
+  late Future<List<Map<String, dynamic>>> rates = loadRates();
+  Future<List<Map<String, dynamic>>> loadRates() async =>
+      widget.loadRates != null
+      ? widget.loadRates!()
+      : db.from('coin_settings').select();
+  late final controlsStream =
+      widget.controls ??
+      db.from('action_controls').stream(primaryKey: ['action_type']);
   @override
   void dispose() {
     link.dispose();
@@ -2472,24 +2703,39 @@ class _CreateCampaignState extends State<CreateCampaign> {
     super.dispose();
   }
 
-  Future<void> submit() async {
+  Future<void> submit(int reward) async {
     if (!form.currentState!.validate()) return;
     setState(() => busy = true);
     try {
-      await db.rpc(
-        'create_campaign',
-        params: {
-          'p_type': type,
-          'p_link': link.text.trim(),
-          'p_count': int.parse(count.text),
-        },
-      );
+      if (widget.reserve != null) {
+        await widget.reserve!(
+          type,
+          link.text.trim(),
+          int.parse(count.text),
+          reward,
+        );
+      } else {
+        await db.rpc(
+          'create_campaign_at_rate',
+          params: {
+            'p_type': type,
+            'p_reward': reward,
+            'p_link': link.text.trim(),
+            'p_count': int.parse(count.text),
+          },
+        );
+      }
       if (mounted) {
         Navigator.pop(context);
         toast(context, tr(context, 'created'));
       }
     } catch (e) {
-      if (mounted) toast(context, friendlyError(context, e));
+      if (mounted) {
+        toast(context, friendlyError(context, e));
+        setState(() {
+          rates = loadRates();
+        });
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -2498,85 +2744,113 @@ class _CreateCampaignState extends State<CreateCampaign> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(tr(context, 'create'))),
-    body: StreamBuilder<List<Map<String, dynamic>>>(
-      stream: db.from('action_controls').stream(primaryKey: ['action_type']),
-      builder: (context, controls) {
-        if (controls.hasError) return Center(child: Text(tr(context, 'error')));
-        if (!controls.hasData) {
+    body: FutureBuilder<List<Map<String, dynamic>>>(
+      future: rates,
+      builder: (context, prices) {
+        if (prices.hasError) {
+          return Center(
+            child: TextButton(
+              onPressed: () => setState(() {
+                rates = loadRates();
+              }),
+              child: Text(tr(context, 'retry')),
+            ),
+          );
+        }
+        if (!prices.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final enabled = controls.data!.any(
-          (row) => row['action_type'] == type && row['enabled'] == true,
-        );
-        return Form(
-          key: form,
-          child: AppListView(
-            panel: true,
-            padding: const EdgeInsets.all(20),
-            children: [
-              Text(
-                tr(context, 'create'),
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: type,
-                decoration: InputDecoration(labelText: tr(context, 'type')),
-                items: ['follow', 'like', 'comment', 'share']
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(tr(context, t)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: busy ? null : (v) => setState(() => type = v!),
-              ),
-              if (!enabled) Text(tr(context, 'actionDisabled')),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: link,
-                keyboardType: TextInputType.url,
-                decoration: InputDecoration(
-                  labelText: tr(context, 'link'),
-                  hintText: tr(
-                    context,
-                    type == 'follow' ? 'profileHint' : 'postHint',
+        final reward =
+            prices.data!.firstWhere((row) => row['key'] == type)['amount']
+                as int;
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: controlsStream,
+          builder: (context, controls) {
+            if (controls.hasError) {
+              return Center(child: Text(tr(context, 'error')));
+            }
+            if (!controls.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final enabled = controls.data!.any(
+              (row) => row['action_type'] == type && row['enabled'] == true,
+            );
+            return Form(
+              key: form,
+              child: AppListView(
+                panel: true,
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Text(
+                    tr(context, 'create'),
+                    style: Theme.of(context).textTheme.headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                ),
-                validator: (v) => v == null || v.trim().isEmpty
-                    ? tr(context, 'required')
-                    : null,
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: type,
+                    decoration: InputDecoration(labelText: tr(context, 'type')),
+                    items: ['follow', 'like', 'comment', 'share']
+                        .map(
+                          (t) => DropdownMenuItem(
+                            value: t,
+                            child: Text(tr(context, t)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: busy ? null : (v) => setState(() => type = v!),
+                  ),
+                  if (!enabled) Text(tr(context, 'actionDisabled')),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: link,
+                    keyboardType: TextInputType.url,
+                    decoration: InputDecoration(
+                      labelText: tr(context, 'link'),
+                      hintText: tr(
+                        context,
+                        type == 'follow' ? 'profileHint' : 'postHint',
+                      ),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? tr(context, 'required')
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: count,
+                    onChanged: (_) => setState(() {}),
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: tr(context, 'count'),
+                      helperText:
+                          '$reward ${tr(context, 'coins')} ${tr(context, 'perTask')} · ${tr(context, 'cost')}',
+                    ),
+                    validator: (v) {
+                      final n = int.tryParse(v ?? '');
+                      return n == null || n < 1 || n > 100
+                          ? tr(context, 'validCount')
+                          : null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    '${tr(context, 'totalCost')}: ${(int.tryParse(count.text) ?? 0) * reward} ${tr(context, 'coins')}',
+                  ),
+                  const Notice(),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: busy || !enabled ? null : () => submit(reward),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Text(tr(context, 'submit')),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: count,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: tr(context, 'count'),
-                  helperText: tr(context, 'cost'),
-                ),
-                validator: (v) {
-                  final n = int.tryParse(v ?? '');
-                  return n == null || n < 1 || n > 100
-                      ? tr(context, 'validCount')
-                      : null;
-                },
-              ),
-              const SizedBox(height: 24),
-              const Notice(),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: busy || !enabled ? null : submit,
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Text(tr(context, 'submit')),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     ),
@@ -2589,12 +2863,24 @@ String? profileName(User user) {
 }
 
 class Profile extends StatelessWidget {
-  const Profile({super.key, required this.user, this.gateway});
+  const Profile({
+    super.key,
+    required this.user,
+    this.gateway,
+    this.onNotifications,
+    this.notifications,
+  });
   final User user;
   final ProfileGateway? gateway;
+  final VoidCallback? onNotifications;
+  final Stream<List<Map<String, dynamic>>>? notifications;
   @override
-  Widget build(BuildContext context) =>
-      ProfileFeatures(user: user, gateway: gateway);
+  Widget build(BuildContext context) => ProfileFeatures(
+    user: user,
+    gateway: gateway,
+    onNotifications: onNotifications,
+    notifications: notifications,
+  );
 }
 
 class CoinHistoryPage extends StatelessWidget {
@@ -2649,6 +2935,7 @@ class CoinHistoryPage extends StatelessWidget {
                         'campaign' => 'campaignReason',
                         'task' => 'taskReason',
                         'refund' => 'refundReason',
+                        'referral' => 'referrals',
                         _ => 'history',
                       };
                       return Card(
@@ -2685,10 +2972,12 @@ class ReleasePinDialog extends StatefulWidget {
     this.setup = false,
     this.changing = false,
     this.savePin,
+    this.sendOtp,
   });
+  final Future<void> Function()? sendOtp;
   final bool setup;
   final bool changing;
-  final Future<String> Function(String pin, String? currentPin)? savePin;
+  final Future<String> Function(String pin, String? otpCode)? savePin;
   @override
   State<ReleasePinDialog> createState() => _ReleasePinDialogState();
 }
@@ -2698,21 +2987,26 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
   final confirm = TextEditingController();
   final current = TextEditingController();
   String? error;
-  bool busy = false;
+  bool busy = false, otpSent = false;
+  int cooldown = 0;
+  Timer? otpTimer;
   @override
   void dispose() {
     pin.dispose();
     confirm.dispose();
     current.dispose();
+    otpTimer?.cancel();
     super.dispose();
   }
 
   Future<void> submit() async {
+    if (widget.setup &&
+        (!otpSent || !RegExp(r'^\d{6}$').hasMatch(current.text))) {
+      setState(() => error = tr(context, 'otp_required'));
+      return;
+    }
     if (!RegExp(r'^\d{4}$').hasMatch(pin.text) ||
-        (widget.setup &&
-            (pin.text != confirm.text ||
-                (widget.changing &&
-                    !RegExp(r'^\d{4}$').hasMatch(current.text))))) {
+        (widget.setup && pin.text != confirm.text)) {
       setState(
         () => error = tr(
           context,
@@ -2730,13 +3024,13 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
       error = null;
     });
     try {
-      final currentPin = widget.changing ? current.text : null;
+      final otpCode = current.text;
       final result = widget.savePin == null
           ? await db.rpc(
               'set_release_pin',
-              params: {'p_pin': pin.text, 'p_current_pin': currentPin},
+              params: {'p_pin': pin.text, 'p_current_pin': otpCode},
             )
-          : await widget.savePin!(pin.text, currentPin);
+          : await widget.savePin!(pin.text, otpCode);
       if (!mounted) return;
       if (result == 'ok') {
         Navigator.pop(context, 'ok');
@@ -2775,7 +3069,58 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (!widget.setup) Text(tr(context, 'enterPin')),
-          if (widget.changing) pinField(current, 'currentPin'),
+          if (widget.setup) ...[
+            OutlinedButton(
+              onPressed: busy || cooldown > 0 || widget.sendOtp == null
+                  ? null
+                  : () async {
+                      setState(() {
+                        busy = true;
+                        error = null;
+                      });
+                      try {
+                        await widget.sendOtp!();
+                        if (mounted) {
+                          setState(() {
+                            otpSent = true;
+                            cooldown = 60;
+                          });
+                          otpTimer?.cancel();
+                          otpTimer = Timer.periodic(
+                            const Duration(seconds: 1),
+                            (timer) {
+                              if (!mounted) {
+                                timer.cancel();
+                                return;
+                              }
+                              setState(() => cooldown--);
+                              if (cooldown == 0) timer.cancel();
+                            },
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          setState(() => error = friendlyError(context, e));
+                        }
+                      } finally {
+                        if (mounted) setState(() => busy = false);
+                      }
+                    },
+              child: Text(
+                '${tr(context, 'sendPinOtp')}${cooldown > 0 ? ' ($cooldown)' : ''}',
+              ),
+            ),
+            if (otpSent) Text(tr(context, 'otpSentPin')),
+            TextField(
+              controller: current,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+              decoration: InputDecoration(labelText: tr(context, 'otp')),
+            ),
+          ],
           pinField(pin, widget.setup ? 'newPin' : 'releasePin'),
           if (widget.setup) pinField(confirm, 'confirmPin'),
           if (error != null)
@@ -2805,7 +3150,9 @@ class InstagramLookupException implements Exception {
 }
 
 class ProfileInfo {
+  final Map<String, int> referralRewards;
   const ProfileInfo({
+    this.referralRewards = const {},
     required this.usernames,
     required this.referralCode,
     required this.referralCount,
@@ -2826,13 +3173,25 @@ abstract class ProfileGateway {
   Future<String> searchInstagram(String username);
   Future<void> removeAccount(String username);
   Future<void> applyReferral(String code);
-  Future<String> setPin(String pin, String? currentPin);
+  Future<void> sendPinOtp();
+  Future<String> setPin(String pin, String? otpCode);
   Future<void> signOut();
 }
 
 class SupabaseProfileGateway implements ProfileGateway {
-  const SupabaseProfileGateway(this.client);
+  const SupabaseProfileGateway(this.client, {this.otpClientFactory});
   final SupabaseClient client;
+  final SupabaseClient Function()? otpClientFactory;
+  SupabaseClient newOtpClient() =>
+      otpClientFactory?.call() ??
+      SupabaseClient(
+        supabaseUrl,
+        supabaseKey,
+        authOptions: const AuthClientOptions(
+          autoRefreshToken: false,
+          authFlowType: AuthFlowType.implicit,
+        ),
+      );
   @override
   Future<ProfileInfo> load(String uid) async {
     final values = await Future.wait<dynamic>([
@@ -2843,6 +3202,7 @@ class SupabaseProfileGateway implements ProfileGateway {
           .order('created_at'),
       client.rpc('referral_info'),
       client.rpc('release_pin_is_set'),
+      client.from('coin_settings').select(),
     ]);
     final accounts = values[0] as List;
     final referral = Map<String, dynamic>.from(values[1] as Map);
@@ -2854,6 +3214,16 @@ class SupabaseProfileGateway implements ProfileGateway {
       referralCount: referral['count'] as int,
       referralJoined: referral['joined'] as bool,
       pinSet: values[2] as bool,
+      referralRewards: {
+        for (final row in values[3] as List)
+          if ([
+            'invite',
+            'milestone_5',
+            'milestone_10',
+            'milestone_15',
+          ].contains(row['key']))
+            row['key'] as String: row['amount'] as int,
+      },
     );
   }
 
@@ -2912,11 +3282,40 @@ class SupabaseProfileGateway implements ProfileGateway {
   Future<void> applyReferral(String code) async =>
       client.rpc('apply_referral', params: {'p_code': code});
   @override
-  Future<String> setPin(String pin, String? currentPin) async =>
-      await client.rpc(
+  Future<void> sendPinOtp() async {
+    final email = client.auth.currentUser?.email;
+    if (email == null) throw const AuthException('Sign in first.');
+    final isolated = newOtpClient();
+    try {
+      await isolated.auth.signInWithOtp(email: email, shouldCreateUser: false);
+    } finally {
+      await isolated.dispose();
+    }
+  }
+
+  @override
+  Future<String> setPin(String pin, String? otpCode) async {
+    final user = client.auth.currentUser;
+    if (user?.email == null || otpCode == null) return 'otp_required';
+    final isolated = newOtpClient();
+    try {
+      final verified = await isolated.auth.verifyOTP(
+        email: user!.email!,
+        token: otpCode,
+        type: OtpType.email,
+      );
+      if (verified.user?.id != user.id || verified.session == null) {
+        return 'otp_required';
+      }
+      return await isolated.rpc(
         'set_release_pin',
-        params: {'p_pin': pin, 'p_current_pin': currentPin},
+        params: {'p_pin': pin, 'p_current_pin': null},
       ) as String;
+    } finally {
+      await isolated.dispose();
+    }
+  }
+
   @override
   Future<void> signOut() => client.auth.signOut();
 }
@@ -2936,9 +3335,17 @@ String profileInitials(String value) {
 }
 
 class ProfileFeatures extends StatefulWidget {
-  const ProfileFeatures({super.key, required this.user, this.gateway});
+  const ProfileFeatures({
+    super.key,
+    required this.user,
+    this.gateway,
+    this.onNotifications,
+    this.notifications,
+  });
   final User user;
   final ProfileGateway? gateway;
+  final VoidCallback? onNotifications;
+  final Stream<List<Map<String, dynamic>>>? notifications;
   @override
   State<ProfileFeatures> createState() => _ProfileFeaturesState();
 }
@@ -2972,6 +3379,7 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
         setup: true,
         changing: pinSet,
         savePin: gateway.setPin,
+        sendOtp: gateway.sendPinOtp,
       ),
     );
     if (result == 'ok' && mounted) {
@@ -3014,6 +3422,8 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
         onPin: details.hasData ? () => openPin(details.data!.pinSet) : null,
         onSignOut: signOut,
         onLanguage: toggleLanguage,
+        onNotifications: widget.onNotifications,
+        notifications: widget.notifications,
       ),
     ),
   );
@@ -3034,7 +3444,11 @@ class ProfileLayout extends StatelessWidget {
     required this.onPin,
     required this.onSignOut,
     required this.onLanguage,
+    this.onNotifications,
+    this.notifications,
   });
+  final VoidCallback? onNotifications;
+  final Stream<List<Map<String, dynamic>>>? notifications;
   final User user;
   final ProfileInfo? info;
   final int? balance;
@@ -3071,6 +3485,11 @@ class ProfileLayout extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onNotifications != null && notifications != null)
+                  NotificationsButton(
+                    stream: notifications!,
+                    onPressed: onNotifications!,
+                  ),
                 PopupMenuButton<String>(
                   tooltip: tr(context, 'profileSettings'),
                   icon: const Icon(Icons.settings_outlined),
@@ -3526,6 +3945,21 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
               ),
             ] else ...[
               Text(tr(context, 'referralNoReward')),
+              for (final reward in info.referralRewards.entries)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.toll_outlined),
+                    title: Text(
+                      reward.key == 'invite'
+                          ? (Localizations.localeOf(context).languageCode ==
+                                    'ml'
+                                ? 'ഓരോ invite-നും'
+                                : 'Each referral')
+                          : '${reward.key.split('_').last} invites · ${Localizations.localeOf(context).languageCode == 'ml' ? 'അധിക bonus' : 'extra bonus'}',
+                    ),
+                    trailing: Text('${reward.value} ${tr(context, 'coins')}'),
+                  ),
+                ),
               const SizedBox(height: 16),
               Text(tr(context, 'referralCode')),
               SelectableText(

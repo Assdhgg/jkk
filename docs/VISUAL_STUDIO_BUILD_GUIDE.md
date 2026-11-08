@@ -73,7 +73,25 @@ Supabase SQL Editor-ൽ `supabase/migrations/`-ലെ SQL files താഴെ ക
 <!-- coderabbit-ai-generated-section:v1:447632e64b4e814629213d1b1e2727d4c6f2a7447a09b99e442f3adf6a52ee17 -->
 
 7. `20261107060000_admin_submission_review.sql`
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:019eecc0633cc58dc7a1226682d738cf147684cad89c5c1fdfe2f6905c734230 -->
+
 8. `20261107070000_instagram_lookup_rate.sql`
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:5f8b51c05f806e2b1652efb559e07daf12681ec42ad762670b229ac749db847d -->
+
+9. `20261107080000_notifications.sql`
+10. `20261107090000_coin_settings_referrals_pin_otp.sql`
+
+പുതിയ migration-നൊപ്പം user/admin builds നൽകുക. Admin dashboard-ലെ **Coin settings** വഴി registration/action/referral rewards മാറ്റാം. പഴയ campaigns-ന്റെ payout/refund നിരക്ക് മാറില്ല. പുതിയ default referral reward 100 coins; 5/10/15 invites-ന് extra 100/200/300 coins. മുമ്പത്തെ referrals-ന് backfill ഇല്ല.
+
+PIN set/reset-ന് Supabase **Authentication → Email Templates → Magic Link** template-ൽ `{{ .Token }}` നൽകി six-digit email OTP ലഭ്യമാക്കണം; signup template മാത്രം മാറ്റിയാൽ മതിയാകില്ല. Production SMTP/sending limits configure ചെയ്യുക. Profile → Coin release PIN → Change / reset PIN → Send email OTP → code + പുതിയ PIN നൽകി Save ചെയ്യുക. വിശദാംശങ്ങളും rollout നിബന്ധനകളും [README](../README.md#coin-settings-referral-rewards-and-email-otp-pin)-ൽ ഉണ്ട്. SQL commit/push ചെയ്തതുകൊണ്ട് live Supabase migration apply ആകില്ല.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Instagram username lookup-ന് Meta Business Discovery credentials Supabase Edge Function-ൽ configure ചെയ്യുകയും `instagram-lookup` function deploy ചെയ്യുകയും വേണം. ഇത് full username ഉള്ള Business/Creator accounts മാത്രം പരിശോധിക്കും. Personal accounts-ന് manual add ഉപയോഗിക്കാം. വിശദമായ setup-ന് [Instagram username lookup](../README.md#instagram-username-lookup) കാണുക.
 

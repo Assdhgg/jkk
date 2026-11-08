@@ -154,7 +154,17 @@ Apply `supabase/migrations/20261107070000_instagram_lookup_rate.sql` after all e
 
 Deploy `supabase/functions/instagram-lookup` to the same Supabase project. Set the Edge Function secrets `META_INSTAGRAM_USER_ID` and `META_INSTAGRAM_ACCESS_TOKEN` in Supabase's secret manager; the platform supplies `SUPABASE_URL` and `SUPABASE_ANON_KEY`. For example, after installing and authenticating the [Supabase CLI](https://supabase.com/docs/guides/functions/deploy), link the intended project and use `supabase secrets set --env-file <secure-file-outside-repository>` followed by `supabase functions deploy instagram-lookup`. The secure file contains those two `NAME=value` entries and must be protected and excluded from version control. Keep JWT verification enabled. Invalid/expired credentials show an unavailable message; rotate them through Meta and update the Supabase secrets. The server validates the user session, rejects blocked users and limits lookups to 20 per user per minute.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:0c829ef2a10d0ac13f82b0a314d87ef3ebcce2934d0131ccdccf13b5c84f8763 -->
+
+## Task filters and notifications
+
+Earn tasks can be filtered by Follow, Like, Comment or Share; submission history stays visible. Apply `supabase/migrations/20261107080000_notifications.sql` after the earlier migrations and enable the `notifications` table in Supabase Realtime if it is not already published. The new migration records future approvals, rejections and positive coin ledger entries transactionally; earlier events are not backfilled. Signed-in active users can view only their own notifications and mark them read. An unread indicator and list update while the app is open and connected. These are in-app notifications; no device push notification service is configured.
+
 ## Administrator submission inspection
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -184,13 +194,60 @@ The campaign owner retains the approval decision; administrators can inspect pen
 
 Apply `supabase/migrations/20261107040000_admin_action_controls.sql` after the preceding migrations and distribute updated user and administrator apps. In the administrator app, open Action controls to enable or disable Follow, Like, Share and Comment independently. Disabling an action blocks new campaigns and submissions for that action on the server, including requests from older clients. Operations already in progress can finish before the change commits. Existing submissions remain available for owner review or withdrawal, and campaign cancellation still refunds unused coins. These controls apply inside Growth Circle; they cannot control actions directly on Instagram.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:1ce76b4e4b99a55e89f1d4c9b37beb991ebf83d06740bce98ae128c6b9a4acd4 -->
+
+## Coin settings, referral rewards and email OTP PIN
+
+Apply `supabase/migrations/20261107090000_coin_settings_referrals_pin_otp.sql` **after all preceding migrations**, including `20261107080000_notifications.sql`. Distribute updated user and administrator builds with this migration. Old clients cannot set/change a PIN after the upgrade; existing PINs still release coins. New clients use `create_campaign_at_rate` to reject a changed price before spending coins. Legacy creation requests use the current configured rate: retire old builds before changing task prices, because they display a fixed one-coin cost.
+
+In the administrator dashboard, choose **Coin settings**. Defaults and limits:
+
+| Setting | Default coins | Allowed range |
+| --- | ---: | ---: |
+| Registration bonus | 10 | 0–10000 |
+| Follow / Like / Comment / Share | 1 each | 1–10000 |
+| Each successful referral | 100 | 0–10000 |
+| 5 / 10 / 15 referrals: extra milestone bonus | 100 / 200 / 300 | 0–10000 each |
+
+Only active administrators can change settings, and each change is audited. Registration changes affect wallets initialized afterward. Each new campaign saves its reward; approval and cancellation use that saved amount. Existing campaigns retain a one-coin reward. Available task cards show the reward; the creation form shows the total reservation and rejects a stale displayed rate.
+
+A referral is credited when a signed-in user successfully applies another account's valid referral code. The inviter must have initialized their wallet. Credit and notifications commit in the same transaction. Self-referrals and duplicate codes for a joined user are rejected. At invite 5, 10 and 15, the current extra milestone amount is added to that invite's reward once. A zero setting disables that credit. Historical referrals receive no backfill; previously achieved milestones are recorded as consumed without payout. A zero-valued milestone is also consumed when reached. Deleting a referred account cannot earn the same milestone again. These are account referrals; they do not prove an Instagram follow or prevent someone registering multiple email accounts.
+
+### Email OTP configuration and PIN recovery
+
+1. In Supabase Authentication, keep **Email** authentication enabled. Configure SMTP/email sending and provider rate limits for production. This app uses email accounts; phone OTP is not an app login flow.
+2. In **Authentication → Email Templates → Magic Link**, use the `{{ .Token }}` variable to display the six-digit login OTP instead of requiring a link. For example: `<p>Your Growth Circle verification code is: {{ .Token }}</p>`. The existing signup confirmation template is separate. See [Supabase email OTP setup](https://supabase.com/docs/guides/auth/auth-email-passwordless#with-email-otp).
+3. In Profile, choose **Coin release PIN → Set up** or **Change / reset PIN**. Send the OTP to the signed-in email, enter that code, then enter and confirm the new four-digit PIN. The app permits resend after 60 seconds; Supabase may impose a longer sending limit.
+4. OTP verification uses a separate short-lived client so the main password session is preserved. The server requires a signed Auth JWT with a recent `otp` authentication event (within five minutes of verification), and consumes that event once across token refreshes. Password-only, stale and reused proof cannot change a PIN. The old `p_current_pin` RPC parameter is retained for compatibility but is no longer authorization. See [Supabase JWT authentication methods](https://supabase.com/docs/guides/auth/jwt-fields#authentication-methods-amrmethod).
+5. A successful email-verified reset clears PIN lockout. Releasing coins still requires the PIN and retains the five-failure, 15-minute lock. Verify email delivery, first setup, forgotten-PIN recovery and approval on your live project before distributing builds.
+
+Local verification uses Flutter tests plus `python3 supabase/tests/economy_integration.py DATABASE_NAME` after `bootstrap.sql` and all migrations in an isolated PostgreSQL database. The test bootstrap's `auth.jwt()` is a privileged mock; **never install that bootstrap in Supabase**. Notification/action/admin inspection tests also accept explicit mock OTP claims for setup. Existing `profile_integration.py` documents/tests the earlier four-migration PIN contract and must use that earlier schema.
+
+Live rollout is not performed by committing SQL or pushing GitHub. Apply only unapplied migrations in the correct project, configure email templates/SMTP, and verify actual email and Realtime delivery. No Edge Function or Meta credentials are required for these features. Instagram live search remains separate.
+
 ## Profile and release PIN upgrade
 
 <!-- /coderabbit-ai-generated:v1 -->
 
-Apply `supabase/migrations/20261107030000_profile_pin_referrals.sql` after the administrator migration. Distribute the updated app at the same time: older clients cannot review submissions after this upgrade. Owners must set a four-digit PIN in Profile before approving and releasing a coin. Five incorrect attempts lock the PIN for 15 minutes. PIN changes require the current PIN; there is no in-app forgotten-PIN reset.
+<!-- /coderabbit-ai-generated:v1 -->
 
-Profile supports multiple Instagram usernames, a separate coin history page and referral codes. A user can apply one other user's code; referrals are tracked without coin rewards.
+Apply `supabase/migrations/20261107030000_profile_pin_referrals.sql` after the administrator migration. Distribute the updated app at the same time: older clients cannot review submissions after this upgrade. Owners must set a four-digit PIN in Profile before approving and releasing a coin. Five incorrect attempts lock the PIN for 15 minutes. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:c009fa4e50f7f72b3f0068404f465c0032a57f65fbca343e81865be63df838e7 -->
+
+After the economy/OTP upgrade below, both initial PIN setup and change/reset require a fresh email OTP instead of the current PIN. PIN release attempts retain the five-attempt lockout.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+Profile supports multiple Instagram usernames, a separate coin history page and referral codes. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:720f73b969649381e83927dd616b5bbf422f53a0e5b4cb7853aaddfb87af416a -->
+
+A user can apply one other user's code once. The economy migration below enables configurable rewards for future referral events.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Coin model
 
@@ -200,7 +257,19 @@ Profile supports multiple Instagram usernames, a separate coin history page and 
 
 <!-- coderabbit-ai-generated-section:v1:c64faf45931f12ec47d077d6d2401381342ff7988e233c74cb245f02e21f94de -->
 
-Accounts receive 10 coins once. Campaigns reserve one coin per requested task. A participant submits an Instagram username and a JPEG or PNG screenshot (maximum 512 KiB); the owner sees a pending submission, reviews the screenshot and approves or rejects it. Approving pays one coin and consumes one reserved task. Rejecting or withdrawing reopens the slot. Cancellation refunds all unapproved slots, including pending submissions. <!-- coderabbit-ai-generated:v1 -->
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:edb3e906f6395dd43354cbb3a3b30fb96533f500b6227a5099e527c48b29fa98 -->
+
+The default registration bonus is 10 coins once, and the default campaign reward is one coin per task. After the economy migration, administrators can change both. Campaigns reserve the configured reward multiplied by the requested task count.
+
+<!-- /coderabbit-ai-generated:v1 --> A participant submits an Instagram username and a JPEG or PNG screenshot (maximum 512 KiB); the owner sees a pending submission, reviews the screenshot and approves or rejects it. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:04c6b5e61c4712e1f6c99ef7592762da032e646f0bf8ddc1006f9c76cef62ee8 -->
+
+Approving pays the campaign's saved reward and consumes one reserved task. Later setting changes do not alter existing campaign payouts or refunds.
+
+<!-- /coderabbit-ai-generated:v1 --> Rejecting or withdrawing reopens the slot. Cancellation refunds all unapproved slots, including pending submissions. <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:fe5d94089b88fd5520ac3eac467b5dcf4d301cd218dd3803a58442b0e7928c07 -->
 
