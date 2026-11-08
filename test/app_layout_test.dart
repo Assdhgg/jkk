@@ -1,0 +1,74 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:growth_circle/main.dart';
+
+void main() {
+  tearDown(() => language.value = const Locale('en'));
+  for (final locale in ['en', 'ml']) {
+    testWidgets('home actions remain reachable at narrow width in $locale', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      language.value = Locale(locale);
+      var browse = false, create = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: growthTheme(),
+          locale: Locale(locale),
+          supportedLocales: const [Locale('en'), Locale('ml')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(1.5)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Dashboard(
+              uid: 'sample',
+              balanceStream: Stream.value([
+                {'balance': 128},
+              ]),
+              onBrowse: () => browse = true,
+              onCreate: () => create = true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('128'), findsOneWidget);
+      final menus = find.byType(ProfileMenuTile);
+      await tester.scrollUntilVisible(find.byIcon(Icons.explore_outlined), 200);
+      await tester.ensureVisible(menus.at(0));
+      await tester.pumpAndSettle();
+      await tester.tap(menus.at(0));
+      await tester.ensureVisible(menus.at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(menus.at(1));
+      expect(browse, isTrue);
+      expect(create, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('shared page content stays centered on a wide window', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: Scaffold(body: AppListView(children: const [Text('Content')])),
+      ),
+    );
+    expect(tester.getSize(find.byType(ListView)).width, 560);
+    expect(tester.getTopLeft(find.byType(ListView)).dx, 320);
+    expect(tester.takeException(), isNull);
+  });
+}

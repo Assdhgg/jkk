@@ -559,6 +559,104 @@ void toast(BuildContext context, String message) {
 void toggleLanguage() =>
     language.value = Locale(language.value.languageCode == 'en' ? 'ml' : 'en');
 
+// Shared user-app surfaces follow the profile layout on phones and wide windows.
+ThemeData growthTheme() => ThemeData(
+  useMaterial3: true,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: const Color(0xff6554c0),
+    surface: const Color(0xfff5f4f7),
+  ),
+  scaffoldBackgroundColor: const Color(0xfff5f4f7),
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.white,
+    surfaceTintColor: Colors.transparent,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+    centerTitle: false,
+    titleTextStyle: TextStyle(
+      color: Color(0xff17171b),
+      fontSize: 19,
+      fontWeight: FontWeight.w700,
+    ),
+  ),
+  navigationBarTheme: NavigationBarThemeData(
+    backgroundColor: Colors.white,
+    elevation: 0,
+    indicatorColor: const Color(0xffe9e3fa),
+    labelTextStyle: WidgetStateProperty.all(
+      const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+    ),
+  ),
+  cardTheme: CardThemeData(
+    elevation: 0,
+    color: Colors.white,
+    surfaceTintColor: Colors.transparent,
+    margin: const EdgeInsets.symmetric(vertical: 6),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+  ),
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: const Color(0xfff8f7fa),
+    contentPadding: const EdgeInsets.all(16),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(color: Color(0xffdedce6)),
+    ),
+  ),
+  filledButtonTheme: FilledButtonThemeData(
+    style: FilledButton.styleFrom(
+      minimumSize: const Size(48, 48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ),
+  ),
+  outlinedButtonTheme: OutlinedButtonThemeData(
+    style: OutlinedButton.styleFrom(
+      minimumSize: const Size(48, 48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ),
+  ),
+  chipTheme: ChipThemeData(
+    backgroundColor: const Color(0xfff2eff8),
+    side: BorderSide.none,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  ),
+);
+
+class AppListView extends StatelessWidget {
+  const AppListView({
+    super.key,
+    required this.children,
+    this.padding = const EdgeInsets.all(20),
+    this.panel = false,
+  });
+  final List<Widget> children;
+  final EdgeInsetsGeometry padding;
+  final bool panel;
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 560),
+      child: ListView(
+        padding: padding,
+        children: panel
+            ? [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: children,
+                    ),
+                  ),
+                ),
+              ]
+            : children,
+      ),
+    ),
+  );
+}
+
 class GrowthApp extends StatelessWidget {
   const GrowthApp({super.key, required this.configured});
   final bool configured;
@@ -571,23 +669,7 @@ class GrowthApp extends StatelessWidget {
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('ml')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xff6554c0),
-          surface: const Color(0xfffaf9ff),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-        ),
-      ),
+      theme: growthTheme(),
       home: configured ? const AuthGate() : const SetupScreen(),
     ),
   );
@@ -1268,10 +1350,7 @@ class _HomeShellState extends State<HomeShell> {
       appBar: selected == 3
           ? null
           : AppBar(
-              title: const Text(
-                'Growth Circle',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
+              title: Text(tr(context, labels[selected])),
               actions: [
                 TextButton(
                   onPressed: toggleLanguage,
@@ -1311,20 +1390,21 @@ class _HomeShellState extends State<HomeShell> {
 }
 
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key, required this.uid});
+  const BalanceCard({super.key, required this.uid, this.balanceStream});
   final String uid;
+  final Stream<List<Map<String, dynamic>>>? balanceStream;
   @override
   Widget build(
     BuildContext context,
   ) => StreamBuilder<List<Map<String, dynamic>>>(
-    stream: db.from('wallets').stream(primaryKey: ['id']).eq('id', uid),
+    stream:
+        balanceStream ??
+        db.from('wallets').stream(primaryKey: ['id']).eq('id', uid),
     builder: (context, snapshot) => Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xff6554c0), Color(0xff9b78d7)],
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: const Color(0xff1e211e),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
@@ -1350,7 +1430,7 @@ class BalanceCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.toll_rounded, color: Colors.white, size: 45),
+          const Icon(Icons.toll_rounded, color: Color(0xffc5f64b), size: 45),
         ],
       ),
     ),
@@ -1363,14 +1443,16 @@ class Dashboard extends StatelessWidget {
     required this.onBrowse,
     required this.onCreate,
     required this.uid,
+    this.balanceStream,
   });
+  final Stream<List<Map<String, dynamic>>>? balanceStream;
   final VoidCallback onBrowse, onCreate;
   final String uid;
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) => AppListView(
     padding: const EdgeInsets.all(20),
     children: [
-      BalanceCard(uid: uid),
+      BalanceCard(uid: uid, balanceStream: balanceStream),
       const SizedBox(height: 28),
       Text(
         tr(context, 'welcome'),
@@ -1383,21 +1465,24 @@ class Dashboard extends StatelessWidget {
         style: Theme.of(context).textTheme.bodyLarge,
       ),
       const SizedBox(height: 24),
-      FilledButton.icon(
-        onPressed: onBrowse,
-        icon: const Icon(Icons.explore_outlined),
-        label: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text(tr(context, 'browse')),
-        ),
-      ),
-      const SizedBox(height: 10),
-      OutlinedButton.icon(
-        onPressed: onCreate,
-        icon: const Icon(Icons.add),
-        label: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text(tr(context, 'create')),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Column(
+            children: [
+              ProfileMenuTile(
+                icon: Icons.explore_outlined,
+                title: tr(context, 'browse'),
+                onTap: onBrowse,
+              ),
+              const Divider(indent: 64, endIndent: 16, height: 1),
+              ProfileMenuTile(
+                icon: Icons.add_circle_outline,
+                title: tr(context, 'create'),
+                onTap: onCreate,
+              ),
+            ],
+          ),
         ),
       ),
       const SizedBox(height: 24),
@@ -1939,7 +2024,7 @@ class TaskList extends StatelessWidget {
                 a['created_at'] as String,
               ),
             );
-          return ListView(
+          return AppListView(
             padding: const EdgeInsets.all(20),
             children: [
               Text(
@@ -2260,7 +2345,7 @@ class Campaigns extends StatelessWidget {
           (a, b) =>
               (b['createdAt'] as String).compareTo(a['createdAt'] as String),
         );
-      return ListView(
+      return AppListView(
         padding: const EdgeInsets.all(20),
         children: [
           Row(
@@ -2425,7 +2510,8 @@ class _CreateCampaignState extends State<CreateCampaign> {
         );
         return Form(
           key: form,
-          child: ListView(
+          child: AppListView(
+            panel: true,
             padding: const EdgeInsets.all(20),
             children: [
               Text(
@@ -2435,6 +2521,7 @@ class _CreateCampaignState extends State<CreateCampaign> {
               ),
               const SizedBox(height: 20),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: type,
                 decoration: InputDecoration(labelText: tr(context, 'type')),
                 items: ['follow', 'like', 'comment', 'share']
@@ -2517,7 +2604,7 @@ class CoinHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(tr(context, 'history'))),
-    body: ListView(
+    body: AppListView(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
@@ -3409,7 +3496,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final info = snapshot.data!;
-        return ListView(
+        return AppListView(
+          panel: true,
           padding: const EdgeInsets.all(20),
           children: [
             if (widget.accounts) ...[
