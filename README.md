@@ -134,7 +134,29 @@ Run `flutter analyze` and `flutter test`. PostgreSQL tests mock Supabase `auth.u
 
 <!-- coderabbit-ai-generated-section:v1:00d23226cd9b44dff7373890f13416954c466ed19f96947df380fc36e9e8f145 -->
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:40898aafea10f08a5e4c83d28271a67f3572bcd60748b57ef221489e5b77a5d5 -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:70bf78bff72d93bf90e70badef71da3e261c6514ae11cd29fbd61a4dd25ea3b3 -->
+
+## Instagram username lookup
+
+For project `stpxbshwdiupigymakfy`, follow the [Malayalam live setup checklist](docs/INSTAGRAM_LIVE_SETUP.md). Hosted deployment and Meta access must be verified separately from source tests.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+The in-app lookup searches an exact username using Meta Business Discovery. Meta supports Business/Creator accounts for this endpoint; personal or age-restricted accounts may not be returned, partial-name suggestions are not supported, and a result does not establish ownership. Manual username entry remains available.
+
+Apply `supabase/migrations/20261107070000_instagram_lookup_rate.sql` after all earlier migrations. Set up a Meta app and an authorized Instagram professional account using [Meta's Business Discovery requirements](https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-user/business_discovery): the applicable Facebook access token requires `instagram_basic`, `instagram_manage_insights` and `pages_read_engagement`; Meta app review or additional permissions may be required for your deployment. Obtain that authorized account's Instagram user ID and access token through Meta's official flow. The token belongs only on the server; do not put it in the Flutter app, source control, or chat.
+
+Deploy `supabase/functions/instagram-lookup` to the same Supabase project. Set the Edge Function secrets `META_INSTAGRAM_USER_ID` and `META_INSTAGRAM_ACCESS_TOKEN` in Supabase's secret manager; the platform supplies `SUPABASE_URL` and `SUPABASE_ANON_KEY`. For example, after installing and authenticating the [Supabase CLI](https://supabase.com/docs/guides/functions/deploy), link the intended project and use `supabase secrets set --env-file <secure-file-outside-repository>` followed by `supabase functions deploy instagram-lookup`. The secure file contains those two `NAME=value` entries and must be protected and excluded from version control. Keep JWT verification enabled. Invalid/expired credentials show an unavailable message; rotate them through Meta and update the Supabase secrets. The server validates the user session, rejects blocked users and limits lookups to 20 per user per minute.
+
 ## Administrator submission inspection
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Apply `supabase/migrations/20261107060000_admin_submission_review.sql` after the preceding migrations. Administrators can inspect pending usernames and screenshots; each inspection is recorded in a private audit table. <!-- coderabbit-ai-generated:v1 -->
 
