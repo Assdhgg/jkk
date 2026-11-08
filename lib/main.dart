@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' as ui;
+
+import 'evidence_image.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,10 @@ Future<void> main() async {
 }
 
 const words = <String, List<String>>{
+  'email_otp_required': [
+    'PIN setup requires a verified email account without a linked phone. Contact support to check your account.',
+    'PIN സജ്ജമാക്കാൻ verified email account വേണം; linked phone ഉണ്ടെങ്കിൽ support-നെ ബന്ധപ്പെടുക.',
+  ],
   'otp_required': [
     'Send and verify a fresh email OTP.',
     'പുതിയ email OTP അയച്ച് സ്ഥിരീകരിക്കുക.',
@@ -1755,6 +1760,7 @@ Future<ClaimProof?> pickScreenshot() async {
       bytes[7] == 0x0a;
   final jpg = bytes[0] == 0xff && bytes[1] == 0xd8 && bytes[2] == 0xff;
   if (!png && !jpg) throw const FormatException('Invalid image');
+  await validateEvidenceImage(bytes);
   return ClaimProof(bytes, png ? 'image/png' : 'image/jpeg');
 }
 
@@ -1912,22 +1918,7 @@ class _ClaimReviewDialogState extends State<ClaimReviewDialog> {
     final value = await widget.loadEvidence();
     final data = value['data'];
     if (data is! String) throw const FormatException('Missing evidence');
-    final bytes = base64Decode(data);
-    if (bytes.isEmpty || bytes.length > 524288) {
-      throw const FormatException('Invalid evidence');
-    }
-    final codec = await ui.instantiateImageCodec(
-      bytes,
-      targetWidth: 1024,
-      allowUpscaling: false,
-    );
-    try {
-      final frame = await codec.getNextFrame();
-      frame.image.dispose();
-    } finally {
-      codec.dispose();
-    }
-    return bytes;
+    return decodeEvidenceImage(data);
   }
 
   Future<void> decide(bool approve) async {
