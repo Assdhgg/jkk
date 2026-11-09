@@ -20,6 +20,7 @@ def sql(query, user=None, role='authenticated', fails=False, claims=None):
     if user:
         prefix += f"select set_config('request.jwt.claim.sub','{user}',false); "
     if claims is not None:
+        claims = {'email': 'synthetic@example.test', 'phone':'', **claims}
         prefix += f"select set_config('request.jwt.claims','{json.dumps(claims)}',false); "
     result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', prefix + query], capture_output=True, text=True)
     if fails:

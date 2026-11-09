@@ -15,6 +15,7 @@ PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGPcHdrBwMDAxMDAw
 def sql(query, user=ADMIN, fails=False, claims=None):
     prefix = f"set role authenticated; select set_config('request.jwt.claim.sub','{user}',false); "
     if claims is not None:
+        claims = {'email': 'owner@example.test', 'phone':'', **claims}
         prefix += f"select set_config('request.jwt.claims','{json.dumps(claims)}',false); "
     result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', prefix + query], text=True, capture_output=True)
     if fails:

@@ -20,6 +20,47 @@ const json = (status: number, body: Record<string, unknown>): Response =>
   });
 const validUsername = /^[A-Za-z0-9._]{1,30}$/;
 
+// Bound bytes while streaming: checking after request.text() allocates an
+// attacker-controlled body before authorization has even been validated.
+async function readSmallBody(request: Request): Promise<string> {
+  const limit = 2048;
+  const reader = request.body?.getReader();
+  if (!reader) throw new Error("Missing body");
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    void reader.cancel().catch(() => {});
+  }, 8000);
+  try {
+    const declared = request.headers.get("content-length");
+    if (declared && (!/^\d+$/.test(declared) || Number(declared) > limit)) {
+      throw new Error("Body too large");
+    }
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (timedOut) throw new Error("Body timeout");
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) throw new Error("Body too large");
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } finally {
+    clearTimeout(timeout);
+    // Also cancel on a size/header/UTF-8 error instead of draining the body.
+    void reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
 export function createLookupHandler(
   config: LookupConfig,
   fetcher: Fetcher = fetch,
@@ -41,8 +82,7 @@ export function createLookupHandler(
 
     let username: unknown;
     try {
-      const raw = await request.text();
-      if (raw.length > 2048) return json(400, { error: "invalid_username" });
+      const raw = await readSmallBody(request);
       const body = JSON.parse(raw);
       username = body && typeof body === "object" ? body.username : undefined;
     } catch {

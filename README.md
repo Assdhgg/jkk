@@ -198,7 +198,25 @@ Apply `supabase/migrations/20261107040000_admin_action_controls.sql` after the p
 
 <!-- coderabbit-ai-generated-section:v1:1ce76b4e4b99a55e89f1d4c9b37beb991ebf83d06740bce98ae128c6b9a4acd4 -->
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:3a88de9ea64157cf907adfedb072d93bae9ecee31ede80d08208ef681ef934c8 -->
+
+## Security hardening
+
+Apply `supabase/migrations/20261107100000_security_hardening.sql` after **all ten earlier migrations**, then distribute updated user/admin apps. If Instagram lookup is deployed, redeploy its updated Edge Function as well; lookup activation remains separate.
+
+- App data and coin RPCs now require a real account with a confirmed email. Anonymous Auth sessions and unconfirmed accounts cannot bypass the signup UI to initialize wallets or earn referral credits. User-editable metadata is not accepted as email verification. Existing RLS ownership and administrator checks remain enforced.
+- PIN setup/reset now checks the current confirmed account email against the signed JWT email. Generic `otp` AMR can also represent SMS, so PIN setup/reset explicitly rejects accounts with a linked phone or JWT phone claim. This app supports email account login; phone-linked accounts need account support before changing their PIN. Existing PINs still release coins for active verified-email users. Freshness, one-use OTP proof and five-failure/15-minute release lockout remain intact. A stale email claim must be refreshed before setup/reset.
+- Evidence remains JPEG/PNG and at most 512 KiB, and now must also be static and no more than 4096 pixels in either dimension. The database checks PNG/JPEG metadata for new writes. Both reviewer apps check dimensions before decoding and validate a bounded thumbnail before rendering. Historical malformed evidence is not deleted by the migration; updated owners can reject it, while approval stays disabled when evidence cannot be safely decoded. A dimension check is not a claim that a screenshot proves Instagram activity.
+- The lookup Edge Function stops reading request bodies at 2048 bytes and cancels stalled reads after eight seconds. This applies before upstream API calls; credentials remain server-side.
+- Android release traffic explicitly disallows cleartext HTTP. App backup is disabled, with Android 12+ cloud/device-transfer exclusions to keep stored login sessions from being copied. Debug-only cleartext support is retained for Flutter development. See [Android backup configuration](https://developer.android.com/identity/data/autobackup).
+
+Verification: Flutter analyzer and all 52 tests passed; isolated PostgreSQL security/economy/notification/action/admin-inspection/lookup tests passed; Edge handler tests and Deno checks passed; Gradle debug/release manifest merging and debug resource compilation passed. A query of OSV for the 93 hosted packages in the unchanged lockfile returned no listed advisories. These checks use synthetic Auth/Meta fixtures and do not establish live Supabase configuration, actual OTP delivery, native device behavior or production deployment. Committing migrations and pushing GitHub does **not** apply them to Supabase.
+
 ## Coin settings, referral rewards and email OTP PIN
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Apply `supabase/migrations/20261107090000_coin_settings_referrals_pin_otp.sql` **after all preceding migrations**, including `20261107080000_notifications.sql`. Distribute updated user and administrator builds with this migration. Old clients cannot set/change a PIN after the upgrade; existing PINs still release coins. New clients use `create_campaign_at_rate` to reject a changed price before spending coins. Legacy creation requests use the current configured rate: retire old builds before changing task prices, because they display a fixed one-coin cost.
 

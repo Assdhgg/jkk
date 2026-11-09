@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'evidence_image.dart';
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -1485,10 +1488,8 @@ class _AdminInspectionDialogState extends State<AdminInspectionDialog> {
         return;
       }
       session = id;
-      final image = base64Decode(value['data'] as String);
-      if (image.isEmpty || image.length > 524288) {
-        throw const FormatException('Invalid image');
-      }
+      final image = await decodeEvidenceImage(value['data'] as String);
+      if (!mounted) return;
       setState(() {
         username = value['username'] as String;
         bytes = image;
@@ -1546,6 +1547,7 @@ class _AdminInspectionDialogState extends State<AdminInspectionDialog> {
           if (bytes != null)
             Image.memory(
               bytes!,
+              cacheWidth: 1024,
               height: 300,
               fit: BoxFit.contain,
               errorBuilder: (_, _, _) => Text(at(context, 'submissionFailure')),

@@ -83,7 +83,16 @@ Supabase SQL Editor-ൽ `supabase/migrations/`-ലെ SQL files താഴെ ക
 <!-- coderabbit-ai-generated-section:v1:5f8b51c05f806e2b1652efb559e07daf12681ec42ad762670b229ac749db847d -->
 
 9. `20261107080000_notifications.sql`
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:668f87cea98a9d8199d97e84571e6a6b3b3cefc0b194a32d2ee0de4b2d17142a -->
+
 10. `20261107090000_coin_settings_referrals_pin_otp.sql`
+11. `20261107100000_security_hardening.sql`
+
+Security migration verified email ഉള്ള accounts-ന് മാത്രം app data/coin access നൽകും. PIN set/reset-ൽ current email-ഉം OTP proof-ഉം പരിശോധിക്കും; linked phone accounts-ന് PIN മാറ്റാൻ account support വേണം. പഴയ PIN release തുടരും. Screenshots static JPEG/PNG, 512 KiB-ൽ താഴെ, ഓരോ dimension-ഉം പരമാവധി 4096 pixels ആയിരിക്കണം. Updated user/admin builds നൽകുക. Live project access ഇവിടെ ഇല്ലാത്തതിനാൽ migration apply ചെയ്തിട്ടില്ല. വിശദാംശങ്ങൾ [security notes](../README.md#security-hardening)-ൽ ഉണ്ട്.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 പുതിയ migration-നൊപ്പം user/admin builds നൽകുക. Admin dashboard-ലെ **Coin settings** വഴി registration/action/referral rewards മാറ്റാം. പഴയ campaigns-ന്റെ payout/refund നിരക്ക് മാറില്ല. പുതിയ default referral reward 100 coins; 5/10/15 invites-ന് extra 100/200/300 coins. മുമ്പത്തെ referrals-ന് backfill ഇല്ല.
 

@@ -130,3 +130,74 @@ test("missing Meta configuration and provider failures never produce fabricated 
     assert.deepEqual(await result.json(), { error });
   }
 });
+
+test("oversized streaming and multibyte bodies stop before upstream requests", async () => {
+  for (
+    const chunks of [
+      [new Uint8Array(2049), new Uint8Array(1024 * 1024)],
+      [new TextEncoder().encode(
+        JSON.stringify({ username: "é".repeat(1100) }),
+      )],
+    ]
+  ) {
+    let cancelled = false;
+    const body = new ReadableStream({
+      pull(controller) {
+        const next = chunks.shift();
+        if (next) controller.enqueue(next);
+        else controller.close();
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const { fn, calls } = fakeFetch();
+    const result = await createLookupHandler(config, fn)(
+      new Request("https://edge.test/instagram-lookup", {
+        method: "POST",
+        headers: { authorization: "Bearer user-token" },
+        body,
+        duplex: "half",
+      }),
+    );
+    assert.equal(result.status, 400);
+    assert.equal(cancelled, true);
+    assert.equal(calls.length, 0);
+  }
+});
+
+test("oversized content length is rejected without reading the body", async () => {
+  const { fn, calls } = fakeFetch();
+  const req = new Request("https://edge.test/instagram-lookup", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer user-token",
+      "content-length": "10000000",
+    },
+    body: "{}",
+  });
+  assert.equal((await createLookupHandler(config, fn)(req)).status, 400);
+  assert.equal(calls.length, 0);
+});
+
+test("a body that never finishes is cancelled at the bounded read deadline", async () => {
+  let cancelled = false;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode("{}"));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const { fn, calls } = fakeFetch();
+  const req = new Request("https://edge.test/instagram-lookup", {
+    method: "POST",
+    headers: { authorization: "Bearer user-token" },
+    body,
+    duplex: "half",
+  });
+  assert.equal((await createLookupHandler(config, fn)(req)).status, 400);
+  assert.equal(cancelled, true);
+  assert.equal(calls.length, 0);
+});

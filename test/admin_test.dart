@@ -350,6 +350,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(fake.startedReviews, 0);
     await tester.tap(find.text('Inspect'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
     await tester.pumpAndSettle();
     expect(fake.startedReviews, 1);
     expect(find.text('Instagram username: @sample'), findsOneWidget);
@@ -375,6 +379,10 @@ void main() {
           body: AdminInspectionDialog(gateway: fake, submission: submission),
         ),
       ),
+    );
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
     );
     await tester.pumpAndSettle();
     expect(find.byType(Image), findsOneWidget);
