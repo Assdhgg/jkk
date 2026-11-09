@@ -168,7 +168,13 @@ Deploy `supabase/functions/instagram-lookup` to the same Supabase project. Set t
 
 ## Task filters and notifications
 
-Earn tasks can be filtered by Follow, Like, Comment or Share; submission history stays visible. Apply `supabase/migrations/20261107080000_notifications.sql` after the earlier migrations and enable the `notifications` table in Supabase Realtime if it is not already published. The new migration records future approvals, rejections and positive coin ledger entries transactionally; earlier events are not backfilled. Signed-in active users can view only their own notifications and mark them read. An unread indicator and list update while the app is open and connected. These are in-app notifications; no device push notification service is configured.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:3fe50bf68fcd4089bb4ced784dc8c555991840b0fc9c848368878a3c9b8c4327 -->
+
+Earn tasks can be filtered by Follow, Like, Comment or Share; submission history stays visible. Apply `supabase/migrations/20261107080000_notifications.sql` after the earlier migrations and enable the `notifications` table in Supabase Realtime if it is not already published. The new migration records future approvals, rejections and positive coin ledger entries transactionally; earlier events are not backfilled. Signed-in active users can view only their own notifications and mark them read. An unread indicator and list update while the app is open and connected. These are in-app notifications. Optional Android push requires the additional setup in [User app features and Android push setup](docs/USER_FEATURES.md).
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Administrator submission inspection
 
