@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'evidence_image.dart';
+import 'admin_operations.dart';
 
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -42,6 +44,78 @@ const labels = <String, List<String>>{
     'ലോഗിൻ പരാജയപ്പെട്ടു. വിവരങ്ങളും internet-ഉം പരിശോധിക്കുക.',
   ],
   'users': ['Users', 'ഉപയോക്താക്കൾ'],
+  'workspace': ['ADMIN WORKSPACE', 'ADMIN WORKSPACE'],
+  'usersIntro': [
+    'Find members and manage their access to Growth Circle.',
+    'അംഗങ്ങളെ കണ്ടെത്തി Growth Circle-ലേക്കുള്ള access നിയന്ത്രിക്കുക.',
+  ],
+  'directory': ['MEMBER DIRECTORY', 'MEMBER DIRECTORY'],
+  'coinSettings': ['Coin settings', 'Coin settings'],
+  'workspaceMenu': ['Workspace', 'Workspace'],
+  'overview': ['Overview', 'അവലോകനം'],
+  'activity': ['Admin activity', 'Admin പ്രവർത്തനങ്ങൾ'],
+  'reports': ['Reports & CSV', 'റിപ്പോർട്ടുകളും CSV-യും'],
+  'alerts': ['Alerts', 'അറിയിപ്പുകൾ'],
+  'roles': ['Admin roles', 'Admin roles'],
+  'details': ['Details', 'വിശദാംശങ്ങൾ'],
+  'filterSubmissions': ['Filter submissions', 'Submissions filter ചെയ്യുക'],
+  'campaignId': ['Campaign ID', 'Campaign ID'],
+  'dateRange': ['Date range (UTC)', 'തീയതി പരിധി (UTC)'],
+  'apply': ['Apply', 'പ്രയോഗിക്കുക'],
+  'clear': ['Clear', 'മായ്ക്കുക'],
+  'invalidCampaign': [
+    'Enter a valid campaign ID.',
+    'ശരിയായ campaign ID നൽകുക.',
+  ],
+  'rangeTooLong': [
+    'Choose a range of at most 366 days.',
+    'പരമാവധി 366 ദിവസത്തെ പരിധി തിരഞ്ഞെടുക്കുക.',
+  ],
+  'saveReport': ['Report saved.', 'റിപ്പോർട്ട് സേവ് ചെയ്തു.'],
+  'saveFailure': [
+    'Unable to save report on this device.',
+    'ഈ ഉപകരണത്തിൽ റിപ്പോർട്ട് സേവ് ചെയ്യാനായില്ല.',
+  ],
+  'workspaceFailure': [
+    'Unable to load workspace data.',
+    'Workspace വിവരങ്ങൾ ലഭ്യമല്ല.',
+  ],
+  'activeCampaigns': ['Active campaigns', 'സജീവ campaigns'],
+  'coinsCredited': ['Coins credited', 'ലഭിച്ച coins'],
+  'overviewHelp': [
+    'A live snapshot of Growth Circle activity.',
+    'Growth Circle പ്രവർത്തനങ്ങളുടെ നിലവിലെ സ്ഥിതി.',
+  ],
+  'exportCsv': ['Export CSV', 'CSV എക്സ്പോർട്ട്'],
+  'alertsHelp': [
+    'Signals use the configured thresholds. These do not establish abuse.',
+    'ക്രമീകരിച്ച thresholds അനുസരിച്ചുള്ള സൂചനകൾ. ഇവ ദുരുപയോഗത്തിന്റെ തെളിവല്ല.',
+  ],
+  'rolesHelp': [
+    'Editors can change controls. Viewers can inspect data and evidence. The project owner provisions and changes roles in the database.',
+    'Editors-ന് controls മാറ്റാം. Viewers-ന് വിവരങ്ങളും evidence-ഉം പരിശോധിക്കാം. Project owner ആണ് database-ൽ roles നൽകുന്നതും മാറ്റുന്നതും.',
+  ],
+  'noRecords': ['No records found.', 'വിവരങ്ങൾ കണ്ടെത്തിയില്ല.'],
+  'detailsFailure': [
+    'Unable to load user details.',
+    'ഉപയോക്താവിന്റെ വിവരങ്ങൾ ലഭ്യമല്ല.',
+  ],
+  'recentRecords': [
+    'The most recent 100 records in each section are shown.',
+    'ഓരോ വിഭാഗത്തിലെയും ഏറ്റവും പുതിയ 100 വിവരങ്ങൾ കാണിക്കുന്നു.',
+  ],
+  'referrals': ['Referrals', 'Referrals'],
+  'role': ['Role', 'Role'],
+  'member': ['Member', 'അംഗം'],
+  'referredBy': ['Referred by another member', 'മറ്റൊരു അംഗം refer ചെയ്തത്'],
+  'yes': ['Yes', 'അതെ'],
+  'no': ['No', 'ഇല്ല'],
+  'ledger': ['Coin history', 'Coin history'],
+  'submissionHistory': ['Submission history', 'Submission history'],
+  'transactions': ['Transactions', 'Transactions'],
+  'credited': ['Credited', 'ലഭിച്ചത്'],
+  'spent': ['Spent', 'ചെലവായത്'],
+  'registrations': ['Registrations', 'രജിസ്ട്രേഷനുകൾ'],
   'campaigns': ['Campaigns', 'Campaign-ുകൾ'],
   'submissions': ['Pending submissions', 'പരിശോധിക്കാനുള്ള submissions'],
   'inspect': ['Inspect', 'പരിശോധിക്കുക'],
@@ -212,14 +286,17 @@ class AdminSubmission {
     required this.submissionId,
     required this.type,
     required this.link,
+    this.submittedAt,
   });
   final String campaignId, userId, submissionId, type, link;
+  final String? submittedAt;
   factory AdminSubmission.fromJson(Map<String, dynamic> row) => AdminSubmission(
     campaignId: row['campaign_id'] as String,
     userId: row['user_id'] as String,
     submissionId: row['submission_id'] as String,
     type: row['action_type'] as String,
     link: row['campaign_link'] as String,
+    submittedAt: row['submitted_at'] as String?,
   );
 }
 
@@ -246,9 +323,88 @@ abstract class AdminGateway {
   Future<void> dispose();
 }
 
-class SupabaseAdminGateway implements AdminGateway {
+abstract class AdminWorkspaceGateway {
+  Future<String> workspaceRole();
+  Future<Map<String, dynamic>> overview();
+  Future<List<Map<String, dynamic>>> roles();
+  Future<Map<String, dynamic>> userDetails(String userId);
+  Future<List<Map<String, dynamic>>> activity(int offset);
+  Future<List<Map<String, dynamic>>> dailyReport(DateTime from, DateTime to);
+  Future<List<Map<String, dynamic>>> alerts();
+  Future<List<AdminSubmission>> filteredSubmissions(
+    String? type,
+    String? campaign,
+    DateTime? from,
+    DateTime? to,
+    int offset,
+    int limit,
+  );
+}
+
+class SupabaseAdminGateway implements AdminGateway, AdminWorkspaceGateway {
   SupabaseAdminGateway(this.client);
   final SupabaseClient client;
+  @override
+  Future<String> workspaceRole() async =>
+      (await client.rpc('admin_workspace_role')) as String;
+  @override
+  Future<List<Map<String, dynamic>>> roles() async =>
+      _rows(await client.rpc('admin_roles'));
+  @override
+  Future<Map<String, dynamic>> overview() async => Map<String, dynamic>.from(
+    await client.rpc('admin_workspace_overview') as Map,
+  );
+  @override
+  Future<Map<String, dynamic>> userDetails(String userId) async =>
+      Map<String, dynamic>.from(
+        await client.rpc('admin_user_details', params: {'p_user_id': userId})
+            as Map,
+      );
+  List<Map<String, dynamic>> _rows(dynamic value) => (value as List)
+      .map((row) => Map<String, dynamic>.from(row as Map))
+      .toList();
+  @override
+  Future<List<Map<String, dynamic>>> activity(int offset) async => _rows(
+    await client.rpc(
+      'admin_activity',
+      params: {'p_offset': offset, 'p_limit': 50},
+    ),
+  );
+  @override
+  Future<List<Map<String, dynamic>>> dailyReport(
+    DateTime from,
+    DateTime to,
+  ) async => _rows(
+    await client.rpc(
+      'admin_daily_report',
+      params: {'p_from': _dateOnly(from), 'p_to': _dateOnly(to)},
+    ),
+  );
+  @override
+  Future<List<Map<String, dynamic>>> alerts() async =>
+      _rows(await client.rpc('admin_alerts'));
+  @override
+  Future<List<AdminSubmission>> filteredSubmissions(
+    String? type,
+    String? campaign,
+    DateTime? from,
+    DateTime? to,
+    int offset,
+    int limit,
+  ) async => _rows(
+    await client.rpc(
+      'admin_filtered_submissions',
+      params: {
+        'p_type': type,
+        'p_campaign': campaign,
+        'p_from': from?.toUtc().toIso8601String(),
+        'p_to': to?.toUtc().toIso8601String(),
+        'p_offset': offset,
+        'p_limit': limit,
+      },
+    ),
+  ).map(AdminSubmission.fromJson).toList();
+
   @override
   Future<List<Map<String, dynamic>>> coinSettings() async =>
       List<Map<String, dynamic>>.from(
@@ -421,13 +577,7 @@ class _AdminAppState extends State<AdminApp> {
     locale: locale,
     supportedLocales: const [Locale('en'), Locale('ml')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xff5b43c2),
-        surface: const Color(0xfffaf9fe),
-      ),
-    ),
+    theme: adminTheme(),
     home: gateway == null
         ? AdminSetup(
             onConnect: (value) => setState(() => gateway = value),
@@ -445,6 +595,140 @@ class _AdminAppState extends State<AdminApp> {
             onChangeProject: changeProject,
             onLanguage: changeLanguage,
           ),
+  );
+}
+
+// A restrained palette keeps account and review information easy to scan.
+const adminInk = Color(0xff242338);
+const adminMuted = Color(0xff6e6c80);
+const adminViolet = Color(0xff5b43c2);
+const adminCanvas = Color(0xfff7f6fb);
+const adminLine = Color(0xffe8e6f0);
+
+ThemeData adminTheme() {
+  final scheme = ColorScheme.fromSeed(
+    seedColor: adminViolet,
+    primary: adminViolet,
+    surface: Colors.white,
+  );
+  final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+  return base.copyWith(
+    scaffoldBackgroundColor: adminCanvas,
+    textTheme: base.textTheme.apply(
+      bodyColor: adminInk,
+      displayColor: adminInk,
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: adminCanvas,
+      foregroundColor: adminInk,
+      surfaceTintColor: Colors.transparent,
+      centerTitle: false,
+    ),
+    cardTheme: CardThemeData(
+      color: Colors.white,
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: adminLine),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xfff2f1f8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: adminViolet, width: 1.5),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, 44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        side: const BorderSide(color: adminLine),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+  );
+}
+
+class AdminBrand extends StatelessWidget {
+  const AdminBrand({super.key, this.compact = false});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: adminViolet,
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: const Icon(Icons.hub_outlined, color: Colors.white, size: 21),
+      ),
+      if (!compact) ...[
+        const SizedBox(width: 12),
+        const Flexible(
+          child: Text(
+            'Growth Circle',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+            ),
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+class AdminNotice extends StatelessWidget {
+  const AdminNotice({
+    super.key,
+    required this.text,
+    this.icon = Icons.info_outline,
+  });
+  final String text;
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xffefedf8),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 19, color: adminViolet),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(color: adminInk, height: 1.4),
+          ),
+        ),
+      ],
+    ),
   );
 }
 
@@ -575,7 +859,7 @@ class AdminFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Growth Circle Admin'),
+      title: const AdminBrand(),
       actions: [
         TextButton(
           onPressed: onLanguage,
@@ -593,7 +877,25 @@ class AdminFrame extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
           child: Card(
-            child: Padding(padding: const EdgeInsets.all(28), child: child),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'GROWTH CIRCLE  /  ADMIN',
+                    style: TextStyle(
+                      color: adminViolet,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  child,
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -640,6 +942,14 @@ class _AdminSignInState extends State<AdminSignIn> {
         await widget.gateway.signOut();
         if (mounted) setState(() => error = at(context, 'unauthorized'));
       } else if (mounted) {
+        final gateway = widget.gateway;
+        if (gateway is SupabaseAdminGateway &&
+            !await verifyAdminMfa(context, gateway.client)) {
+          await gateway.signOut();
+          if (mounted) setState(() => error = at(context, 'loginError'));
+          return;
+        }
+        if (!mounted) return;
         password.clear();
         widget.onSuccess();
       }
@@ -737,11 +1047,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int offset = 0;
   String search = '';
   bool changing = false;
+  bool canEdit = false;
   static const pageSize = 50;
   @override
   void initState() {
     super.initState();
     results = widget.gateway.users(search, offset, pageSize);
+    final gateway = widget.gateway;
+    if (gateway is AdminWorkspaceGateway) {
+      (gateway as AdminWorkspaceGateway)
+          .workspaceRole()
+          .then((role) {
+            if (mounted) setState(() => canEdit = role == 'editor');
+          })
+          .catchError((_) {});
+    } else {
+      canEdit = true;
+    }
   }
 
   @override
@@ -800,43 +1122,76 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
+  Widget _navigationAction(
+    BuildContext context,
+    String label,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
+    if (MediaQuery.sizeOf(context).width >= 1100) {
+      return Tooltip(
+        message: at(context, label),
+        child: TextButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon, size: 19),
+          label: Text(at(context, label)),
+        ),
+      );
+    }
+    return IconButton(
+      tooltip: at(context, label),
+      icon: Icon(icon),
+      onPressed: onPressed,
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Growth Circle Admin'),
+      titleSpacing: 8,
+      title: AdminBrand(compact: MediaQuery.sizeOf(context).width < 650),
       actions: [
-        IconButton(
-          tooltip: at(context, 'submissions'),
-          icon: const Icon(Icons.fact_check_outlined),
-          onPressed: () => Navigator.push(
+        _navigationAction(
+          context,
+          'submissions',
+          Icons.fact_check_outlined,
+          () => Navigator.push(
             context,
             MaterialPageRoute<void>(
               builder: (_) => AdminSubmissions(gateway: widget.gateway),
             ),
           ),
         ),
-        IconButton(
-          tooltip: at(context, 'campaigns'),
-          icon: const Icon(Icons.campaign_outlined),
-          onPressed: () => Navigator.push(
+        _navigationAction(
+          context,
+          'campaigns',
+          Icons.campaign_outlined,
+          () => Navigator.push(
             context,
             MaterialPageRoute<void>(
               builder: (_) => AdminCampaigns(gateway: widget.gateway),
             ),
           ),
         ),
-        IconButton(
-          tooltip: at(context, 'actionControls'),
-          icon: const Icon(Icons.tune),
-          onPressed: () => Navigator.push(
+        _navigationAction(
+          context,
+          'actionControls',
+          Icons.tune,
+          () => Navigator.push(
             context,
             MaterialPageRoute<void>(
-              builder: (_) => AdminActionControls(gateway: widget.gateway),
+              builder: (_) => AdminActionControls(
+                gateway: widget.gateway,
+                canEdit: canEdit,
+              ),
             ),
           ),
         ),
         TextButton(
           onPressed: widget.onLanguage,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+          ),
           child: Text(
             Localizations.localeOf(context).languageCode == 'ml'
                 ? 'English'
@@ -845,39 +1200,88 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         TextButton(
           onPressed: changing ? null : widget.onLogout,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+          ),
           child: Text(at(context, 'logout')),
         ),
+        const SizedBox(width: 8),
       ],
     ),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1050),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.fromLTRB(
+            MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
+            12,
+            MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
+            16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                at(context, 'users'),
-                style: Theme.of(context).textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.toll_outlined),
-                  label: const Text('Coin settings'),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          AdminCoinSettings(gateway: widget.gateway),
-                    ),
-                  ),
+                at(context, 'directory'),
+                style: const TextStyle(
+                  color: adminViolet,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.3,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(at(context, 'accessInfo')),
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          at(context, 'users'),
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          at(context, 'usersIntro'),
+                          style: const TextStyle(
+                            color: adminMuted,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.toll_outlined, size: 18),
+                    label: Text(at(context, 'coinSettings')),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => AdminCoinSettings(
+                          gateway: widget.gateway,
+                          canEdit: canEdit,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                at(context, 'accessInfo'),
+                style: const TextStyle(
+                  color: adminMuted,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -887,8 +1291,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       controller: query,
                       maxLength: 100,
                       decoration: InputDecoration(
-                        labelText: at(context, 'search'),
-                        border: const OutlineInputBorder(),
+                        hintText: at(context, 'search'),
+                        prefixIcon: const Icon(Icons.search, size: 20),
                         counterText: '',
                       ),
                       onSubmitted: (_) => reload(newSearch: true),
@@ -906,7 +1310,93 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              if (widget.gateway is AdminWorkspaceGateway)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: PopupMenuButton<String>(
+                    tooltip: at(context, 'workspaceMenu'),
+                    onSelected: (page) => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            page == 'operations' &&
+                                widget.gateway is SupabaseAdminGateway
+                            ? AdminOperationsPage(
+                                client: (widget.gateway as SupabaseAdminGateway)
+                                    .client,
+                                canEdit: canEdit,
+                              )
+                            : AdminWorkspacePage(
+                                gateway:
+                                    widget.gateway as AdminWorkspaceGateway,
+                                page: page,
+                              ),
+                      ),
+                    ),
+                    itemBuilder: (_) => [
+                      if (widget.gateway is SupabaseAdminGateway)
+                        PopupMenuItem(
+                          value: 'operations',
+                          child: Text(
+                            Localizations.localeOf(context).languageCode == 'ml'
+                                ? 'Admin പ്രവർത്തനങ്ങൾ'
+                                : 'Admin operations',
+                          ),
+                        ),
+                      PopupMenuItem(
+                        value: 'overview',
+                        child: Text(at(context, 'overview')),
+                      ),
+                      PopupMenuItem(
+                        value: 'activity',
+                        child: Text(at(context, 'activity')),
+                      ),
+                      PopupMenuItem(
+                        value: 'reports',
+                        child: Text(at(context, 'reports')),
+                      ),
+                      PopupMenuItem(
+                        value: 'alerts',
+                        child: Text(at(context, 'alerts')),
+                      ),
+                      PopupMenuItem(
+                        value: 'roles',
+                        child: Text(at(context, 'roles')),
+                      ),
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.grid_view_rounded,
+                            size: 18,
+                            color: adminViolet,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            at(context, 'workspaceMenu'),
+                            style: const TextStyle(
+                              color: adminViolet,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Icon(Icons.arrow_drop_down, color: adminViolet),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              if (widget.gateway is SupabaseAdminGateway)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AdminNotificationButton(
+                    client: (widget.gateway as SupabaseAdminGateway).client,
+                    canEdit: canEdit,
+                  ),
+                ),
+              const SizedBox(height: 8),
               Expanded(
                 child: FutureBuilder<List<AdminUser>>(
                   future: results,
@@ -933,8 +1423,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     return AdminUserCard(
                                       user: user,
                                       joined: joined,
-                                      changing: changing,
+                                      changing: changing || !canEdit,
                                       onChange: () => change(user),
+                                      onDetails:
+                                          widget.gateway
+                                              is AdminWorkspaceGateway
+                                          ? () => Navigator.push(
+                                              context,
+                                              MaterialPageRoute<void>(
+                                                builder: (_) => AdminUserDetails(
+                                                  gateway:
+                                                      widget.gateway
+                                                          as AdminWorkspaceGateway,
+                                                  user: user,
+                                                ),
+                                              ),
+                                            )
+                                          : null,
                                     );
                                   },
                                 ),
@@ -948,7 +1453,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   : null,
                               child: Text(at(context, 'previous')),
                             ),
-                            Text('${offset + 1}–${offset + users.length}'),
+                            Text(
+                              '${offset + (users.isEmpty ? 0 : 1)}–${offset + users.length}',
+                              style: const TextStyle(color: adminMuted),
+                            ),
                             TextButton(
                               onPressed: users.length == pageSize
                                   ? () => reload(page: offset + pageSize)
@@ -977,23 +1485,35 @@ class AdminUserCard extends StatelessWidget {
     required this.joined,
     required this.changing,
     required this.onChange,
+    this.onDetails,
   });
   final AdminUser user;
   final String joined;
   final bool changing;
   final VoidCallback onChange;
+  final VoidCallback? onDetails;
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final status = user.isAdmin
+              ? 'admin'
+              : user.blocked
+              ? 'blocked'
+              : 'active';
+          final details = Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                child: Icon(user.blocked ? Icons.block : Icons.person_outline),
+                radius: 21,
+                backgroundColor: const Color(0xffefedf8),
+                foregroundColor: adminViolet,
+                child: Icon(
+                  user.blocked ? Icons.block : Icons.person_outline,
+                  size: 21,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1002,50 +1522,90 @@ class AdminUserCard extends StatelessWidget {
                   children: [
                     Text(
                       user.name.isEmpty ? user.email : user.name,
-                      style: Theme.of(context).textTheme.titleSmall,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    Text(user.email),
+                    if (user.name.isNotEmpty)
+                      Text(
+                        user.email,
+                        style: const TextStyle(color: adminMuted, height: 1.4),
+                      ),
+                    const SizedBox(height: 6),
                     Text(
-                      '${at(context, 'coins')}: ${user.coins ?? '—'}  •  ${at(context, 'joined')}: $joined',
+                      '${at(context, 'coins')}: ${user.coins ?? '—'}  ·  ${at(context, 'joined')}: $joined',
+                      style: const TextStyle(color: adminMuted, fontSize: 12),
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
+          );
+          final controls = Wrap(
             spacing: 8,
+            runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Chip(
-                label: Text(
-                  at(
-                    context,
-                    user.isAdmin
-                        ? 'admin'
-                        : user.blocked
-                        ? 'blocked'
-                        : 'active',
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: user.blocked
+                      ? const Color(0xfffff0ed)
+                      : const Color(0xfff0eef9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  at(context, status),
+                  style: TextStyle(
+                    color: user.blocked ? const Color(0xffa44739) : adminViolet,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
+              if (onDetails != null)
+                TextButton(
+                  onPressed: onDetails,
+                  child: Text(at(context, 'details')),
+                ),
               if (!user.isAdmin)
                 OutlinedButton(
                   onPressed: changing ? null : onChange,
                   child: Text(at(context, user.blocked ? 'unblock' : 'block')),
                 ),
             ],
-          ),
-        ],
+          );
+          if (constraints.maxWidth < 650) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [details, const SizedBox(height: 12), controls],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: details),
+              const SizedBox(width: 16),
+              controls,
+            ],
+          );
+        },
       ),
     ),
   );
 }
 
 class AdminActionControls extends StatefulWidget {
-  const AdminActionControls({super.key, required this.gateway});
+  const AdminActionControls({
+    super.key,
+    required this.gateway,
+    this.canEdit = true,
+  });
   final AdminGateway gateway;
+  final bool canEdit;
   @override
   State<AdminActionControls> createState() => _AdminActionControlsState();
 }
@@ -1110,7 +1670,7 @@ class _AdminActionControlsState extends State<AdminActionControls> {
             return ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                Text(at(context, 'actionHelp')),
+                AdminNotice(text: at(context, 'actionHelp'), icon: Icons.tune),
                 const SizedBox(height: 16),
                 for (final type in ['follow', 'like', 'share', 'comment'])
                   Card(
@@ -1124,7 +1684,10 @@ class _AdminActionControlsState extends State<AdminActionControls> {
                         ),
                       ),
                       value: values[type] == true,
-                      onChanged: changing || !values.containsKey(type)
+                      onChanged:
+                          changing ||
+                              !widget.canEdit ||
+                              !values.containsKey(type)
                           ? null
                           : (enabled) => change(type, enabled),
                     ),
@@ -1180,7 +1743,10 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(at(context, 'campaignInfo')),
+              AdminNotice(
+                text: at(context, 'campaignInfo'),
+                icon: Icons.campaign_outlined,
+              ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 12,
@@ -1264,21 +1830,81 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
                                   itemCount: campaigns.length,
                                   itemBuilder: (context, index) {
                                     final campaign = campaigns[index];
+                                    final completed =
+                                        campaign.requested - campaign.remaining;
                                     return Card(
-                                      child: ListTile(
-                                        title: Text(
-                                          '${at(context, campaign.type)} · ${at(context, campaign.status)}',
-                                        ),
-                                        subtitle: Column(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            SelectableText(campaign.link),
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.campaign_outlined,
+                                                  color: adminViolet,
+                                                  size: 20,
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    '${at(context, campaign.type)} · ${at(context, campaign.status)}',
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      fontSize: 15,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            SelectableText(
+                                              'Campaign ID: ${campaign.id}',
+                                              style: const TextStyle(
+                                                color: adminMuted,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            SelectableText(
+                                              campaign.link,
+                                              style: const TextStyle(
+                                                color: adminMuted,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
                                             SelectableText(
                                               '${at(context, 'owner')}: ${campaign.ownerEmail.isEmpty ? campaign.ownerId : campaign.ownerEmail}',
+                                              style: const TextStyle(
+                                                color: adminMuted,
+                                              ),
                                             ),
+                                            const SizedBox(height: 16),
                                             Text(
-                                              '${at(context, 'progress')}: ${campaign.requested - campaign.remaining}/${campaign.requested}',
+                                              '${at(context, 'progress')}: $completed/${campaign.requested}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                              child: LinearProgressIndicator(
+                                                value: campaign.requested > 0
+                                                    ? (completed /
+                                                              campaign
+                                                                  .requested)
+                                                          .clamp(0.0, 1.0)
+                                                    : 0,
+                                                minHeight: 6,
+                                                backgroundColor: const Color(
+                                                  0xffefedf8,
+                                                ),
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -1336,15 +1962,76 @@ class AdminSubmissions extends StatefulWidget {
 class _AdminSubmissionsState extends State<AdminSubmissions> {
   static const pageSize = 30;
   int offset = 0;
+  String? type;
+  final campaign = TextEditingController();
+  DateTimeRange? range;
   late Future<List<AdminSubmission>> result;
+  Future<List<AdminSubmission>> fetch() {
+    final gateway = widget.gateway;
+    if (gateway is AdminWorkspaceGateway) {
+      return (gateway as AdminWorkspaceGateway).filteredSubmissions(
+        type,
+        campaign.text.trim().isEmpty ? null : campaign.text.trim(),
+        range == null
+            ? null
+            : DateTime.utc(
+                range!.start.year,
+                range!.start.month,
+                range!.start.day,
+              ),
+        range == null
+            ? null
+            : DateTime.utc(
+                range!.end.year,
+                range!.end.month,
+                range!.end.day + 1,
+              ),
+        offset,
+        pageSize,
+      );
+    }
+    return gateway.submissions(offset, pageSize);
+  }
+
+  @override
+  void dispose() {
+    campaign.dispose();
+    super.dispose();
+  }
+
+  Future<void> chooseRange() async {
+    final selected = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      initialDateRange: range,
+    );
+    if (selected != null && mounted) setState(() => range = selected);
+  }
+
+  void applyFilters() {
+    final value = campaign.text.trim();
+    if (value.isNotEmpty &&
+        !RegExp(
+          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+        ).hasMatch(value)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(at(context, 'invalidCampaign'))));
+      return;
+    }
+    offset = 0;
+    reload();
+  }
+
   @override
   void initState() {
     super.initState();
-    result = widget.gateway.submissions(offset, pageSize);
+    result = fetch();
   }
 
   void reload() => setState(() {
-    result = widget.gateway.submissions(offset, pageSize);
+    result = fetch();
   });
   Future<void> inspect(AdminSubmission submission) async {
     await showDialog<void>(
@@ -1376,7 +2063,84 @@ class _AdminSubmissionsState extends State<AdminSubmissions> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              Text(at(context, 'reviewNotice')),
+              AdminNotice(
+                text: at(context, 'reviewNotice'),
+                icon: Icons.fact_check_outlined,
+              ),
+              if (widget.gateway is AdminWorkspaceGateway)
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: Text(
+                    at(context, 'filterSubmissions'),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  children: [
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        DropdownButton<String>(
+                          value: type,
+                          hint: Text(at(context, 'allActions')),
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(at(context, 'allActions')),
+                            ),
+                            for (final item in [
+                              'follow',
+                              'like',
+                              'share',
+                              'comment',
+                            ])
+                              DropdownMenuItem(
+                                value: item,
+                                child: Text(at(context, item)),
+                              ),
+                          ],
+                          onChanged: (value) => setState(() => type = value),
+                        ),
+                        SizedBox(
+                          width: 260,
+                          child: TextField(
+                            controller: campaign,
+                            decoration: InputDecoration(
+                              labelText: at(context, 'campaignId'),
+                            ),
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: chooseRange,
+                          icon: const Icon(Icons.date_range),
+                          label: Text(
+                            range == null
+                                ? at(context, 'dateRange')
+                                : '${_dateOnly(range!.start)} – ${_dateOnly(range!.end)}',
+                          ),
+                        ),
+                        FilledButton(
+                          onPressed: applyFilters,
+                          child: Text(at(context, 'apply')),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              type = null;
+                              range = null;
+                              campaign.clear();
+                              offset = 0;
+                            });
+                            reload();
+                          },
+                          child: Text(at(context, 'clear')),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
+              const SizedBox(height: 16),
               Expanded(
                 child: FutureBuilder<List<AdminSubmission>>(
                   future: result,
@@ -1403,10 +2167,28 @@ class _AdminSubmissionsState extends State<AdminSubmissions> {
                                     final item = items[index];
                                     return Card(
                                       child: ListTile(
-                                        title: Text(at(context, item.type)),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 8,
+                                            ),
+                                        leading: const CircleAvatar(
+                                          backgroundColor: Color(0xffefedf8),
+                                          foregroundColor: adminViolet,
+                                          child: Icon(
+                                            Icons.fact_check_outlined,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        title: Text(
+                                          at(context, item.type),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                         subtitle: Text(
-                                          item.link,
-                                          maxLines: 2,
+                                          '${item.link}${item.submittedAt == null ? '' : '\n${item.submittedAt}'}',
+                                          maxLines: 3,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         trailing: OutlinedButton(
@@ -1565,8 +2347,13 @@ class _AdminInspectionDialogState extends State<AdminInspectionDialog> {
 }
 
 class AdminCoinSettings extends StatefulWidget {
-  const AdminCoinSettings({super.key, required this.gateway});
+  const AdminCoinSettings({
+    super.key,
+    required this.gateway,
+    this.canEdit = true,
+  });
   final AdminGateway gateway;
+  final bool canEdit;
   @override
   State<AdminCoinSettings> createState() => _AdminCoinSettingsState();
 }
@@ -1629,11 +2416,19 @@ class _AdminCoinSettingsState extends State<AdminCoinSettings> {
           future: data,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return TextButton(
-                onPressed: () => setState(() {
-                  data = widget.gateway.coinSettings();
-                }),
-                child: Text(at(context, 'refresh')),
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(at(context, 'actionFailure')),
+                    TextButton(
+                      onPressed: () => setState(() {
+                        data = widget.gateway.coinSettings();
+                      }),
+                      child: Text(at(context, 'refresh')),
+                    ),
+                  ],
+                ),
               );
             }
             if (!snapshot.hasData) {
@@ -1642,16 +2437,18 @@ class _AdminCoinSettingsState extends State<AdminCoinSettings> {
             return ListView(
               padding: const EdgeInsets.all(24),
               children: [
-                const Text(
-                  'Changes apply to future registrations, new campaigns and future referral events. Existing campaign rewards stay fixed. Referral rewards require an initialized inviter wallet.',
+                const AdminNotice(
+                  icon: Icons.toll_outlined,
+                  text: 'Changes apply to future registrations, new campaigns and future referral events. Existing campaign rewards stay fixed. Referral rewards require an initialized inviter wallet.',
                 ),
+                const SizedBox(height: 16),
                 for (final row in snapshot.data!)
                   Card(
                     child: ListTile(
                       title: Text(label(row['key'])),
                       subtitle: Text("${row['amount']} coins"),
                       trailing: const Icon(Icons.edit_outlined),
-                      onTap: busy ? null : () => edit(row),
+                      onTap: busy || !widget.canEdit ? null : () => edit(row),
                     ),
                   ),
               ],
@@ -1713,5 +2510,421 @@ class _CoinAmountDialogState extends State<CoinAmountDialog> {
         child: const Text('Save'),
       ),
     ],
+  );
+}
+
+String _dateOnly(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+String adminReportCsv(List<Map<String, dynamic>> rows) {
+  const keys = [
+    'day',
+    'registrations',
+    'campaigns',
+    'coin_transactions',
+    'coins_credited',
+    'coins_spent',
+  ];
+  return [
+    keys.join(','),
+    ...rows.map(
+      (row) => keys
+          .map(
+            (key) => '"${(row[key] ?? '').toString().replaceAll('"', '""')}"',
+          )
+          .join(','),
+    ),
+  ].join('\r\n');
+}
+
+// The workspace keeps metrics and operational lists separate from account edits.
+class AdminWorkspacePage extends StatefulWidget {
+  const AdminWorkspacePage({
+    super.key,
+    required this.gateway,
+    required this.page,
+  });
+  final AdminWorkspaceGateway gateway;
+  final String page;
+  @override
+  State<AdminWorkspacePage> createState() => _AdminWorkspacePageState();
+}
+
+class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
+  late Future<dynamic> data;
+  int offset = 0;
+  DateTime end = DateTime.now().toUtc();
+  late DateTime start = end.subtract(const Duration(days: 29));
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  void load() {
+    data = switch (widget.page) {
+      'overview' => widget.gateway.overview(),
+      'activity' => widget.gateway.activity(offset),
+      'reports' => widget.gateway.dailyReport(start, end),
+      'alerts' => widget.gateway.alerts(),
+      _ => widget.gateway.roles(),
+    };
+  }
+
+  void reload() => setState(load);
+  Future<void> dateRange() async {
+    final result = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      initialDateRange: DateTimeRange(start: start, end: end),
+    );
+    if (result == null || !mounted) return;
+    if (result.end.difference(result.start).inDays > 365) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(at(context, 'rangeTooLong'))));
+      return;
+    }
+    setState(() {
+      start = result.start;
+      end = result.end;
+      load();
+    });
+  }
+
+  Future<void> export(List<Map<String, dynamic>> rows) async {
+    try {
+      final location = await getSaveLocation(
+        suggestedName:
+            'growth-circle-report-${_dateOnly(start)}-${_dateOnly(end)}.csv',
+        acceptedTypeGroups: [
+          const XTypeGroup(label: 'CSV', extensions: ['csv']),
+        ],
+      );
+      if (location == null) return;
+      final csv = adminReportCsv(rows);
+      await XFile.fromData(
+        Uint8List.fromList(utf8.encode(csv)),
+        mimeType: 'text/csv',
+      ).saveTo(location.path);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(at(context, 'saveReport'))));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(at(context, 'saveFailure'))));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = switch (widget.page) {
+      'overview' => at(context, 'overview'),
+      'activity' => at(context, 'activity'),
+      'reports' => at(context, 'reports'),
+      'alerts' => at(context, 'alerts'),
+      _ => at(context, 'roles'),
+    };
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          IconButton(
+            onPressed: reload,
+            tooltip: at(context, 'refresh'),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: FutureBuilder<dynamic>(
+            future: data,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(at(context, 'workspaceFailure')),
+                      TextButton(
+                        onPressed: reload,
+                        child: Text(at(context, 'refresh')),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              if (widget.page == 'overview') {
+                final values = snapshot.data as Map<String, dynamic>;
+                final metrics = <(String, String, IconData)>[
+                  (at(context, 'users'), 'users', Icons.people_outline),
+                  (
+                    at(context, 'activeCampaigns'),
+                    'active_campaigns',
+                    Icons.campaign_outlined,
+                  ),
+                  (
+                    at(context, 'submissions'),
+                    'pending_submissions',
+                    Icons.fact_check_outlined,
+                  ),
+                  (
+                    at(context, 'coinsCredited'),
+                    'coins_credited',
+                    Icons.toll_outlined,
+                  ),
+                ];
+                return ListView(
+                  padding: const EdgeInsets.all(24),
+                  children: [
+                    AdminNotice(
+                      text: at(context, 'overviewHelp'),
+                      icon: Icons.hub_outlined,
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final metric in metrics)
+                          SizedBox(
+                            width: 190,
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(metric.$3, color: adminViolet),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      '${values[metric.$2] ?? 0}',
+                                      style: const TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    Text(
+                                      metric.$1,
+                                      style: const TextStyle(color: adminMuted),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+              final rows = (snapshot.data as List).cast<Map<String, dynamic>>();
+              return Column(
+                children: [
+                  if (widget.page == 'reports')
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: dateRange,
+                            icon: const Icon(Icons.date_range),
+                            label: Text(
+                              '${_dateOnly(start)} – ${_dateOnly(end)} (UTC)',
+                            ),
+                          ),
+                          FilledButton.icon(
+                            onPressed: () => export(rows),
+                            icon: const Icon(Icons.download_outlined),
+                            label: Text(at(context, 'exportCsv')),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (widget.page == 'alerts')
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: AdminNotice(text: at(context, 'alertsHelp')),
+                    ),
+                  if (widget.page == 'roles')
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: AdminNotice(text: at(context, 'rolesHelp')),
+                    ),
+                  Expanded(
+                    child: rows.isEmpty
+                        ? Center(child: Text(at(context, 'noRecords')))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(24),
+                            itemCount: rows.length,
+                            itemBuilder: (context, i) {
+                              final r = rows[i];
+                              final (heading, detail) = switch (widget.page) {
+                                'activity' => (
+                                  '${r['action']} · ${r['actor']}',
+                                  '${r['details']}\n${r['event_at']}',
+                                ),
+                                'reports' => (
+                                  '${r['day']}',
+                                  "${at(context, 'registrations')}: ${r['registrations']}  ·  ${at(context, 'campaigns')}: ${r['campaigns']}\n${at(context, 'transactions')}: ${r['coin_transactions']}  ·  ${at(context, 'credited')}: ${r['coins_credited']}  ·  ${at(context, 'spent')}: ${r['coins_spent']}",
+                                ),
+                                'alerts' => (
+                                  '${r['kind']} · ${r['subject']}',
+                                  'Activity: ${r['activity']}  ·  ${r['observed_at']}',
+                                ),
+                                _ => (
+                                  '${r['email']}',
+                                  '${r['role']}  ·  ${r['created_at']}',
+                                ),
+                              };
+                              return Card(
+                                child: ListTile(
+                                  title: Text(
+                                    heading,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  subtitle: Text(detail),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  if (widget.page == 'activity')
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: offset > 0
+                              ? () => setState(() {
+                                  offset -= 50;
+                                  load();
+                                })
+                              : null,
+                          child: Text(at(context, 'previous')),
+                        ),
+                        Text(
+                          '${offset + (rows.isEmpty ? 0 : 1)}–${offset + rows.length}',
+                        ),
+                        TextButton(
+                          onPressed: rows.length == 50
+                              ? () => setState(() {
+                                  offset += 50;
+                                  load();
+                                })
+                              : null,
+                          child: Text(at(context, 'next')),
+                        ),
+                        const SizedBox(width: 24),
+                      ],
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AdminUserDetails extends StatelessWidget {
+  const AdminUserDetails({
+    super.key,
+    required this.gateway,
+    required this.user,
+  });
+  final AdminWorkspaceGateway gateway;
+  final AdminUser user;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(user.name.isEmpty ? user.email : user.name)),
+    body: FutureBuilder<Map<String, dynamic>>(
+      future: gateway.userDetails(user.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Center(child: Text(at(context, 'detailsFailure')));
+        }
+        final data = snapshot.data!;
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 850),
+            child: ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                Text(user.email, style: Theme.of(context).textTheme.titleLarge),
+                SelectableText(
+                  'User ID: ${user.id}',
+                  style: const TextStyle(color: adminMuted, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${at(context, 'coins')}: ${user.coins ?? '—'}  ·  ${at(context, 'referrals')}: ${data['referrals']}  ·  ${at(context, 'role')}: ${data['role'] ?? at(context, 'member')}',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "${at(context, 'referredBy')}: ${at(context, data['referred'] == true ? 'yes' : 'no')}",
+                  style: const TextStyle(color: adminMuted),
+                ),
+                const SizedBox(height: 16),
+                AdminNotice(text: at(context, 'recentRecords')),
+                for (final section in [
+                  'campaigns',
+                  'submissions',
+                  'ledger',
+                ]) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    at(
+                      context,
+                      section == 'submissions' ? 'submissionHistory' : section,
+                    ).toUpperCase(),
+                    style: const TextStyle(
+                      color: adminViolet,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if ((data[section] as List).isEmpty)
+                    Text(at(context, 'noRecords')),
+                  for (final item in data[section] as List)
+                    Card(
+                      child: ListTile(
+                        title: Text(
+                          section == 'ledger'
+                              ? '${item['reason']} · ${item['amount']} coins'
+                              : '${item['type']} · ${item['status']}',
+                        ),
+                        subtitle: Text(
+                          section == 'campaigns'
+                              ? '${item['link']}\nCompleted: ${item['requested'] - item['remaining']}/${item['requested']} · ${item['created_at']}'
+                              : section == 'submissions'
+                              ? '${item['link']}\n${item['created_at']}'
+                              : '${item['created_at']}',
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    ),
   );
 }

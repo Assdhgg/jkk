@@ -6,6 +6,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Firebase must initialize natively when Android starts the process for a push.
+if (file("google-services.json").isFile) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 val keyProperties = Properties()
 val keyPropertiesFile = rootProject.file("key.properties")
 if (keyPropertiesFile.isFile) { keyPropertiesFile.inputStream().use { keyProperties.load(it) } }

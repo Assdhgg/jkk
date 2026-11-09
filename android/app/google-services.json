@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "140499941128",
+    "project_id": "growth-circle-c8efe",
+    "storage_bucket": "growth-circle-c8efe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:140499941128:android:51980ad2b9208427c99ebd",
+        "android_client_info": {
+          "package_name": "com.growthcircle.growth_circle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWt5qz7e1cnxWc2-zxwx5KGyChudmckaU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

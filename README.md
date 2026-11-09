@@ -104,7 +104,15 @@ on conflict (user_id) do nothing;
 
 Only a database owner can provision administrators. The admin UI cannot block administrator accounts. Admin changes are recorded in `public.admin_access_audit`; that table and the admin allowlist are not directly readable or writable by app clients. No delete-account or coin-edit feature is provided.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:31b97719c787e6520a754072963f17bfc3206fb5b4bd351aa51ad9f3b2d0de0e -->
+
 On Windows with Flutter 3.47.9 and Visual Studio C++ tools, run `flutter pub get` and `flutter build windows --release -t lib/admin_main.dart`. Run `build\windows\x64\runner\Release\growth_circle_admin.exe` with the entire Release directory. A GitHub Actions workflow also produces a Windows ZIP artifact. On first launch enter the project URL and publishable/anon key, then sign in as the provisioned admin. The public project configuration is stored locally; passwords and service-role keys are not stored by the app. Supabase SQL deployment and a real Windows build must be verified on the target environment.
+
+For the admin workspace, reports, alert thresholds and viewer/editor roles, see [Admin workspace](docs/ADMIN_WORKSPACE.md).
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Tests
 
@@ -160,7 +168,13 @@ Deploy `supabase/functions/instagram-lookup` to the same Supabase project. Set t
 
 ## Task filters and notifications
 
-Earn tasks can be filtered by Follow, Like, Comment or Share; submission history stays visible. Apply `supabase/migrations/20261107080000_notifications.sql` after the earlier migrations and enable the `notifications` table in Supabase Realtime if it is not already published. The new migration records future approvals, rejections and positive coin ledger entries transactionally; earlier events are not backfilled. Signed-in active users can view only their own notifications and mark them read. An unread indicator and list update while the app is open and connected. These are in-app notifications; no device push notification service is configured.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:3fe50bf68fcd4089bb4ced784dc8c555991840b0fc9c848368878a3c9b8c4327 -->
+
+Earn tasks can be filtered by Follow, Like, Comment or Share; submission history stays visible. Apply `supabase/migrations/20261107080000_notifications.sql` after the earlier migrations and enable the `notifications` table in Supabase Realtime if it is not already published. The new migration records future approvals, rejections and positive coin ledger entries transactionally; earlier events are not backfilled. Signed-in active users can view only their own notifications and mark them read. An unread indicator and list update while the app is open and connected. These are in-app notifications. Optional Android push requires the additional setup in [User app features and Android push setup](docs/USER_FEATURES.md).
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Administrator submission inspection
 
