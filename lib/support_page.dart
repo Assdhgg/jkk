@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'design.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 String supportText(BuildContext c, String en, String ml) =>
@@ -130,11 +133,19 @@ class _SupportPageState extends State<SupportPage> {
         final rows = s.data ?? [];
         if (rows.isEmpty) {
           return Center(
-            child: Text(
-              supportText(
-                c,
-                'No support tickets yet.',
-                'ഇതുവരെ support tickets ഇല്ല.',
+            child: SingleChildScrollView(
+              child: GrowthEmpty(
+                art: 'support',
+                title: supportText(
+                  c,
+                  'No support tickets yet.',
+                  'ഇതുവരെ support tickets ഇല്ല.',
+                ),
+                subtitle: supportText(
+                  c,
+                  'Create a new support ticket if you need any assistance.',
+                  'സഹായത്തിനായി ഒരു പുതിയ ticket സൃഷ്ടിക്കുക.',
+                ),
               ),
             ),
           );
