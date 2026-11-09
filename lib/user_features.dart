@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'support_page.dart';
+import 'design.dart';
 
 String uf(BuildContext c, String en, String ml) => supportText(c, en, ml);
 
@@ -319,9 +320,23 @@ class UserHelpPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              GrowthHero(
+                title: uf(context, 'Need Help?', 'സഹായം വേണോ?'),
+                subtitle: uf(
+                  context,
+                  'We are here to help you!',
+                  'നിങ്ങളെ സഹായിക്കാൻ ഞങ്ങൾ ഇവിടെയുണ്ട്!',
+                ),
+                icon: Icons.support_agent_rounded,
+              ),
+              const SizedBox(height: 16),
               for (final item in items.entries)
                 Card(
                   child: ExpansionTile(
+                    leading: const Icon(
+                      Icons.help_outline,
+                      color: growthPurple,
+                    ),
                     title: Text(
                       item.key,
                       style: const TextStyle(fontWeight: FontWeight.w700),

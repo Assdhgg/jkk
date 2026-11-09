@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'design.dart';
 import 'evidence_image.dart';
 import 'support_page.dart';
 import 'user_features.dart';
@@ -621,18 +622,18 @@ void toggleLanguage() =>
 ThemeData growthTheme() => ThemeData(
   useMaterial3: true,
   colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xff6554c0),
-    surface: const Color(0xfff5f4f7),
+    seedColor: growthPurple,
+    surface: const Color(0xfffaf8ff),
   ),
-  scaffoldBackgroundColor: const Color(0xfff5f4f7),
+  scaffoldBackgroundColor: Colors.transparent,
   appBarTheme: const AppBarTheme(
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.transparent,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
     scrolledUnderElevation: 0,
     centerTitle: false,
     titleTextStyle: TextStyle(
-      color: Color(0xff17171b),
+      color: growthInk,
       fontSize: 19,
       fontWeight: FontWeight.w700,
     ),
@@ -640,7 +641,7 @@ ThemeData growthTheme() => ThemeData(
   navigationBarTheme: NavigationBarThemeData(
     backgroundColor: Colors.white,
     elevation: 0,
-    indicatorColor: const Color(0xffe9e3fa),
+    indicatorColor: const Color(0xffd8c5ff),
     labelTextStyle: WidgetStateProperty.all(
       const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
     ),
@@ -665,7 +666,9 @@ ThemeData growthTheme() => ThemeData(
   filledButtonTheme: FilledButtonThemeData(
     style: FilledButton.styleFrom(
       minimumSize: const Size(48, 48),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      backgroundColor: growthPurple,
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
     ),
   ),
   outlinedButtonTheme: OutlinedButtonThemeData(
@@ -677,7 +680,8 @@ ThemeData growthTheme() => ThemeData(
   chipTheme: ChipThemeData(
     backgroundColor: const Color(0xfff2eff8),
     side: BorderSide.none,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    selectedColor: const Color(0xffded0ff),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
   ),
 );
 
@@ -728,6 +732,7 @@ class GrowthApp extends StatelessWidget {
       supportedLocales: const [Locale('en'), Locale('ml')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: growthTheme(),
+      builder: (context, child) => GrowthBackdrop(child: child!),
       home: configured ? const AuthGate() : const SetupScreen(),
     ),
   );
@@ -879,7 +884,22 @@ class _AccountGateState extends State<AccountGate> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(friendlyError(context, snapshot.error!)),
+                if (snapshot.error is PostgrestException &&
+                    (snapshot.error! as PostgrestException).message.contains(
+                      'Account access is blocked',
+                    ))
+                  const GrowthArt('blocked', height: 190),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    friendlyError(context, snapshot.error!),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
                 TextButton(
                   onPressed: () => setState(() => initialize = load()),
                   child: Text(tr(context, 'retry')),
@@ -1107,9 +1127,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final color = const Color(0xff5b43c2);
+    const color = growthPurple;
     return Scaffold(
-      backgroundColor: const Color(0xfffaf9fe),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -1151,7 +1170,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 42),
+                  if (pendingEmail != null) ...[
+                    const SizedBox(height: 18),
+                    const GrowthArt('verify', height: 150),
+                  ] else
+                    const SizedBox(height: 42),
                   Text(
                     tr(
                       context,
@@ -1453,7 +1476,12 @@ class NotificationsPage extends StatelessWidget {
         }
         final items = snapshot.data!;
         if (items.isEmpty) {
-          return Center(child: Text(tr(context, 'noNotifications')));
+          return Center(
+            child: GrowthEmpty(
+              art: 'notifications',
+              title: tr(context, 'noNotifications'),
+            ),
+          );
         }
         return AppListView(
           children: [
@@ -1586,31 +1614,45 @@ class _HomeShellState extends State<HomeShell> {
               ],
             ),
       body: SafeArea(child: pages[selected]),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selected,
-        onDestinationSelected: (i) => setState(() => selected = i),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home_rounded),
-            label: tr(context, labels[0]),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.explore_outlined),
-            selectedIcon: const Icon(Icons.explore),
-            label: tr(context, labels[1]),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.campaign_outlined),
-            selectedIcon: const Icon(Icons.campaign),
-            label: tr(context, labels[2]),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.person_outline),
-            selectedIcon: const Icon(Icons.person),
-            label: tr(context, labels[3]),
-          ),
-        ],
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(36),
+          boxShadow: [
+            BoxShadow(
+              color: growthPurple.withValues(alpha: .12),
+              blurRadius: 18,
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: NavigationBar(
+          selectedIndex: selected,
+          onDestinationSelected: (i) => setState(() => selected = i),
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home_rounded),
+              label: tr(context, labels[0]),
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.explore_outlined),
+              selectedIcon: const Icon(Icons.explore),
+              label: tr(context, labels[1]),
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.campaign_outlined),
+              selectedIcon: const Icon(Icons.campaign),
+              label: tr(context, labels[2]),
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person),
+              label: tr(context, labels[3]),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1630,8 +1672,15 @@ class BalanceCard extends StatelessWidget {
     builder: (context, snapshot) => Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xff1e211e),
-        borderRadius: BorderRadius.circular(18),
+        gradient: growthGradient,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: growthPurple.withValues(alpha: .22),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -1657,7 +1706,7 @@ class BalanceCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.toll_rounded, color: Color(0xffc5f64b), size: 45),
+          const Icon(Icons.stars_rounded, color: Color(0xffffc542), size: 54),
         ],
       ),
     ),
@@ -1692,28 +1741,38 @@ class Dashboard extends StatelessWidget {
         style: Theme.of(context).textTheme.bodyLarge,
       ),
       const SizedBox(height: 24),
-      Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-          child: Column(
-            children: [
-              ProfileMenuTile(
-                icon: Icons.explore_outlined,
-                title: tr(context, 'browse'),
-                onTap: onBrowse,
+      Column(
+        children: [
+          Card(
+            child: ProfileMenuTile(
+              icon: Icons.explore_outlined,
+              title: tr(context, 'browse'),
+              subtitle: uf(
+                context,
+                'Explore available tasks & earn coins',
+                'Tasks കണ്ടെത്തി coins നേടുക',
               ),
-              const Divider(indent: 64, endIndent: 16, height: 1),
-              ProfileMenuTile(
-                icon: Icons.add_circle_outline,
-                title: tr(context, 'create'),
-                onTap: onCreate,
-              ),
-            ],
+              onTap: onBrowse,
+            ),
           ),
-        ),
+          Card(
+            child: ProfileMenuTile(
+              icon: Icons.campaign_outlined,
+              title: tr(context, 'create'),
+              subtitle: uf(
+                context,
+                'Start your campaign & grow',
+                'Campaign ആരംഭിക്കുക',
+              ),
+              onTap: onCreate,
+            ),
+          ),
+        ],
       ),
       const SizedBox(height: 24),
       Notice(),
+      const SizedBox(height: 12),
+      const GrowthArt('gift', height: 150),
     ],
   );
 }
@@ -1730,7 +1789,7 @@ class Notice extends StatelessWidget {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.info_outline, size: 20),
+        const Icon(Icons.info, color: growthPurple, size: 24),
         const SizedBox(width: 10),
         Expanded(child: Text(tr(context, 'disclaimer'))),
       ],
@@ -2357,13 +2416,29 @@ class _TaskListState extends State<TaskList> {
           return AppListView(
             padding: const EdgeInsets.all(20),
             children: [
-              Text(
-                tr(context, 'earnTitle'),
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tr(context, 'earnTitle'),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: growthInk,
+                              ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(tr(context, 'earnDesc')),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const GrowthArt('task_header', height: 100),
+                ],
               ),
-              const SizedBox(height: 6),
-              Text(tr(context, 'earnDesc')),
               const SizedBox(height: 16),
               const Notice(),
               const SizedBox(height: 12),
@@ -2423,17 +2498,16 @@ class _TaskListState extends State<TaskList> {
                 ),
               const SizedBox(height: 12),
               if (filteredTasks.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(28),
-                  child: Center(
-                    child: Text(
-                      tr(
-                        context,
-                        selectedType == 'all'
-                            ? 'emptyTasks'
-                            : 'noFilteredTasks',
-                      ),
-                    ),
+                GrowthEmpty(
+                  art: 'tasks',
+                  title: tr(
+                    context,
+                    selectedType == 'all' ? 'emptyTasks' : 'noFilteredTasks',
+                  ),
+                  subtitle: uf(
+                    context,
+                    'Check back later for new tasks.',
+                    'പുതിയ tasks പിന്നീട് പരിശോധിക്കുക.',
                   ),
                 ),
               for (final task in filteredTasks)
@@ -2840,16 +2914,26 @@ class Campaigns extends StatelessWidget {
       return AppListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  tr(context, 'myCampaigns'),
-                  style: Theme.of(context).textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
+          GrowthHero(
+            title: tr(context, 'myCampaigns'),
+            subtitle: uf(
+              context,
+              'Create and manage your campaigns with ease.',
+              'നിങ്ങളുടെ campaigns സൃഷ്ടിക്കുകയും നിയന്ത്രിക്കുകയും ചെയ്യുക.',
+            ),
+            icon: Icons.campaign_rounded,
+          ),
+          const SizedBox(height: 12),
+          if (docs.isEmpty)
+            GrowthEmpty(
+              art: 'campaigns',
+              title: tr(context, 'emptyCampaigns'),
+              subtitle: uf(
+                context,
+                'Create your first campaign and reach more audience.',
+                'നിങ്ങളുടെ ആദ്യ campaign സൃഷ്ടിക്കുക.',
               ),
-              IconButton.filled(
+              action: FilledButton.icon(
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute<void>(
@@ -2857,15 +2941,22 @@ class Campaigns extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.add),
-                tooltip: tr(context, 'create'),
+                label: Text(tr(context, 'create')),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (docs.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(28),
-              child: Center(child: Text(tr(context, 'emptyCampaigns'))),
+            )
+          else
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const CreateCampaign(),
+                  ),
+                ),
+                icon: const Icon(Icons.add),
+                label: Text(tr(context, 'create')),
+              ),
             ),
           for (final doc in docs)
             Builder(
@@ -3177,10 +3268,14 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
     body: AppListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text(
-          tr(context, 'history'),
-          style: Theme.of(context).textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold),
+        GrowthHero(
+          title: tr(context, 'history'),
+          subtitle: uf(
+            context,
+            'Track your earned and spent coins',
+            'ലഭിച്ചതും ചെലവാക്കിയതുമായ coins കാണുക',
+          ),
+          icon: Icons.stars_rounded,
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -3226,9 +3321,9 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
                   ),
                 );
             if (docs.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(tr(context, 'emptyHistory')),
+              return GrowthEmpty(
+                art: 'coins',
+                title: tr(context, 'emptyHistory'),
               );
             }
             return Column(
@@ -3377,6 +3472,8 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const Icon(Icons.shield_rounded, color: growthPurple, size: 54),
+          const SizedBox(height: 8),
           if (!widget.setup) Text(tr(context, 'enterPin')),
           if (widget.setup) ...[
             OutlinedButton(
@@ -3778,11 +3875,11 @@ class ProfileLayout extends StatelessWidget {
         ? null
         : '${tr(context, 'profileJoined')} ${MaterialLocalizations.of(context).formatMonthYear(created.toLocal())}';
     return Container(
-      color: const Color(0xfff5f4f7),
+      color: Colors.transparent,
       child: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: Colors.transparent,
             padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
             child: Row(
               children: [
@@ -3925,7 +4022,7 @@ class ProfileLayout extends StatelessWidget {
                       ),
                     const SizedBox(height: 16),
                     Material(
-                      color: const Color(0xff1e211e),
+                      color: const Color(0xff4314b9),
                       borderRadius: BorderRadius.circular(18),
                       child: InkWell(
                         key: const Key('profile_referral_banner'),
@@ -3939,12 +4036,12 @@ class ProfileLayout extends StatelessWidget {
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xff343d24),
+                                  color: const Color(0xff6840d6),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
                                   Icons.people_alt_outlined,
-                                  color: Color(0xffc5f64b),
+                                  color: Color(0xffe5d9ff),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -4154,10 +4251,10 @@ class ProfileMenuTile extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: const Color(0xfff4f3f7),
+          color: const Color(0xffeee6ff),
           borderRadius: BorderRadius.circular(11),
         ),
-        child: Icon(icon, size: 19, color: const Color(0xff676889)),
+        child: Icon(icon, size: 19, color: growthPurple),
       ),
       title: Text(
         title,
@@ -4287,9 +4384,21 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         }
         final info = snapshot.data!;
         return AppListView(
-          panel: true,
+          panel: false,
           padding: const EdgeInsets.all(20),
           children: [
+            if (!widget.accounts) ...[
+              GrowthHero(
+                title: uf(context, 'Refer & Earn', 'Refer & Earn'),
+                subtitle: uf(
+                  context,
+                  'Invite your friends and earn rewards',
+                  'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് rewards നേടുക',
+                ),
+                icon: Icons.card_giftcard_rounded,
+              ),
+              const SizedBox(height: 16),
+            ],
             if (widget.accounts) ...[
               FilledButton.icon(
                 onPressed: search,
@@ -4297,7 +4406,16 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                 label: Text(tr(context, 'instagramSearch')),
               ),
               const SizedBox(height: 12),
-              if (info.usernames.isEmpty) Text(tr(context, 'noAccounts')),
+              if (info.usernames.isEmpty)
+                GrowthEmpty(
+                  art: 'accounts',
+                  title: tr(context, 'noAccounts'),
+                  subtitle: uf(
+                    context,
+                    'Add your Instagram username to manage your account here.',
+                    'നിങ്ങളുടെ Instagram username ചേർക്കുക.',
+                  ),
+                ),
               for (final username in info.usernames)
                 Card(
                   child: ListTile(
