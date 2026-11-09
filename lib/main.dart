@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'evidence_image.dart';
+import 'support_page.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,9 @@ Future<void> main() async {
 }
 
 const words = <String, List<String>>{
+  'adminAdjustment': ['Admin adjustment', 'Admin adjustment'],
+  'support': ['Support', 'സഹായം'],
+  'reportCampaign': ['Report', 'റിപ്പോർട്ട്'],
   'email_otp_required': [
     'PIN setup requires a verified email account without a linked phone. Contact support to check your account.',
     'PIN സജ്ജമാക്കാൻ verified email account വേണം; linked phone ഉണ്ടെങ്കിൽ support-നെ ബന്ധപ്പെടുക.',
@@ -2326,6 +2330,89 @@ class _TaskListState extends State<TaskList> {
                                       : null,
                                   child: Text(tr(context, 'open')),
                                 ),
+                                TextButton(
+                                  onPressed: () async {
+                                    final controller = TextEditingController();
+                                    final reason = await showDialog<String>(
+                                      context: context,
+                                      builder: (c) => AlertDialog(
+                                        title: Text(tr(c, 'reportCampaign')),
+                                        content: TextField(
+                                          controller: controller,
+                                          maxLength: 1000,
+                                          maxLines: 3,
+                                          decoration: InputDecoration(
+                                            labelText: supportText(
+                                              c,
+                                              'Reason',
+                                              'കാരണം',
+                                            ),
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(c),
+                                            child: Text(tr(c, 'cancel')),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () {
+                                              if (controller.text
+                                                  .trim()
+                                                  .isNotEmpty) {
+                                                Navigator.pop(
+                                                  c,
+                                                  controller.text.trim(),
+                                                );
+                                              }
+                                            },
+                                            child: Text(
+                                              supportText(
+                                                c,
+                                                'Send',
+                                                'അയയ്ക്കുക',
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    controller.dispose();
+                                    if (reason == null || !context.mounted) {
+                                      return;
+                                    }
+                                    try {
+                                      await db.rpc(
+                                        'report_campaign',
+                                        params: {
+                                          'p_campaign': task['id'],
+                                          'p_reason': reason,
+                                        },
+                                      );
+                                      if (context.mounted) {
+                                        toast(
+                                          context,
+                                          supportText(
+                                            context,
+                                            'Report sent.',
+                                            'റിപ്പോർട്ട് അയച്ചു.',
+                                          ),
+                                        );
+                                      }
+                                    } catch (_) {
+                                      if (context.mounted) {
+                                        toast(
+                                          context,
+                                          supportText(
+                                            context,
+                                            'Unable to send report.',
+                                            'റിപ്പോർട്ട് അയയ്ക്കാനായില്ല.',
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: Text(tr(context, 'reportCampaign')),
+                                ),
                                 if (status == 'pending')
                                   TextButton(
                                     onPressed: () =>
@@ -2927,6 +3014,7 @@ class CoinHistoryPage extends StatelessWidget {
                         'task' => 'taskReason',
                         'refund' => 'refundReason',
                         'referral' => 'referrals',
+                        'admin_adjustment' => 'adminAdjustment',
                         _ => 'history',
                       };
                       return Card(
@@ -3682,6 +3770,16 @@ class ProfileLayout extends StatelessWidget {
                             icon: Icons.people_outline,
                             title: tr(context, 'referrals'),
                             onTap: onReferrals,
+                          ),
+                          ProfileMenuTile(
+                            icon: Icons.support_agent_outlined,
+                            title: tr(context, 'support'),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => SupportPage(client: db),
+                              ),
+                            ),
                           ),
                           ProfileMenuTile(
                             icon: Icons.lock_outline,
