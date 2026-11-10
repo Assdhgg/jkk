@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'evidence_image.dart';
 import 'admin_operations.dart';
 import 'admin_app_releases.dart';
+import 'admin_design.dart';
 
 import 'dart:typed_data';
 
@@ -59,6 +60,7 @@ const labels = <String, List<String>>{
   'alerts': ['Alerts', 'അറിയിപ്പുകൾ'],
   'roles': ['Admin roles', 'Admin roles'],
   'details': ['Details', 'വിശദാംശങ്ങൾ'],
+  'actionsLabel': ['Actions', 'പ്രവർത്തനങ്ങൾ'],
   'filterSubmissions': ['Filter submissions', 'Submissions filter ചെയ്യുക'],
   'campaignId': ['Campaign ID', 'Campaign ID'],
   'dateRange': ['Date range (UTC)', 'തീയതി പരിധി (UTC)'],
@@ -579,6 +581,7 @@ class _AdminAppState extends State<AdminApp> {
     supportedLocales: const [Locale('en'), Locale('ml')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     theme: adminTheme(),
+    builder: (context, child) => AdminBackdrop(child: child!),
     home: gateway == null
         ? AdminSetup(
             onConnect: (value) => setState(() => gateway = value),
@@ -608,11 +611,11 @@ class _AdminAppState extends State<AdminApp> {
 }
 
 // A restrained palette keeps account and review information easy to scan.
-const adminInk = Color(0xff242338);
-const adminMuted = Color(0xff6e6c80);
-const adminViolet = Color(0xff5b43c2);
-const adminCanvas = Color(0xfff7f6fb);
-const adminLine = Color(0xffe8e6f0);
+const adminInk = Color(0xff160b49);
+const adminMuted = Color(0xff6c5f91);
+const adminViolet = Color(0xff4d16d5);
+const adminCanvas = Color(0xfff6f3ff);
+const adminLine = Color(0xffe2d9f5);
 
 ThemeData adminTheme() {
   final scheme = ColorScheme.fromSeed(
@@ -620,12 +623,16 @@ ThemeData adminTheme() {
     primary: adminViolet,
     surface: Colors.white,
   );
-  final base = ThemeData(useMaterial3: true, colorScheme: scheme);
+  final base = ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    fontFamily: 'Poppins',
+  );
   return base.copyWith(
-    scaffoldBackgroundColor: adminCanvas,
+    scaffoldBackgroundColor: Colors.transparent,
     dividerTheme: const DividerThemeData(color: adminLine, thickness: 1),
     dataTableTheme: DataTableThemeData(
-      headingRowColor: WidgetStateProperty.all(const Color(0xfff1f3f9)),
+      headingRowColor: WidgetStateProperty.all(const Color(0xffeae0fa)),
       headingTextStyle: const TextStyle(
         fontWeight: FontWeight.w700,
         color: adminMuted,
@@ -643,7 +650,7 @@ ThemeData adminTheme() {
       displayColor: adminInk,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: adminCanvas,
+      backgroundColor: Colors.transparent,
       foregroundColor: adminInk,
       surfaceTintColor: Colors.transparent,
       centerTitle: false,
@@ -834,6 +841,7 @@ class _AdminSetupState extends State<AdminSetup> {
   @override
   Widget build(BuildContext context) => AdminFrame(
     onLanguage: widget.onLanguage,
+    isSetup: true,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -877,54 +885,114 @@ class _AdminSetupState extends State<AdminSetup> {
 }
 
 class AdminFrame extends StatelessWidget {
-  const AdminFrame({super.key, required this.child, required this.onLanguage});
+  const AdminFrame({
+    super.key,
+    required this.child,
+    required this.onLanguage,
+    this.isSetup = false,
+  });
   final Widget child;
   final VoidCallback onLanguage;
+  final bool isSetup;
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const AdminBrand(),
-      actions: [
-        TextButton(
-          onPressed: onLanguage,
-          child: Text(
-            Localizations.localeOf(context).languageCode == 'ml'
-                ? 'English'
-                : 'മലയാളം',
-          ),
-        ),
-      ],
-    ),
-    body: Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'GROWTH CIRCLE  /  ADMIN',
-                    style: TextStyle(
-                      color: adminViolet,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  child,
-                ],
+  Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 1100;
+    final panel = Card(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!wide) ...[
+              const Text(
+                'GROWTH CIRCLE  /  ADMIN',
+                style: TextStyle(
+                  color: adminViolet,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
               ),
+              const SizedBox(height: 20),
+            ],
+            child,
+          ],
+        ),
+      ),
+    );
+    return Scaffold(
+      appBar: AppBar(
+        title: const AdminBrand(),
+        actions: [
+          TextButton(
+            onPressed: onLanguage,
+            child: Text(
+              Localizations.localeOf(context).languageCode == 'ml'
+                  ? 'English'
+                  : 'മലയാളം',
             ),
+          ),
+        ],
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: wide ? 1500 : 500),
+            child: wide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (!isSetup)
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  at(context, 'signIn'),
+                                  style: const TextStyle(
+                                    fontSize: 38,
+                                    color: adminInk,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.15,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  Localizations.localeOf(context)
+                                              .languageCode ==
+                                          'ml'
+                                      ? 'Growth Circle admin workspace തുറക്കുക.'
+                                      : 'Access your Growth Circle admin workspace.',
+                                  style: const TextStyle(
+                                    color: adminMuted,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      SizedBox(width: isSetup ? 520 : 440, child: panel),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: AdminIllustration(
+                            isSetup ? 'connect' : 'signin',
+                            height: 360,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : panel,
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class AdminSignIn extends StatefulWidget {
@@ -995,10 +1063,39 @@ class _AdminSignInState extends State<AdminSignIn> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          at(context, 'signIn'),
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        if (MediaQuery.sizeOf(context).width >= 1100) ...[
+          const Center(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Color(0xffede6ff),
+                  child: Icon(Icons.hub, color: adminViolet),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Growth Circle',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: adminInk,
+                  ),
+                ),
+                Text(
+                  'ADMIN PORTAL',
+                  style: TextStyle(
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    color: adminMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else
+          Text(
+            at(context, 'signIn'),
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
         const SizedBox(height: 24),
         TextField(
           key: const Key('admin_email'),
@@ -1007,6 +1104,7 @@ class _AdminSignInState extends State<AdminSignIn> {
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(
             labelText: at(context, 'email'),
+            prefixIcon: const Icon(Icons.mail_outline),
             border: const OutlineInputBorder(),
           ),
         ),
@@ -1018,6 +1116,7 @@ class _AdminSignInState extends State<AdminSignIn> {
           obscureText: !visible,
           decoration: InputDecoration(
             labelText: at(context, 'password'),
+            prefixIcon: const Icon(Icons.lock_outline),
             border: const OutlineInputBorder(),
             suffixIcon: IconButton(
               onPressed: () => setState(() => visible = !visible),
@@ -1238,7 +1337,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
     body: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1050),
+        constraints: BoxConstraints(maxWidth: widget.embedded ? 1600 : 1050),
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             MediaQuery.sizeOf(context).width < 600 ? 16 : 32,
@@ -1249,59 +1348,69 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                at(context, 'directory'),
-                style: const TextStyle(
-                  color: adminViolet,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.3,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          at(context, 'users'),
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -1,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          at(context, 'usersIntro'),
-                          style: const TextStyle(
-                            color: adminMuted,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
+              if (widget.embedded)
+                AdminHeading(
+                  title: at(context, 'users'),
+                  icon: Icons.people_rounded,
+                  eyebrow: at(context, 'directory'),
+                  subtitle: at(context, 'usersIntro'),
+                  art: 'users',
+                )
+              else ...[
+                Text(
+                  at(context, 'directory'),
+                  style: const TextStyle(
+                    color: adminViolet,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.3,
                   ),
-                  const SizedBox(width: 8),
-                  if (!widget.embedded)
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.toll_outlined, size: 18),
-                      label: Text(at(context, 'coinSettings')),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => AdminCoinSettings(
-                            gateway: widget.gateway,
-                            canEdit: canEdit,
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            at(context, 'users'),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -1,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            at(context, 'usersIntro'),
+                            style: const TextStyle(
+                              color: adminMuted,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (!widget.embedded)
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.toll_outlined, size: 18),
+                        label: Text(at(context, 'coinSettings')),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => AdminCoinSettings(
+                              gateway: widget.gateway,
+                              canEdit: canEdit,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 at(context, 'accessInfo'),
@@ -1457,151 +1566,206 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               : widget.embedded
                               ? SingleChildScrollView(
                                   child: Card(
-                                    child: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: DataTable(
-                                        columns: [
-                                          DataColumn(
-                                            label: Text(at(context, 'member')),
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) => SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minWidth: constraints.maxWidth,
                                           ),
-                                          DataColumn(
-                                            label: Text(at(context, 'joined')),
-                                          ),
-                                          DataColumn(
-                                            label: Text(at(context, 'coins')),
-                                            numeric: true,
-                                          ),
-                                          DataColumn(
-                                            label: Text(at(context, 'role')),
-                                          ),
-                                          DataColumn(
-                                            label: Text(at(context, 'details')),
-                                          ),
-                                        ],
-                                        rows: [
-                                          for (final user in users)
-                                            DataRow(
-                                              cells: [
-                                                DataCell(
-                                                  Column(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        user.name.isEmpty
-                                                            ? user.email
-                                                            : user.name,
-                                                        style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                        ),
-                                                      ),
-                                                      if (user.name.isNotEmpty)
-                                                        Text(
-                                                          user.email,
-                                                          style:
-                                                              const TextStyle(
-                                                                color:
-                                                                    adminMuted,
-                                                                fontSize: 12,
+                                          child: DataTable(
+                                            columns: [
+                                              DataColumn(
+                                                label: Text(
+                                                  at(context, 'member'),
+                                                ),
+                                              ),
+                                              DataColumn(
+                                                label: Text(
+                                                  at(context, 'joined'),
+                                                ),
+                                              ),
+                                              DataColumn(
+                                                label: Text(
+                                                  at(context, 'coins'),
+                                                ),
+                                                numeric: true,
+                                              ),
+                                              DataColumn(
+                                                label: Text(
+                                                  at(context, 'role'),
+                                                ),
+                                              ),
+                                              DataColumn(
+                                                label: Text(
+                                                  at(context, 'details'),
+                                                ),
+                                              ),
+                                              DataColumn(
+                                                label: Text(
+                                                  at(context, 'actionsLabel'),
+                                                ),
+                                              ),
+                                            ],
+                                            rows: [
+                                              for (final user in users)
+                                                DataRow(
+                                                  cells: [
+                                                    DataCell(
+                                                      Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          const CircleAvatar(
+                                                            backgroundColor:
+                                                                Color(
+                                                                  0xffeee6fc,
+                                                                ),
+                                                            child: Icon(
+                                                              Icons.person,
+                                                              color:
+                                                                  adminViolet,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 12,
+                                                          ),
+                                                          Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .center,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                user
+                                                                        .name
+                                                                        .isEmpty
+                                                                    ? user.email
+                                                                    : user.name,
+                                                                style: const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w700,
+                                                                ),
                                                               ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                DataCell(
-                                                  Text(
-                                                    user.joined.length >= 10
-                                                        ? user.joined.substring(
-                                                            0,
-                                                            10,
-                                                          )
-                                                        : user.joined,
-                                                  ),
-                                                ),
-                                                DataCell(
-                                                  Text('${user.coins ?? '—'}'),
-                                                ),
-                                                DataCell(
-                                                  Chip(
-                                                    label: Text(
-                                                      at(
-                                                        context,
-                                                        user.isAdmin
-                                                            ? 'admin'
-                                                            : user.blocked
-                                                            ? 'blocked'
-                                                            : 'active',
+                                                              if (user
+                                                                  .name
+                                                                  .isNotEmpty)
+                                                                Text(
+                                                                  user.email,
+                                                                  style: const TextStyle(
+                                                                    color:
+                                                                        adminMuted,
+                                                                    fontSize:
+                                                                        12,
+                                                                  ),
+                                                                ),
+                                                            ],
+                                                          ),
+                                                        ],
                                                       ),
                                                     ),
-                                                    side: BorderSide.none,
-                                                    backgroundColor:
-                                                        user.blocked
-                                                        ? const Color(
-                                                            0xffffeceb,
-                                                          )
-                                                        : const Color(
-                                                            0xffeaf5f0,
-                                                          ),
-                                                  ),
-                                                ),
-                                                DataCell(
-                                                  Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      if (widget.gateway
-                                                          is AdminWorkspaceGateway)
-                                                        TextButton(
-                                                          onPressed: () => Navigator.push(
+                                                    DataCell(
+                                                      Text(
+                                                        user.joined.length >= 10
+                                                            ? user.joined
+                                                                  .substring(
+                                                                    0,
+                                                                    10,
+                                                                  )
+                                                            : user.joined,
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      Text(
+                                                        '${user.coins ?? '—'}',
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      Chip(
+                                                        label: Text(
+                                                          at(
                                                             context,
-                                                            MaterialPageRoute<
-                                                              void
-                                                            >(
-                                                              builder: (_) =>
-                                                                  AdminUserDetails(
-                                                                    gateway:
-                                                                        widget.gateway
-                                                                            as AdminWorkspaceGateway,
-                                                                    user: user,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                          child: Text(
-                                                            at(
-                                                              context,
-                                                              'details',
-                                                            ),
+                                                            user.isAdmin
+                                                                ? 'admin'
+                                                                : user.blocked
+                                                                ? 'blocked'
+                                                                : 'active',
                                                           ),
                                                         ),
-                                                      if (!user.isAdmin)
-                                                        OutlinedButton(
-                                                          onPressed:
-                                                              changing ||
-                                                                  !canEdit
-                                                              ? null
-                                                              : () => change(
-                                                                  user,
+                                                        side: BorderSide.none,
+                                                        backgroundColor:
+                                                            user.blocked
+                                                            ? const Color(
+                                                                0xffffeceb,
+                                                              )
+                                                            : const Color(
+                                                                0xffeaf5f0,
+                                                              ),
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      widget.gateway
+                                                              is AdminWorkspaceGateway
+                                                          ? TextButton.icon(
+                                                              onPressed: () => Navigator.push(
+                                                                context,
+                                                                MaterialPageRoute<
+                                                                  void
+                                                                >(
+                                                                  builder: (_) =>
+                                                                      AdminUserDetails(
+                                                                        gateway:
+                                                                            widget.gateway
+                                                                                as AdminWorkspaceGateway,
+                                                                        user:
+                                                                            user,
+                                                                      ),
                                                                 ),
-                                                          child: Text(
-                                                            at(
-                                                              context,
-                                                              user.blocked
-                                                                  ? 'unblock'
-                                                                  : 'block',
-                                                            ),
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  ),
+                                                              ),
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .visibility_outlined,
+                                                                size: 18,
+                                                              ),
+                                                              label: Text(
+                                                                at(
+                                                                  context,
+                                                                  'details',
+                                                                ),
+                                                              ),
+                                                            )
+                                                          : const Text('—'),
+                                                    ),
+                                                    DataCell(
+                                                      !user.isAdmin
+                                                          ? OutlinedButton(
+                                                              onPressed:
+                                                                  changing ||
+                                                                      !canEdit
+                                                                  ? null
+                                                                  : () =>
+                                                                        change(
+                                                                          user,
+                                                                        ),
+                                                              child: Text(
+                                                                at(
+                                                                  context,
+                                                                  user.blocked
+                                                                      ? 'unblock'
+                                                                      : 'block',
+                                                                ),
+                                                              ),
+                                                            )
+                                                          : const Text('—'),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
-                                            ),
-                                        ],
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1834,10 +1998,19 @@ class _AdminActionControlsState extends State<AdminActionControls> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(at(context, 'actionControls'))),
+    appBar: AdminPageBar(
+      title: at(context, 'actionControls'),
+      icon: Icons.tune,
+      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      subtitle: Localizations.localeOf(context).languageCode == 'ml'
+          ? 'User പ്രവർത്തനങ്ങൾ ഓൺ അല്ലെങ്കിൽ ഓഫ് ചെയ്യുക.'
+          : 'Enable or disable user actions.',
+    ),
     body: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 650),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width >= 1100 ? 1600 : 650,
+        ),
         child: FutureBuilder<Map<String, bool>>(
           future: result,
           builder: (context, snapshot) {
@@ -1869,6 +2042,20 @@ class _AdminActionControlsState extends State<AdminActionControls> {
                   Card(
                     child: SwitchListTile(
                       key: Key('action_$type'),
+                      secondary: Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffeee6fc),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(switch (type) {
+                          'follow' => Icons.person_add_alt_1,
+                          'like' => Icons.thumb_up_alt,
+                          'share' => Icons.share,
+                          _ => Icons.chat_bubble,
+                        }, color: adminViolet),
+                      ),
                       title: Text(at(context, type)),
                       subtitle: Text(
                         at(
@@ -1918,8 +2105,14 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
   });
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(at(context, 'campaigns')),
+    appBar: AdminPageBar(
+      title: at(context, 'campaigns'),
+      icon: Icons.campaign,
+      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      subtitle: Localizations.localeOf(context).languageCode == 'ml'
+          ? 'Campaign-കൾ കാണുകയും നിയന്ത്രിക്കുകയും ചെയ്യുക.'
+          : 'View and manage campaigns.',
+      art: 'campaigns',
       actions: [
         IconButton(
           onPressed: reload,
@@ -1930,7 +2123,9 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
     ),
     body: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 850),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width >= 1100 ? 1600 : 850,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -2016,8 +2211,9 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
                       children: [
                         Expanded(
                           child: campaigns.isEmpty
-                              ? Center(
-                                  child: Text(at(context, 'campaignEmpty')),
+                              ? AdminEmptyState(
+                                  title: at(context, 'campaignEmpty'),
+                                  art: 'campaigns_empty',
                                 )
                               : ListView.builder(
                                   itemCount: campaigns.length,
@@ -2239,8 +2435,13 @@ class _AdminSubmissionsState extends State<AdminSubmissions> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(at(context, 'submissions')),
+    appBar: AdminPageBar(
+      title: at(context, 'submissions'),
+      icon: Icons.fact_check,
+      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      subtitle: Localizations.localeOf(context).languageCode == 'ml'
+          ? 'പരിശോധിക്കാനുള്ള submissions കാണുക.'
+          : 'Review pending submissions.',
       actions: [
         IconButton(
           onPressed: reload,
@@ -2251,7 +2452,9 @@ class _AdminSubmissionsState extends State<AdminSubmissions> {
     ),
     body: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 850),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width >= 1100 ? 1600 : 850,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -2351,8 +2554,9 @@ class _AdminSubmissionsState extends State<AdminSubmissions> {
                       children: [
                         Expanded(
                           child: items.isEmpty
-                              ? Center(
-                                  child: Text(at(context, 'submissionEmpty')),
+                              ? AdminEmptyState(
+                                  title: at(context, 'submissionEmpty'),
+                                  art: 'submissions_empty',
                                 )
                               : ListView.builder(
                                   itemCount: items.length,
@@ -2601,10 +2805,19 @@ class _AdminCoinSettingsState extends State<AdminCoinSettings> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Coin settings')),
+    appBar: AdminPageBar(
+      title: at(context, 'coinSettings'),
+      icon: Icons.toll,
+      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      subtitle: Localizations.localeOf(context).languageCode == 'ml'
+          ? 'Reward coin മൂല്യങ്ങൾ ക്രമീകരിക്കുക.'
+          : 'Configure reward coin values.',
+    ),
     body: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 650),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width >= 1100 ? 1600 : 650,
+        ),
         child: FutureBuilder<List<Map<String, dynamic>>>(
           future: data,
           builder: (context, snapshot) {
@@ -2638,6 +2851,15 @@ class _AdminCoinSettingsState extends State<AdminCoinSettings> {
                 for (final row in snapshot.data!)
                   Card(
                     child: ListTile(
+                      leading: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xffeee6fc),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.toll, color: adminViolet),
+                      ),
                       title: Text(label(row['key'])),
                       subtitle: Text("${row['amount']} coins"),
                       trailing: const Icon(Icons.edit_outlined),
@@ -2822,8 +3044,24 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
       _ => at(context, 'roles'),
     };
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
+      appBar: AdminPageBar(
+        title: title,
+        desktop: MediaQuery.sizeOf(context).width >= 1100,
+        icon: switch (widget.page) {
+          'overview' => Icons.dashboard,
+          'activity' => Icons.history,
+          'reports' => Icons.bar_chart,
+          'alerts' => Icons.notifications,
+          _ => Icons.admin_panel_settings,
+        },
+        subtitle: widget.page == 'overview'
+            ? at(context, 'overviewHelp')
+            : null,
+        art: widget.page == 'overview'
+            ? 'overview'
+            : widget.page == 'roles'
+            ? 'roles'
+            : null,
         actions: [
           IconButton(
             onPressed: reload,
@@ -2834,7 +3072,9 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width >= 1100 ? 1600 : 900,
+          ),
           child: FutureBuilder<dynamic>(
             future: data,
             builder: (context, snapshot) {
@@ -2878,43 +3118,54 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
                 return ListView(
                   padding: const EdgeInsets.all(24),
                   children: [
-                    AdminNotice(
-                      text: at(context, 'overviewHelp'),
-                      icon: Icons.hub_outlined,
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        for (final metric in metrics)
-                          SizedBox(
-                            width: 190,
-                            child: Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Icon(metric.$3, color: adminViolet),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      '${values[metric.$2] ?? 0}',
-                                      style: const TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w800,
+                    LayoutBuilder(
+                      builder: (context, constraints) => Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          for (final metric in metrics)
+                            SizedBox(
+                              width: constraints.maxWidth >= 800
+                                  ? (constraints.maxWidth - 36) / 4
+                                  : 190,
+                              child: Card(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 28,
+                                        backgroundColor: const Color(
+                                          0xffeee6fc,
+                                        ),
+                                        child: Icon(
+                                          metric.$3,
+                                          color: adminViolet,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      metric.$1,
-                                      style: const TextStyle(color: adminMuted),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        '${values[metric.$2] ?? 0}',
+                                        style: const TextStyle(
+                                          fontSize: 36,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      Text(
+                                        metric.$1,
+                                        style: const TextStyle(
+                                          color: adminMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 );
@@ -2956,7 +3207,12 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
                     ),
                   Expanded(
                     child: rows.isEmpty
-                        ? Center(child: Text(at(context, 'noRecords')))
+                        ? AdminEmptyState(
+                            title: at(context, 'noRecords'),
+                            art: widget.page == 'alerts'
+                                ? 'alerts_empty'
+                                : null,
+                          )
                         : ListView.builder(
                             padding: const EdgeInsets.all(24),
                             itemCount: rows.length,
@@ -2982,6 +3238,15 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
                               };
                               return Card(
                                 child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: const Color(0xffeee6fc),
+                                    child: Icon(switch (widget.page) {
+                                      'activity' => Icons.history,
+                                      'reports' => Icons.bar_chart,
+                                      'alerts' => Icons.notifications_outlined,
+                                      _ => Icons.admin_panel_settings_outlined,
+                                    }, color: adminViolet),
+                                  ),
                                   title: Text(
                                     heading,
                                     style: const TextStyle(
@@ -3220,41 +3485,40 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       body: Row(
         children: [
           SizedBox(
-            width: 248,
+            width: 230,
             child: Material(
-              color: const Color(0xff19182e),
+              color: const Color(0xff180d38),
               child: SafeArea(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Padding(
-                      padding: EdgeInsets.fromLTRB(24, 28, 20, 8),
-                      child: Row(
+                      padding: EdgeInsets.fromLTRB(24, 26, 24, 4),
+                      child: Column(
                         children: [
                           Icon(
                             Icons.hub_rounded,
-                            color: Color(0xffb5a4ff),
-                            size: 32,
+                            color: Color(0xffa88bff),
+                            size: 54,
                           ),
-                          SizedBox(width: 12),
-                          Flexible(
-                            child: Text(
-                              'Growth Circle',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 19,
-                                fontWeight: FontWeight.w800,
-                              ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Growth Circle',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+                      padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
                       child: Text(
                         at(context, 'workspace'),
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Color(0xff9895b5),
                           fontSize: 10,
@@ -3270,34 +3534,60 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                           for (final entry in entries)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 5),
-                              child: ListTile(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(13),
+                                  gradient: selected == entry.$1
+                                      ? const LinearGradient(
+                                          colors: [
+                                            Color(0xff873cff),
+                                            Color(0xff4521bf),
+                                          ],
+                                        )
+                                      : null,
+                                  boxShadow: selected == entry.$1
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(0xff6a34f1)
+                                                .withValues(alpha: .3),
+                                            blurRadius: 16,
+                                          ),
+                                        ]
+                                      : null,
                                 ),
-                                selected: selected == entry.$1,
-                                selectedTileColor: const Color(0xff5943bd),
-                                leading: Icon(
-                                  entry.$2,
-                                  size: 20,
-                                  color: selected == entry.$1
-                                      ? Colors.white
-                                      : const Color(0xffa6a3bf),
-                                ),
-                                title: Text(
-                                  entry.$1 == 'updates'
-                                      ? 'App releases'
-                                      : entry.$1 == 'operations'
-                                      ? 'Admin operations'
-                                      : at(context, entry.$1),
-                                  style: TextStyle(
-                                    color: selected == entry.$1
-                                        ? Colors.white
-                                        : const Color(0xffc4c1d5),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: ListTile(
+                                    dense: true,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    selected: selected == entry.$1,
+                                    selectedTileColor: Colors.transparent,
+                                    leading: Icon(
+                                      entry.$2,
+                                      size: 20,
+                                      color: selected == entry.$1
+                                          ? Colors.white
+                                          : const Color(0xffa6a3bf),
+                                    ),
+                                    title: Text(
+                                      entry.$1 == 'updates'
+                                          ? 'App releases'
+                                          : entry.$1 == 'operations'
+                                          ? 'Admin operations'
+                                          : at(context, entry.$1),
+                                      style: TextStyle(
+                                        color: selected == entry.$1
+                                            ? Colors.white
+                                            : const Color(0xffc4c1d5),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    onTap: () => select(entry.$1),
                                   ),
                                 ),
-                                onTap: () => select(entry.$1),
                               ),
                             ),
                         ],
@@ -3353,11 +3643,13 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
             child: Column(
               children: [
                 Container(
-                  height: 72,
+                  height: 96,
                   padding: const EdgeInsets.symmetric(horizontal: 28),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(bottom: BorderSide(color: adminLine)),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .65),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(22),
+                    ),
                   ),
                   child: Row(
                     children: [

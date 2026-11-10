@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'admin_design.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -409,8 +411,15 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
       'security': op(context, 'Security', 'സുരക്ഷ'),
     };
     return Scaffold(
-      appBar: AppBar(
-        title: Text(op(context, 'Admin operations', 'Admin പ്രവർത്തനങ്ങൾ')),
+      appBar: AdminPageBar(
+        title: op(context, 'Admin operations', 'Admin പ്രവർത്തനങ്ങൾ'),
+        icon: Icons.settings,
+        desktop: MediaQuery.sizeOf(context).width >= 1100,
+        subtitle: op(
+          context,
+          'Manage platform operations and configurations.',
+          'Platform operations നിയന്ത്രിക്കുക.',
+        ),
         actions: [
           IconButton(
             onPressed: refresh,
@@ -421,27 +430,82 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1000),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width >= 1100 ? 1600 : 1000,
+          ),
           child: Column(
             children: [
-              SizedBox(
-                height: 56,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    for (final e in labels.entries)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(e.value),
-                          selected: page == e.key,
-                          onSelected: (_) => select(e.key),
+              if (MediaQuery.sizeOf(context).width >= 1100)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final (index, e) in labels.entries.indexed)
+                          SizedBox(
+                            width: (constraints.maxWidth - 36) / 4,
+                            child: Card(
+                              child: ListTile(
+                                selected: page == e.key,
+                                leading: CircleAvatar(
+                                  backgroundColor: const Color(0xffeee6fc),
+                                  child: Icon(
+                                    [
+                                      Icons.support_agent,
+                                      Icons.notifications,
+                                      Icons.bar_chart,
+                                      Icons.toll,
+                                      Icons.notification_important,
+                                      Icons.show_chart,
+                                      Icons.note,
+                                      Icons.lock,
+                                    ][index],
+                                    color: adminAccent,
+                                  ),
+                                ),
+                                title: Text(
+                                  e.value,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                trailing: const Icon(
+                                  Icons.chevron_right,
+                                  color: adminAccent,
+                                ),
+                                onTap: () => select(e.key),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 56,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      for (final e in labels.entries)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(e.value),
+                            selected: page == e.key,
+                            onSelected: (_) => select(e.key),
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
               if (page == 'trends')
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -637,14 +701,13 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
                       }
                       final rows = s.data ?? [];
                       if (rows.isEmpty) {
-                        return Center(
-                          child: Text(
-                            op(
-                              c,
-                              'No records found.',
-                              'വിവരങ്ങൾ കണ്ടെത്തിയില്ല.',
-                            ),
+                        return AdminEmptyState(
+                          title: op(
+                            c,
+                            'No records found.',
+                            'വിവരങ്ങൾ കണ്ടെത്തിയില്ല.',
                           ),
+                          art: 'operations_empty',
                         );
                       }
                       return ListView.builder(

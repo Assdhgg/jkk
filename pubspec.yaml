@@ -70,6 +70,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/design/
+    - assets/admin/
   fonts:
     - family: Poppins
       fonts:
