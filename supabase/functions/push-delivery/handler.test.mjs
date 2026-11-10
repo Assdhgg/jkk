@@ -23,3 +23,11 @@ test('worker secret authorizes scheduling without exposing a service key', async
  assert.equal((await handler(request('worker-secret'))).status, 200);
  assert.equal(calls, 1);
 });
+
+test('app update uses an update notification message', async () => {
+  let notification;
+  const handler = createHandler({secret:'secret',claim:async()=>[{job_id:'j',lease_id:'l',token:'x',kind:'app_update'}],send:async(_token,title,body)=>{notification={title,body}; return {success:true,permanent:false};},finish:async()=>{}});
+  await handler(new Request('https://worker.test',{method:'POST',headers:{authorization:'Bearer secret'}}));
+  assert.equal(notification.title, 'App update available');
+  assert.match(notification.body, /download and install/);
+});
