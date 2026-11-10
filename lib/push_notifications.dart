@@ -65,6 +65,36 @@ class PushCoordinator {
     return true;
   }
 
+  Future<bool> isEnabled(SupabaseClient client) async {
+    final id = client.auth.currentUser?.id;
+    if (id == null) return false;
+    return (await SharedPreferences.getInstance()).getBool('push_opt_in_$id') ==
+        true;
+  }
+
+  Future<void> disable(SupabaseClient client) async {
+    final id = client.auth.currentUser?.id;
+    if (id == null) throw StateError('Sign in first.');
+    ++_generation;
+    await _refresh?.cancel();
+    _refresh = null;
+    await _writes;
+    // Retain the token for retry if server cleanup fails.
+    final token = _token;
+    if (token != null) {
+      await client.rpc('unregister_push_token', params: {'p_token': token});
+    }
+    if (pushConfigured) {
+      await _initialize();
+      await FirebaseMessaging.instance.unregister();
+    }
+    _token = null;
+    await (await SharedPreferences.getInstance()).setBool(
+      'push_opt_in_$id',
+      false,
+    );
+  }
+
   Future<void> restore(SupabaseClient client) async {
     if (!pushConfigured) return;
     try {

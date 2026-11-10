@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'design.dart';
+import 'app_updates.dart';
 import 'evidence_image.dart';
 import 'support_page.dart';
 import 'user_features.dart';
@@ -1493,7 +1494,20 @@ class NotificationsPage extends StatelessWidget {
                         ? Icons.toll_outlined
                         : Icons.fact_check_outlined,
                   ),
+                  onTap: item['kind'] == 'app_update'
+                      ? () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AppUpdatePage(),
+                          ),
+                        )
+                      : null,
                   title: Text(switch (item['kind']) {
+                    'app_update' => uf(
+                      context,
+                      'App update available',
+                      'പുതിയ app update ലഭ്യമാണ്',
+                    ),
                     'approved' => tr(context, 'notificationApproved'),
                     'rejected' => tr(context, 'notificationRejected'),
                     'support_reply' => tr(context, 'supportReply'),
@@ -1607,13 +1621,26 @@ class _HomeShellState extends State<HomeShell> {
                   stream: notifications,
                   onPressed: openNotifications,
                 ),
-                TextButton(
-                  onPressed: toggleLanguage,
-                  child: Text(tr(context, 'language')),
+                IconButton(
+                  tooltip: uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ'),
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const UserSettingsPage(),
+                    ),
+                  ),
                 ),
               ],
             ),
-      body: SafeArea(child: pages[selected]),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const AppUpdateView(compact: true),
+            Expanded(child: pages[selected]),
+          ],
+        ),
+      ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
         decoration: BoxDecoration(
@@ -3559,12 +3586,14 @@ class ProfileInfo {
   final Map<String, int> referralRewards;
   const ProfileInfo({
     this.referralRewards = const {},
+    this.publicUserId,
     required this.usernames,
     required this.referralCode,
     required this.referralCount,
     required this.referralJoined,
     required this.pinSet,
   });
+  final String? publicUserId;
   final List<String> usernames;
   final String referralCode;
   final int referralCount;
@@ -3616,6 +3645,7 @@ class SupabaseProfileGateway implements ProfileGateway {
       usernames: [
         for (final account in accounts) account['username'] as String,
       ],
+      publicUserId: referral['user_id'] as String?,
       referralCode: referral['code'] as String,
       referralCount: referral['count'] as int,
       referralJoined: referral['joined'] as bool,
@@ -3901,16 +3931,21 @@ class ProfileLayout extends StatelessWidget {
                   tooltip: tr(context, 'profileSettings'),
                   icon: const Icon(Icons.settings_outlined),
                   onSelected: (value) {
-                    if (value == 'language') {
-                      onLanguage();
+                    if (value == 'settings') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const UserSettingsPage(),
+                        ),
+                      );
                     } else if (value == 'signout') {
                       onSignOut();
                     }
                   },
                   itemBuilder: (context) => [
                     PopupMenuItem(
-                      value: 'language',
-                      child: Text(tr(context, 'language')),
+                      value: 'settings',
+                      child: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ')),
                     ),
                     PopupMenuItem(
                       value: 'signout',
@@ -3958,6 +3993,13 @@ class ProfileLayout extends StatelessWidget {
                         user.email!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Color(0xff62647a)),
+                      ),
+                    ],
+                    if (info?.publicUserId != null) ...[
+                      const SizedBox(height: 6),
+                      SelectableText(
+                        'User ID: ${info!.publicUserId}',
+                        textAlign: TextAlign.center,
                       ),
                     ],
                     if (joined != null) ...[
@@ -4113,47 +4155,6 @@ class ProfileLayout extends StatelessWidget {
                             icon: Icons.people_outline,
                             title: tr(context, 'referrals'),
                             onTap: onReferrals,
-                          ),
-                          ProfileMenuTile(
-                            icon: Icons.notifications_active_outlined,
-                            title: uf(
-                              context,
-                              'Enable push notifications',
-                              'Push notifications പ്രവർത്തനക്ഷമമാക്കുക',
-                            ),
-                            onTap: () async {
-                              try {
-                                final enabled = await PushCoordinator.instance
-                                    .enable(db);
-                                if (context.mounted) {
-                                  toast(
-                                    context,
-                                    enabled
-                                        ? uf(
-                                            context,
-                                            'Push notifications enabled.',
-                                            'Push notifications പ്രവർത്തനക്ഷമമായി.',
-                                          )
-                                        : uf(
-                                            context,
-                                            'Notification permission not granted.',
-                                            'Notification permission ലഭിച്ചില്ല.',
-                                          ),
-                                  );
-                                }
-                              } catch (_) {
-                                if (context.mounted) {
-                                  toast(
-                                    context,
-                                    uf(
-                                      context,
-                                      'Unable to enable push notifications. Check the connection and configuration.',
-                                      'Push notifications പ്രവർത്തനക്ഷമമാക്കാനായില്ല. Connection-ഉം configuration-ഉം പരിശോധിക്കുക.',
-                                    ),
-                                  );
-                                }
-                              }
-                            },
                           ),
                           ProfileMenuTile(
                             icon: Icons.help_outline,
@@ -4683,5 +4684,115 @@ class _InstagramSearchDialogState extends State<InstagramSearchDialog> {
         child: Text(tr(context, 'instagramSearchAdd')),
       ),
     ],
+  );
+}
+
+class UserSettingsPage extends StatefulWidget {
+  const UserSettingsPage({super.key, this.enabledLoader, this.pushUpdater});
+  final Future<bool> Function()? enabledLoader;
+  final Future<void> Function(bool)? pushUpdater;
+  @override
+  State<UserSettingsPage> createState() => _UserSettingsPageState();
+}
+
+class _UserSettingsPageState extends State<UserSettingsPage> {
+  bool enabled = false, loading = true, busy = false;
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  Future<void> load() async {
+    try {
+      final value =
+          await (widget.enabledLoader?.call() ??
+              PushCoordinator.instance.isEnabled(db));
+      if (mounted) {
+        setState(() {
+          enabled = value;
+          loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => loading = false);
+        toast(context, tr(context, 'error'));
+      }
+    }
+  }
+
+  Future<void> changePush(bool value) async {
+    setState(() => busy = true);
+    try {
+      if (widget.pushUpdater != null) {
+        await widget.pushUpdater!(value);
+      } else if (value) {
+        final granted = await PushCoordinator.instance.enable(db);
+        if (!granted) throw StateError('Permission not granted');
+      } else {
+        await PushCoordinator.instance.disable(db);
+      }
+      if (mounted) setState(() => enabled = value);
+    } catch (_) {
+      if (mounted) {
+        toast(
+          context,
+          uf(
+            context,
+            'Unable to change notifications. Check permission and connection, then retry.',
+            'Notification മാറ്റാനായില്ല. Permission, connection പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ'))),
+    body: AppListView(
+      children: [
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.system_update),
+            title: Text(uf(context, 'App updates', 'App updates')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(builder: (_) => const AppUpdatePage()),
+            ),
+          ),
+        ),
+        Card(
+          child: SwitchListTile(
+            title: Text(
+              uf(context, 'Push notifications', 'Push notifications'),
+            ),
+            value: enabled,
+            onChanged: loading || busy ? null : changePush,
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.language),
+            title: Text(uf(context, 'Language', 'ഭാഷ')),
+            trailing: DropdownButton<String>(
+              value: Localizations.localeOf(context).languageCode,
+              items: const [
+                DropdownMenuItem(value: 'en', child: Text('English')),
+                DropdownMenuItem(value: 'ml', child: Text('മലയാളം')),
+              ],
+              onChanged: (value) {
+                if (value != null) language.value = Locale(value);
+              },
+            ),
+          ),
+        ),
+        if (loading || busy) const LinearProgressIndicator(),
+      ],
+    ),
   );
 }

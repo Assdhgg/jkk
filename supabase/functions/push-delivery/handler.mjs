@@ -1,4 +1,5 @@
 const messages = {
+  app_update: ['App update available', 'Open Growth Circle to download and install the latest version.'],
   approved: ['Submission approved', 'Open Growth Circle to see your update.'],
   rejected: ['Submission reviewed', 'Open Growth Circle to see your update.'],
   coins_received: ['Coins received', 'Open Growth Circle to see your update.'],

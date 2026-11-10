@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'evidence_image.dart';
 import 'admin_operations.dart';
+import 'admin_app_releases.dart';
 
 import 'dart:typed_data';
 
@@ -584,10 +585,18 @@ class _AdminAppState extends State<AdminApp> {
             onLanguage: changeLanguage,
           )
         : authorized
-        ? AdminDashboard(
-            gateway: gateway!,
-            onLogout: logout,
-            onLanguage: changeLanguage,
+        ? LayoutBuilder(
+            builder: (context, constraints) => constraints.maxWidth >= 1100
+                ? AdminDesktopConsole(
+                    gateway: gateway!,
+                    onLogout: logout,
+                    onLanguage: changeLanguage,
+                  )
+                : AdminDashboard(
+                    gateway: gateway!,
+                    onLogout: logout,
+                    onLanguage: changeLanguage,
+                  ),
           )
         : AdminSignIn(
             gateway: gateway!,
@@ -614,6 +623,21 @@ ThemeData adminTheme() {
   final base = ThemeData(useMaterial3: true, colorScheme: scheme);
   return base.copyWith(
     scaffoldBackgroundColor: adminCanvas,
+    dividerTheme: const DividerThemeData(color: adminLine, thickness: 1),
+    dataTableTheme: DataTableThemeData(
+      headingRowColor: WidgetStateProperty.all(const Color(0xfff1f3f9)),
+      headingTextStyle: const TextStyle(
+        fontWeight: FontWeight.w700,
+        color: adminMuted,
+        fontSize: 12,
+      ),
+      dataTextStyle: const TextStyle(color: adminInk, fontSize: 13),
+      horizontalMargin: 20,
+      columnSpacing: 24,
+      dividerThickness: .6,
+      dataRowMinHeight: 72,
+      dataRowMaxHeight: 88,
+    ),
     textTheme: base.textTheme.apply(
       bodyColor: adminInk,
       displayColor: adminInk,
@@ -1033,7 +1057,9 @@ class AdminDashboard extends StatefulWidget {
     required this.gateway,
     required this.onLogout,
     required this.onLanguage,
+    this.embedded = false,
   });
+  final bool embedded;
   final AdminGateway gateway;
   final Future<void> Function() onLogout;
   final VoidCallback onLanguage;
@@ -1147,67 +1173,69 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      titleSpacing: 8,
-      title: AdminBrand(compact: MediaQuery.sizeOf(context).width < 650),
-      actions: [
-        _navigationAction(
-          context,
-          'submissions',
-          Icons.fact_check_outlined,
-          () => Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => AdminSubmissions(gateway: widget.gateway),
-            ),
-          ),
-        ),
-        _navigationAction(
-          context,
-          'campaigns',
-          Icons.campaign_outlined,
-          () => Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => AdminCampaigns(gateway: widget.gateway),
-            ),
-          ),
-        ),
-        _navigationAction(
-          context,
-          'actionControls',
-          Icons.tune,
-          () => Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => AdminActionControls(
-                gateway: widget.gateway,
-                canEdit: canEdit,
+    appBar: widget.embedded
+        ? null
+        : AppBar(
+            titleSpacing: 8,
+            title: AdminBrand(compact: MediaQuery.sizeOf(context).width < 650),
+            actions: [
+              _navigationAction(
+                context,
+                'submissions',
+                Icons.fact_check_outlined,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => AdminSubmissions(gateway: widget.gateway),
+                  ),
+                ),
               ),
-            ),
+              _navigationAction(
+                context,
+                'campaigns',
+                Icons.campaign_outlined,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => AdminCampaigns(gateway: widget.gateway),
+                  ),
+                ),
+              ),
+              _navigationAction(
+                context,
+                'actionControls',
+                Icons.tune,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => AdminActionControls(
+                      gateway: widget.gateway,
+                      canEdit: canEdit,
+                    ),
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: widget.onLanguage,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(
+                  Localizations.localeOf(context).languageCode == 'ml'
+                      ? 'English'
+                      : 'മലയാളം',
+                ),
+              ),
+              TextButton(
+                onPressed: changing ? null : widget.onLogout,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(at(context, 'logout')),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
-        ),
-        TextButton(
-          onPressed: widget.onLanguage,
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-          ),
-          child: Text(
-            Localizations.localeOf(context).languageCode == 'ml'
-                ? 'English'
-                : 'മലയാളം',
-          ),
-        ),
-        TextButton(
-          onPressed: changing ? null : widget.onLogout,
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-          ),
-          child: Text(at(context, 'logout')),
-        ),
-        const SizedBox(width: 8),
-      ],
-    ),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1050),
@@ -1258,19 +1286,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.toll_outlined, size: 18),
-                    label: Text(at(context, 'coinSettings')),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => AdminCoinSettings(
-                          gateway: widget.gateway,
-                          canEdit: canEdit,
+                  if (!widget.embedded)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.toll_outlined, size: 18),
+                      label: Text(at(context, 'coinSettings')),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => AdminCoinSettings(
+                            gateway: widget.gateway,
+                            canEdit: canEdit,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1310,7 +1339,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ],
               ),
-              if (widget.gateway is AdminWorkspaceGateway)
+              if (!widget.embedded && widget.gateway is AdminWorkspaceGateway)
                 Align(
                   alignment: Alignment.centerLeft,
                   child: PopupMenuButton<String>(
@@ -1319,8 +1348,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       context,
                       MaterialPageRoute<void>(
                         builder: (_) =>
-                            page == 'operations' &&
+                            page == 'updates' &&
                                 widget.gateway is SupabaseAdminGateway
+                            ? AdminAppReleasesPage(
+                                client: (widget.gateway as SupabaseAdminGateway)
+                                    .client,
+                                canEdit: canEdit,
+                              )
+                            : page == 'operations' &&
+                                  widget.gateway is SupabaseAdminGateway
                             ? AdminOperationsPage(
                                 client: (widget.gateway as SupabaseAdminGateway)
                                     .client,
@@ -1334,6 +1370,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     itemBuilder: (_) => [
+                      if (widget.gateway is SupabaseAdminGateway)
+                        const PopupMenuItem(
+                          value: 'updates',
+                          child: Text('App releases'),
+                        ),
                       if (widget.gateway is SupabaseAdminGateway)
                         PopupMenuItem(
                           value: 'operations',
@@ -1413,6 +1454,158 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         Expanded(
                           child: users.isEmpty
                               ? Center(child: Text(at(context, 'empty')))
+                              : widget.embedded
+                              ? SingleChildScrollView(
+                                  child: Card(
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: DataTable(
+                                        columns: [
+                                          DataColumn(
+                                            label: Text(at(context, 'member')),
+                                          ),
+                                          DataColumn(
+                                            label: Text(at(context, 'joined')),
+                                          ),
+                                          DataColumn(
+                                            label: Text(at(context, 'coins')),
+                                            numeric: true,
+                                          ),
+                                          DataColumn(
+                                            label: Text(at(context, 'role')),
+                                          ),
+                                          DataColumn(
+                                            label: Text(at(context, 'details')),
+                                          ),
+                                        ],
+                                        rows: [
+                                          for (final user in users)
+                                            DataRow(
+                                              cells: [
+                                                DataCell(
+                                                  Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        user.name.isEmpty
+                                                            ? user.email
+                                                            : user.name,
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                      if (user.name.isNotEmpty)
+                                                        Text(
+                                                          user.email,
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    adminMuted,
+                                                                fontSize: 12,
+                                                              ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                DataCell(
+                                                  Text(
+                                                    user.joined.length >= 10
+                                                        ? user.joined.substring(
+                                                            0,
+                                                            10,
+                                                          )
+                                                        : user.joined,
+                                                  ),
+                                                ),
+                                                DataCell(
+                                                  Text('${user.coins ?? '—'}'),
+                                                ),
+                                                DataCell(
+                                                  Chip(
+                                                    label: Text(
+                                                      at(
+                                                        context,
+                                                        user.isAdmin
+                                                            ? 'admin'
+                                                            : user.blocked
+                                                            ? 'blocked'
+                                                            : 'active',
+                                                      ),
+                                                    ),
+                                                    side: BorderSide.none,
+                                                    backgroundColor:
+                                                        user.blocked
+                                                        ? const Color(
+                                                            0xffffeceb,
+                                                          )
+                                                        : const Color(
+                                                            0xffeaf5f0,
+                                                          ),
+                                                  ),
+                                                ),
+                                                DataCell(
+                                                  Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      if (widget.gateway
+                                                          is AdminWorkspaceGateway)
+                                                        TextButton(
+                                                          onPressed: () => Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute<
+                                                              void
+                                                            >(
+                                                              builder: (_) =>
+                                                                  AdminUserDetails(
+                                                                    gateway:
+                                                                        widget.gateway
+                                                                            as AdminWorkspaceGateway,
+                                                                    user: user,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            at(
+                                                              context,
+                                                              'details',
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      if (!user.isAdmin)
+                                                        OutlinedButton(
+                                                          onPressed:
+                                                              changing ||
+                                                                  !canEdit
+                                                              ? null
+                                                              : () => change(
+                                                                  user,
+                                                                ),
+                                                          child: Text(
+                                                            at(
+                                                              context,
+                                                              user.blocked
+                                                                  ? 'unblock'
+                                                                  : 'block',
+                                                            ),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )
                               : ListView.builder(
                                   itemCount: users.length,
                                   itemBuilder: (context, i) {
@@ -2927,4 +3120,305 @@ class AdminUserDetails extends StatelessWidget {
       },
     ),
   );
+}
+
+/// Desktop navigation owns its Navigator so detail routes keep the sidebar.
+class AdminDesktopConsole extends StatefulWidget {
+  const AdminDesktopConsole({
+    super.key,
+    required this.gateway,
+    required this.onLogout,
+    required this.onLanguage,
+  });
+  final AdminGateway gateway;
+  final Future<void> Function() onLogout;
+  final VoidCallback onLanguage;
+  @override
+  State<AdminDesktopConsole> createState() => _AdminDesktopConsoleState();
+}
+
+class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
+  final navigator = GlobalKey<NavigatorState>();
+  String selected = 'users';
+  String? role;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.gateway is AdminWorkspaceGateway) {
+      (widget.gateway as AdminWorkspaceGateway)
+          .workspaceRole()
+          .then((value) {
+            if (mounted) setState(() => role = value);
+          })
+          .catchError((Object _) {});
+    } else {
+      role = 'editor';
+    }
+  }
+
+  Widget page(String key) => switch (key) {
+    'users' => AdminDashboard(
+      gateway: widget.gateway,
+      onLogout: widget.onLogout,
+      onLanguage: widget.onLanguage,
+      embedded: true,
+    ),
+    'campaigns' => AdminCampaigns(gateway: widget.gateway),
+    'submissions' => AdminSubmissions(gateway: widget.gateway),
+    'actionControls' => AdminActionControls(
+      gateway: widget.gateway,
+      canEdit: role == 'editor',
+    ),
+    'coinSettings' => AdminCoinSettings(
+      gateway: widget.gateway,
+      canEdit: role == 'editor',
+    ),
+    'updates' => AdminAppReleasesPage(
+      client: (widget.gateway as SupabaseAdminGateway).client,
+      canEdit: role == 'editor',
+    ),
+    'operations' => AdminOperationsPage(
+      client: (widget.gateway as SupabaseAdminGateway).client,
+      canEdit: role == 'editor',
+    ),
+    _ => AdminWorkspacePage(
+      gateway: widget.gateway as AdminWorkspaceGateway,
+      page: key,
+    ),
+  };
+
+  void select(String key) {
+    setState(() => selected = key);
+    navigator.currentState!.pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => page(key)),
+      (_) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <(String, IconData)>[
+      if (widget.gateway is AdminWorkspaceGateway)
+        ('overview', Icons.dashboard_outlined),
+      ('users', Icons.people_outline),
+      ('campaigns', Icons.campaign_outlined),
+      ('submissions', Icons.fact_check_outlined),
+      if (widget.gateway is AdminWorkspaceGateway) ...[
+        ('activity', Icons.history),
+        ('reports', Icons.bar_chart_outlined),
+        ('alerts', Icons.notifications_outlined),
+        ('roles', Icons.admin_panel_settings_outlined),
+      ],
+      ('actionControls', Icons.tune),
+      ('coinSettings', Icons.toll_outlined),
+      if (widget.gateway is SupabaseAdminGateway) ...[
+        ('updates', Icons.system_update),
+        ('operations', Icons.settings_outlined),
+      ],
+    ];
+    return Scaffold(
+      body: Row(
+        children: [
+          SizedBox(
+            width: 248,
+            child: Material(
+              color: const Color(0xff19182e),
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(24, 28, 20, 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.hub_rounded,
+                            color: Color(0xffb5a4ff),
+                            size: 32,
+                          ),
+                          SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              'Growth Circle',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+                      child: Text(
+                        at(context, 'workspace'),
+                        style: const TextStyle(
+                          color: Color(0xff9895b5),
+                          fontSize: 10,
+                          letterSpacing: 1.8,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        children: [
+                          for (final entry in entries)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 5),
+                              child: ListTile(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                selected: selected == entry.$1,
+                                selectedTileColor: const Color(0xff5943bd),
+                                leading: Icon(
+                                  entry.$2,
+                                  size: 20,
+                                  color: selected == entry.$1
+                                      ? Colors.white
+                                      : const Color(0xffa6a3bf),
+                                ),
+                                title: Text(
+                                  entry.$1 == 'updates'
+                                      ? 'App releases'
+                                      : entry.$1 == 'operations'
+                                      ? 'Admin operations'
+                                      : at(context, entry.$1),
+                                  style: TextStyle(
+                                    color: selected == entry.$1
+                                        ? Colors.white
+                                        : const Color(0xffc4c1d5),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                onTap: () => select(entry.$1),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const Divider(
+                      color: Color(0xff343147),
+                      indent: 24,
+                      endIndent: 24,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          const CircleAvatar(
+                            backgroundColor: Color(0xff35314e),
+                            child: Icon(
+                              Icons.verified_user_outlined,
+                              color: Color(0xffcec4ff),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  at(context, 'admin'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  role ?? '…',
+                                  style: const TextStyle(
+                                    color: Color(0xffa6a3bf),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                Container(
+                  height: 72,
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(bottom: BorderSide(color: adminLine)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.space_dashboard_outlined,
+                        color: adminViolet,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        at(context, 'workspaceMenu'),
+                        style: const TextStyle(color: adminMuted),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Icon(
+                          Icons.chevron_right,
+                          size: 16,
+                          color: adminMuted,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          selected == 'operations'
+                              ? 'Admin operations'
+                              : selected == 'updates'
+                              ? 'App releases'
+                              : at(context, selected),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: widget.onLanguage,
+                        icon: const Icon(Icons.language, size: 18),
+                        label: Text(
+                          Localizations.localeOf(context).languageCode == 'ml'
+                              ? 'English'
+                              : 'മലയാളം',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: widget.onLogout,
+                        icon: const Icon(Icons.logout, size: 16),
+                        label: Text(at(context, 'logout')),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Navigator(
+                    key: navigator,
+                    onGenerateRoute: (_) =>
+                        MaterialPageRoute<void>(builder: (_) => page('users')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
