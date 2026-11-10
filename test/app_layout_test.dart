@@ -2,9 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/main.dart';
+import 'package:growth_circle/design.dart';
 
 void main() {
   tearDown(() => language.value = const Locale('en'));
+  testWidgets('rounded navigation remains usable on a narrow screen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var selected = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          bottomNavigationBar: StatefulBuilder(
+            builder: (context, setState) => GrowthNavigation(
+              selected: selected,
+              labels: const ['Home', 'Earn', 'Campaigns', 'Profile'],
+              onSelected: (value) => setState(() => selected = value),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Campaigns'));
+    await tester.pump();
+    expect(selected, 2);
+    expect(tester.takeException(), isNull);
+  });
   for (final locale in ['en', 'ml']) {
     testWidgets('home actions remain reachable at narrow width in $locale', (
       tester,

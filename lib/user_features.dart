@@ -280,7 +280,8 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
 }
 
 class UserHelpPage extends StatelessWidget {
-  const UserHelpPage({super.key});
+  const UserHelpPage({super.key, this.client});
+  final SupabaseClient? client;
   @override
   Widget build(BuildContext context) {
     final items = <String, String>{
@@ -320,22 +321,76 @@ class UserHelpPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              GrowthHero(
-                title: uf(context, 'Need Help?', 'സഹായം വേണോ?'),
-                subtitle: uf(
-                  context,
-                  'We are here to help you!',
-                  'നിങ്ങളെ സഹായിക്കാൻ ഞങ്ങൾ ഇവിടെയുണ്ട്!',
+              SizedBox(
+                height: 155,
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Image.asset(
+                        'assets/design/hero_help.png',
+                        height: 155,
+                        excludeFromSemantics: true,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          gradient: growthGradient,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              uf(context, 'Need Help?', 'സഹായം വേണോ?'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              uf(
+                                context,
+                                'We are here to help you!',
+                                'നിങ്ങളെ സഹായിക്കാൻ ഞങ്ങൾ ഇവിടെയുണ്ട്!',
+                              ),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                icon: Icons.support_agent_rounded,
               ),
               const SizedBox(height: 16),
-              for (final item in items.entries)
+              for (final (index, item) in items.entries.indexed)
                 Card(
                   child: ExpansionTile(
-                    leading: const Icon(
-                      Icons.help_outline,
-                      color: growthPurple,
+                    leading: Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffeee6ff),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        [
+                          Icons.toll,
+                          Icons.fact_check,
+                          Icons.verified_user,
+                          Icons.bookmark,
+                          Icons.help,
+                        ][index],
+                        color: growthPurple,
+                      ),
                     ),
                     title: Text(
                       item.key,
@@ -349,6 +404,63 @@ class UserHelpPage extends StatelessWidget {
                     ],
                   ),
                 ),
+              if (client != null) ...[
+                const SizedBox(height: 16),
+                Card(
+                  color: const Color(0xffe9def9),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.support_agent,
+                          color: growthPurple,
+                          size: 48,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                uf(
+                                  context,
+                                  'Contact Support',
+                                  'Support-നെ ബന്ധപ്പെടുക',
+                                ),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                uf(
+                                  context,
+                                  'Get in touch with our support team for any assistance.',
+                                  'സഹായത്തിനായി support team-നെ ബന്ധപ്പെടുക.',
+                                ),
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              const SizedBox(height: 8),
+                              GrowthActionButton(
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        SupportPage(client: client!),
+                                  ),
+                                ),
+                                icon: Icons.mail_outline,
+                                label: uf(context, 'Contact Us', 'ബന്ധപ്പെടുക'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

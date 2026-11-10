@@ -8,8 +8,9 @@ String supportText(BuildContext c, String en, String ml) =>
     Localizations.localeOf(c).languageCode == 'ml' ? ml : en;
 
 class SupportPage extends StatefulWidget {
-  const SupportPage({super.key, required this.client});
+  const SupportPage({super.key, required this.client, this.loadTickets});
   final SupabaseClient client;
+  final Future<List<dynamic>> Function()? loadTickets;
   @override
   State<SupportPage> createState() => _SupportPageState();
 }
@@ -23,9 +24,9 @@ class _SupportPageState extends State<SupportPage> {
   }
 
   void load() {
-    tickets = widget.client
-        .rpc('support_my_tickets')
-        .then((v) => v as List<dynamic>);
+    tickets =
+        widget.loadTickets?.call() ??
+        widget.client.rpc('support_my_tickets').then((v) => v as List<dynamic>);
   }
 
   void refresh() => setState(load);
@@ -136,6 +137,7 @@ class _SupportPageState extends State<SupportPage> {
             child: SingleChildScrollView(
               child: GrowthEmpty(
                 art: 'support',
+                artHeight: 220,
                 title: supportText(
                   c,
                   'No support tickets yet.',

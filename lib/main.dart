@@ -622,6 +622,7 @@ void toggleLanguage() =>
 // Shared user-app surfaces follow the profile layout on phones and wide windows.
 ThemeData growthTheme() => ThemeData(
   useMaterial3: true,
+  fontFamily: 'Poppins',
   colorScheme: ColorScheme.fromSeed(
     seedColor: growthPurple,
     surface: const Color(0xfffaf8ff),
@@ -648,7 +649,8 @@ ThemeData growthTheme() => ThemeData(
     ),
   ),
   cardTheme: CardThemeData(
-    elevation: 0,
+    elevation: 2,
+    shadowColor: const Color(0x22755dc2),
     color: Colors.white,
     surfaceTintColor: Colors.transparent,
     margin: const EdgeInsets.symmetric(vertical: 6),
@@ -857,8 +859,9 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
 }
 
 class AccountGate extends StatefulWidget {
-  const AccountGate({super.key, required this.user});
+  const AccountGate({super.key, required this.user, this.initializeWallet});
   final User user;
+  final Future<void> Function()? initializeWallet;
   @override
   State<AccountGate> createState() => _AccountGateState();
 }
@@ -872,7 +875,11 @@ class _AccountGateState extends State<AccountGate> {
   }
 
   Future<void> load() async {
-    await db.rpc('initialize_wallet');
+    if (widget.initializeWallet != null) {
+      await widget.initializeWallet!();
+    } else {
+      await db.rpc('initialize_wallet');
+    }
   }
 
   @override
@@ -880,36 +887,113 @@ class _AccountGateState extends State<AccountGate> {
     future: initialize,
     builder: (context, snapshot) {
       if (snapshot.hasError) {
+        final blocked =
+            snapshot.error is PostgrestException &&
+            (snapshot.error! as PostgrestException).message.contains(
+              'Account access is blocked',
+            );
         return Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (snapshot.error is PostgrestException &&
-                    (snapshot.error! as PostgrestException).message.contains(
-                      'Account access is blocked',
-                    ))
-                  const GrowthArt('blocked', height: 190),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    friendlyError(context, snapshot.error!),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+          body: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (blocked) ...[
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/design/brand_logo.png',
+                            width: 48,
+                            height: 48,
+                            excludeFromSemantics: true,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Growth\nCircle',
+                            style: TextStyle(
+                              color: growthInk,
+                              height: 1,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      const GrowthArt('blocked', height: 200),
+                      const SizedBox(height: 16),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        friendlyError(context, snapshot.error!),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    GrowthPrimaryButton(
+                      onPressed: () {
+                        final next = load();
+                        next.ignore();
+                        setState(() {
+                          initialize = next;
+                        });
+                      },
+                      label: tr(context, 'retry'),
+                      icon: Icons.refresh,
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => db.auth.signOut(),
+                      icon: const Icon(Icons.logout),
+                      label: Text(tr(context, 'signout')),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                    ),
+                    if (blocked) ...[
+                      const SizedBox(height: 22),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffe8ddfa),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.support_agent,
+                              color: growthPurple,
+                            ),
+                            const SizedBox(width: 12),
+                            Flexible(
+                              child: Text(
+                                uf(
+                                  context,
+                                  'Need help? Contact the administrator.',
+                                  'സഹായത്തിനായി administrator-നെ ബന്ധപ്പെടുക.',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                TextButton(
-                  onPressed: () => setState(() => initialize = load()),
-                  child: Text(tr(context, 'retry')),
-                ),
-                TextButton(
-                  onPressed: () => db.auth.signOut(),
-                  child: Text(tr(context, 'signout')),
-                ),
-              ],
+              ),
             ),
           ),
         );
@@ -1110,30 +1194,32 @@ class _AuthScreenState extends State<AuthScreen> {
     String label,
     String hint, {
     Widget? suffix,
+    IconData? icon,
   }) => InputDecoration(
     labelText: label,
-    floatingLabelBehavior: FloatingLabelBehavior.always,
+    floatingLabelBehavior: FloatingLabelBehavior.auto,
     hintText: hint,
     hintStyle: const TextStyle(color: Color(0xff6d6b7c)),
     filled: true,
     fillColor: Colors.white,
     suffixIcon: suffix,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+    prefixIcon: icon == null ? null : Icon(icon, color: growthPurple),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(32)),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(32),
       borderSide: const BorderSide(color: Color(0xffd9d8e4)),
     ),
   );
 
   @override
   Widget build(BuildContext context) {
-    const color = growthPurple;
     return Scaffold(
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
@@ -1141,27 +1227,21 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Colors.white,
-                          size: 23,
-                        ),
+                      Image.asset(
+                        'assets/design/brand_logo.png',
+                        width: 48,
+                        height: 48,
+                        excludeFromSemantics: true,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 6),
                       const Expanded(
                         child: Text(
-                          'Growth Circle',
+                          'Growth\nCircle',
                           style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xff201d2d),
+                            fontSize: 16,
+                            height: 1.05,
+                            fontWeight: FontWeight.w700,
+                            color: growthInk,
                           ),
                         ),
                       ),
@@ -1176,58 +1256,80 @@ class _AuthScreenState extends State<AuthScreen> {
                     const GrowthArt('verify', height: 150),
                   ] else
                     const SizedBox(height: 42),
-                  Text(
-                    tr(
-                      context,
-                      pendingEmail != null
-                          ? 'otpTitle'
-                          : registering
-                          ? 'register'
-                          : 'authWelcome',
-                    ),
-                    style: const TextStyle(
-                      fontSize: 28,
-                      height: 1.2,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xff201d2d),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    pendingEmail != null
-                        ? '${tr(context, 'otpHint')} $pendingEmail'
-                        : tr(
-                            context,
-                            registering ? 'authSignupDesc' : 'authWelcomeDesc',
+                  if (pendingEmail == null)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tr(
+                                  context,
+                                  registering ? 'register' : 'authWelcome',
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w800,
+                                  color: growthInk,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                tr(
+                                  context,
+                                  registering
+                                      ? 'authSignupDesc'
+                                      : 'authWelcomeDesc',
+                                ),
+                                style: const TextStyle(
+                                  color: Color(0xff5f5d6c),
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
                           ),
-                    style: const TextStyle(
-                      color: Color(0xff5f5d6c),
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 34),
-                  if (pendingEmail != null) ...[
-                    TextField(
-                      key: const Key('otp'),
-                      controller: otp,
-                      enabled: !busy,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      autofillHints: const [AutofillHints.oneTimeCode],
-                      decoration: fieldDecoration(tr(context, 'otp'), '000000'),
+                        ),
+                        const SizedBox(width: 4),
+                        Image.asset(
+                          'assets/design/${registering ? 'auth_signup_art' : 'auth_signin_art'}.png',
+                          width: 72,
+                          height: 88,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                      ],
+                    )
+                  else ...[
+                    Text(
+                      tr(context, 'otpTitle'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        height: 1.2,
+                        fontWeight: FontWeight.w800,
+                        color: growthInk,
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: color,
-                        minimumSize: const Size.fromHeight(54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                    Text(
+                      '${tr(context, 'otpHint')} $pendingEmail',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xff5f5d6c),
+                        height: 1.5,
                       ),
+                    ),
+                  ],
+                  const SizedBox(height: 34),
+                  if (pendingEmail != null) ...[
+                    VerificationCodeField(controller: otp, enabled: !busy),
+                    const SizedBox(height: 10),
+                    GrowthPrimaryButton(
                       onPressed: busy ? null : verify,
-                      child: Text(tr(context, 'verifyOtp')),
+                      label: tr(context, 'verifyOtp'),
+                      icon: Icons.arrow_forward,
                     ),
                     const SizedBox(height: 12),
                     TextButton(
@@ -1259,6 +1361,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         decoration: fieldDecoration(
                           tr(context, 'authName'),
                           tr(context, 'authNameHint'),
+                          icon: Icons.person_outline,
                         ),
                       ),
                       const SizedBox(height: 22),
@@ -1272,6 +1375,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       decoration: fieldDecoration(
                         tr(context, 'email'),
                         tr(context, 'authEmailHint'),
+                        icon: Icons.mail_outline,
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -1293,6 +1397,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               ? 'authNewPasswordHint'
                               : 'authPasswordHint',
                         ),
+                        icon: Icons.lock_outline,
                         suffix: IconButton(
                           tooltip: tr(
                             context,
@@ -1321,18 +1426,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       )
                     else
                       const SizedBox(height: 24),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: color,
-                        minimumSize: const Size.fromHeight(54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
+                    GrowthPrimaryButton(
                       onPressed: busy || cooldown > 0 ? null : submit,
-                      child: Text(
-                        tr(context, registering ? 'register' : 'login'),
-                      ),
+                      label: tr(context, registering ? 'register' : 'login'),
+                      icon: Icons.arrow_forward,
                     ),
                     if (registering) ...[
                       const SizedBox(height: 12),
@@ -1382,6 +1479,141 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
+class VerificationCodeField extends StatefulWidget {
+  const VerificationCodeField({
+    super.key,
+    required this.controller,
+    required this.enabled,
+  });
+  final TextEditingController controller;
+  final bool enabled;
+  @override
+  State<VerificationCodeField> createState() => _VerificationCodeFieldState();
+}
+
+class _VerificationCodeFieldState extends State<VerificationCodeField> {
+  final focusNode = FocusNode();
+  @override
+  void initState() {
+    super.initState();
+    focusNode.addListener(_updateFocus);
+  }
+
+  void _updateFocus() => setState(() {});
+  @override
+  void dispose() {
+    focusNode.removeListener(_updateFocus);
+    focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .72),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xffded5ed)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.lock, size: 14, color: growthPurple),
+            const SizedBox(width: 6),
+            Text(
+              tr(context, 'otp'),
+              style: const TextStyle(
+                color: growthPurple,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Stack(
+          children: [
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: widget.controller,
+              builder: (context, value, _) => ExcludeSemantics(
+                child: Row(
+                  children: [
+                    for (var i = 0; i < 6; i++)
+                      Expanded(
+                        child: Container(
+                          height: 46,
+                          margin: EdgeInsets.only(right: i == 5 ? 0 : 6),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xfffaf9ff),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color:
+                                  focusNode.hasFocus &&
+                                      i ==
+                                          value.selection.extentOffset.clamp(
+                                            0,
+                                            5,
+                                          )
+                                  ? growthPurple
+                                  : const Color(0xffe1dcec),
+                            ),
+                          ),
+                          child: Text(
+                            i < value.text.length ? value.text[i] : '',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: TextField(
+                key: const Key('otp'),
+                controller: widget.controller,
+                focusNode: focusNode,
+                enabled: widget.enabled,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                autofillHints: const [AutofillHints.oneTimeCode],
+                style: const TextStyle(color: Colors.transparent),
+                cursorColor: Colors.transparent,
+                decoration: InputDecoration(
+                  labelText: tr(context, 'otp'),
+                  labelStyle: const TextStyle(color: Colors.transparent),
+                  counterText: '',
+                  filled: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: widget.controller,
+          builder: (_, value, _) => Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '${value.text.length}/6',
+              style: const TextStyle(fontSize: 10, color: Color(0xff746c8a)),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class BrandIcon extends StatelessWidget {
   const BrandIcon({super.key});
   @override
@@ -1425,7 +1657,19 @@ class TaskTypePicker extends StatelessWidget {
     children: [
       for (final type in ['all', 'follow', 'like', 'comment', 'share'])
         ChoiceChip(
-          label: Text(tr(context, type == 'all' ? 'allTasks' : type)),
+          padding: EdgeInsets.zero,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 3),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          label: Text(
+            tr(context, type == 'all' ? 'allTasks' : type),
+            style: TextStyle(
+              color: selected == type ? Colors.white : growthInk,
+              fontSize: 10,
+            ),
+          ),
+          selectedColor: growthPurple,
+          checkmarkColor: Colors.white,
           selected: selected == type,
           onSelected: (_) => onSelected(type),
         ),
@@ -1467,7 +1711,19 @@ class NotificationsPage extends StatelessWidget {
   final Future<void> Function(String id) markRead;
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(tr(context, 'notifications'))),
+    appBar: AppBar(
+      title: Text(tr(context, 'notifications')),
+      actions: [
+        IconButton(
+          tooltip: uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ'),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(builder: (_) => const UserSettingsPage()),
+          ),
+          icon: const Icon(Icons.settings_outlined),
+        ),
+      ],
+    ),
     body: StreamBuilder<List<Map<String, dynamic>>>(
       stream: stream,
       builder: (context, snapshot) {
@@ -1476,16 +1732,26 @@ class NotificationsPage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         final items = snapshot.data!;
-        if (items.isEmpty) {
-          return Center(
-            child: GrowthEmpty(
-              art: 'notifications',
-              title: tr(context, 'noNotifications'),
-            ),
-          );
-        }
         return AppListView(
           children: [
+            if (items.where((item) => item['read_at'] == null).length == 1)
+              const GrowthArt('notifications', height: 125),
+            if (items.where((item) => item['read_at'] == null).length > 1)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 30),
+                child: Center(
+                  child: Badge.count(
+                    count: items
+                        .where((item) => item['read_at'] == null)
+                        .length,
+                    child: const Icon(
+                      Icons.notifications_rounded,
+                      color: growthPurple,
+                      size: 70,
+                    ),
+                  ),
+                ),
+              ),
             for (final item in items)
               Card(
                 child: ListTile(
@@ -1544,6 +1810,21 @@ class NotificationsPage extends StatelessWidget {
                       : null,
                 ),
               ),
+            GrowthEmpty(
+              art: 'notification_empty',
+              title: items.isEmpty
+                  ? tr(context, 'noNotifications')
+                  : uf(
+                      context,
+                      'No more notifications',
+                      'കൂടുതൽ notifications ഇല്ല',
+                    ),
+              subtitle: uf(
+                context,
+                "You're all caught up!",
+                'പുതിയ notifications ഒന്നുമില്ല.',
+              ),
+            ),
           ],
         );
       },
@@ -1641,45 +1922,10 @@ class _HomeShellState extends State<HomeShell> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(36),
-          boxShadow: [
-            BoxShadow(
-              color: growthPurple.withValues(alpha: .12),
-              blurRadius: 18,
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: NavigationBar(
-          selectedIndex: selected,
-          onDestinationSelected: (i) => setState(() => selected = i),
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home_rounded),
-              label: tr(context, labels[0]),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.explore_outlined),
-              selectedIcon: const Icon(Icons.explore),
-              label: tr(context, labels[1]),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.campaign_outlined),
-              selectedIcon: const Icon(Icons.campaign),
-              label: tr(context, labels[2]),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: const Icon(Icons.person),
-              label: tr(context, labels[3]),
-            ),
-          ],
-        ),
+      bottomNavigationBar: GrowthNavigation(
+        selected: selected,
+        labels: [for (final label in labels) tr(context, label)],
+        onSelected: (index) => setState(() => selected = index),
       ),
     );
   }
@@ -1697,9 +1943,13 @@ class BalanceCard extends StatelessWidget {
         balanceStream ??
         db.from('wallets').stream(primaryKey: ['id']).eq('id', uid),
     builder: (context, snapshot) => Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
       decoration: BoxDecoration(
         gradient: growthGradient,
+        image: const DecorationImage(
+          image: AssetImage('assets/design/balance_background.png'),
+          fit: BoxFit.fill,
+        ),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
@@ -1733,7 +1983,7 @@ class BalanceCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.stars_rounded, color: Color(0xffffc542), size: 54),
+          const SizedBox(width: 110, height: 80),
         ],
       ),
     ),
@@ -1756,18 +2006,33 @@ class Dashboard extends StatelessWidget {
     padding: const EdgeInsets.all(20),
     children: [
       BalanceCard(uid: uid, balanceStream: balanceStream),
-      const SizedBox(height: 28),
+      const SizedBox(height: 20),
       Text(
         tr(context, 'welcome'),
-        style: Theme.of(context).textTheme.headlineSmall
-            ?.copyWith(fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: growthInk,
+        ),
+      ),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          width: 42,
+          height: 3,
+          margin: const EdgeInsets.only(top: 5),
+          decoration: BoxDecoration(
+            color: growthPurple,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
       ),
       const SizedBox(height: 10),
       Text(
         tr(context, 'homeDesc'),
-        style: Theme.of(context).textTheme.bodyLarge,
+        style: const TextStyle(fontSize: 13, color: Color(0xff635b80)),
       ),
-      const SizedBox(height: 24),
+      const SizedBox(height: 14),
       Column(
         children: [
           Card(
@@ -1796,7 +2061,7 @@ class Dashboard extends StatelessWidget {
           ),
         ],
       ),
-      const SizedBox(height: 24),
+      const SizedBox(height: 14),
       Notice(),
       const SizedBox(height: 12),
       const GrowthArt('gift', height: 150),
@@ -1814,11 +2079,21 @@ class Notice extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
     ),
     child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Icon(Icons.info, color: growthPurple, size: 24),
-        const SizedBox(width: 10),
-        Expanded(child: Text(tr(context, 'disclaimer'))),
+        Container(
+          width: 1,
+          height: 28,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          color: const Color(0xffb99cdd),
+        ),
+        Expanded(
+          child: Text(
+            tr(context, 'disclaimer'),
+            style: const TextStyle(fontSize: 11, color: growthInk),
+          ),
+        ),
       ],
     ),
   );
@@ -2276,8 +2551,21 @@ class ReviewApi {
 }
 
 class TaskList extends StatefulWidget {
-  const TaskList({super.key, required this.uid});
+  const TaskList({
+    super.key,
+    required this.uid,
+    this.controlsStream,
+    this.presenceStream,
+    this.campaignsStream,
+    this.claimsStream,
+    this.loadSavedIds,
+  });
   final String uid;
+  final Stream<List<Map<String, dynamic>>>? controlsStream,
+      presenceStream,
+      campaignsStream,
+      claimsStream;
+  final Future<List<String>> Function()? loadSavedIds;
   @override
   State<TaskList> createState() => _TaskListState();
 }
@@ -2295,15 +2583,19 @@ class _TaskListState extends State<TaskList> {
 
   Future<void> loadSaved() async {
     try {
-      final rows = await db
-          .from('saved_tasks')
-          .select('campaign_id')
-          .eq('user_id', widget.uid);
+      final ids = widget.loadSavedIds != null
+          ? await widget.loadSavedIds!()
+          : (await db
+                    .from('saved_tasks')
+                    .select('campaign_id')
+                    .eq('user_id', widget.uid))
+                .map((row) => row['campaign_id'] as String)
+                .toList();
       if (mounted) {
         setState(() {
           saved
             ..clear()
-            ..addAll(rows.map((r) => r['campaign_id'] as String));
+            ..addAll(ids);
           savedError = false;
           savedLoading = false;
         });
@@ -2367,7 +2659,9 @@ class _TaskListState extends State<TaskList> {
   @override
   Widget build(BuildContext context) =>
       StreamBuilder<List<Map<String, dynamic>>>(
-        stream: db.from('action_controls').stream(primaryKey: ['action_type']),
+        stream:
+            widget.controlsStream ??
+            db.from('action_controls').stream(primaryKey: ['action_type']),
         builder: (context, controls) {
           if (controls.hasError) {
             return Center(child: Text(tr(context, 'error')));
@@ -2380,10 +2674,12 @@ class _TaskListState extends State<TaskList> {
               row['action_type'] as String: row['enabled'] == true,
           };
           return StreamBuilder<List<Map<String, dynamic>>>(
-            stream: db
-                .from('admin_review_presence')
-                .stream(primaryKey: ['session_id'])
-                .eq('user_id', widget.uid),
+            stream:
+                widget.presenceStream ??
+                db
+                    .from('admin_review_presence')
+                    .stream(primaryKey: ['session_id'])
+                    .eq('user_id', widget.uid),
             builder: (context, presence) {
               if (presence.hasError) {
                 return Center(child: Text(tr(context, 'error')));
@@ -2402,17 +2698,21 @@ class _TaskListState extends State<TaskList> {
     Map<String, bool> controls,
     List<Map<String, dynamic>> presence,
   ) => StreamBuilder<List<Map<String, dynamic>>>(
-    stream: db.from('campaigns').stream(primaryKey: ['id']),
+    stream:
+        widget.campaignsStream ??
+        db.from('campaigns').stream(primaryKey: ['id']),
     builder: (context, campaigns) {
       if (campaigns.hasError) return Center(child: Text(tr(context, 'error')));
       if (!campaigns.hasData) {
         return const Center(child: CircularProgressIndicator());
       }
       return StreamBuilder<List<Map<String, dynamic>>>(
-        stream: db
-            .from('campaign_claims')
-            .stream(primaryKey: ['campaign_id', 'user_id'])
-            .eq('user_id', widget.uid),
+        stream:
+            widget.claimsStream ??
+            db
+                .from('campaign_claims')
+                .stream(primaryKey: ['campaign_id', 'user_id'])
+                .eq('user_id', widget.uid),
         builder: (context, claims) {
           if (claims.hasError) return Center(child: Text(tr(context, 'error')));
           if (!claims.hasData) {
@@ -2469,9 +2769,9 @@ class _TaskListState extends State<TaskList> {
               const SizedBox(height: 16),
               const Notice(),
               const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute<void>(
@@ -2480,6 +2780,12 @@ class _TaskListState extends State<TaskList> {
                   ),
                   icon: const Icon(Icons.history),
                   label: Text(tr(context, 'viewHistory')),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                    side: const BorderSide(color: Color(0xffc8b2eb)),
+                  ),
                 ),
               ),
               if (history.isNotEmpty) ...[
@@ -2488,18 +2794,30 @@ class _TaskListState extends State<TaskList> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 for (final entry in history.take(10))
-                  ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.fact_check_outlined),
-                    title: Text(
-                      tr(
-                        context,
-                        allCampaigns[entry['campaign_id']]?['type'] ?? 'type',
+                  Card(
+                    child: ListTile(
+                      dense: true,
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffeee6ff),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.fact_check_outlined,
+                          color: growthPurple,
+                        ),
                       ),
-                    ),
-                    subtitle: SubmissionStatus(
-                      claim: entry,
-                      presence: presence,
+                      title: Text(
+                        tr(
+                          context,
+                          allCampaigns[entry['campaign_id']]?['type'] ?? 'type',
+                        ),
+                      ),
+                      subtitle: SubmissionStatus(
+                        claim: entry,
+                        presence: presence,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 12),
@@ -2511,6 +2829,14 @@ class _TaskListState extends State<TaskList> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: FilterChip(
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  avatar: const Icon(
+                    Icons.bookmark_border,
+                    size: 16,
+                    color: growthPurple,
+                  ),
                   label: Text(tr(context, 'savedTasks')),
                   selected: savedOnly,
                   onSelected: savedLoading
@@ -2894,8 +3220,9 @@ class PendingReviews extends StatelessWidget {
 }
 
 class Campaigns extends StatelessWidget {
-  const Campaigns({super.key, required this.uid});
+  const Campaigns({super.key, required this.uid, this.campaignsStream});
   final String uid;
+  final Stream<List<Map<String, dynamic>>>? campaignsStream;
   Future<void> cancel(BuildContext context, String id) async {
     final yes = await showDialog<bool>(
       context: context,
@@ -2927,7 +3254,9 @@ class Campaigns extends StatelessWidget {
   Widget build(
     BuildContext context,
   ) => StreamBuilder<List<Map<String, dynamic>>>(
-    stream: db.from('campaigns').stream(primaryKey: ['id']).eq('ownerId', uid),
+    stream:
+        campaignsStream ??
+        db.from('campaigns').stream(primaryKey: ['id']).eq('ownerId', uid),
     builder: (context, snapshot) {
       if (snapshot.hasError) return Center(child: Text(tr(context, 'error')));
       if (!snapshot.hasData) {
@@ -2949,6 +3278,7 @@ class Campaigns extends StatelessWidget {
               'നിങ്ങളുടെ campaigns സൃഷ്ടിക്കുകയും നിയന്ത്രിക്കുകയും ചെയ്യുക.',
             ),
             icon: Icons.campaign_rounded,
+            background: 'campaign_background',
           ),
           const SizedBox(height: 12),
           if (docs.isEmpty)
@@ -2960,15 +3290,15 @@ class Campaigns extends StatelessWidget {
                 'Create your first campaign and reach more audience.',
                 'നിങ്ങളുടെ ആദ്യ campaign സൃഷ്ടിക്കുക.',
               ),
-              action: FilledButton.icon(
+              action: GrowthActionButton(
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute<void>(
                     builder: (_) => const CreateCampaign(),
                   ),
                 ),
-                icon: const Icon(Icons.add),
-                label: Text(tr(context, 'create')),
+                icon: Icons.add,
+                label: tr(context, 'create'),
               ),
             )
           else
@@ -3303,6 +3633,7 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
             'ലഭിച്ചതും ചെലവാക്കിയതുമായ coins കാണുക',
           ),
           icon: Icons.stars_rounded,
+          background: 'coins_background',
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -3310,12 +3641,24 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
           children: [
             for (final option in ['all', 'earned', 'spent', 'refund'])
               FilterChip(
-                label: Text(switch (option) {
-                  'earned' => uf(context, 'Earned', 'ലഭിച്ചത്'),
-                  'spent' => uf(context, 'Spent', 'ചെലവായത്'),
-                  'refund' => uf(context, 'Refunds', 'Refunds'),
-                  _ => uf(context, 'All', 'എല്ലാം'),
-                }),
+                selectedColor: growthPurple,
+                checkmarkColor: Colors.white,
+                padding: EdgeInsets.zero,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 3),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                label: Text(
+                  switch (option) {
+                    'earned' => uf(context, 'Earned', 'ലഭിച്ചത്'),
+                    'spent' => uf(context, 'Spent', 'ചെലവായത്'),
+                    'refund' => uf(context, 'Refunds', 'Refunds'),
+                    _ => uf(context, 'All', 'എല്ലാം'),
+                  },
+                  style: TextStyle(
+                    color: filter == option ? Colors.white : growthInk,
+                    fontSize: 10,
+                  ),
+                ),
                 selected: filter == option,
                 onSelected: (_) => setState(() => filter = option),
               ),
@@ -3350,7 +3693,16 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
             if (docs.isEmpty) {
               return GrowthEmpty(
                 art: 'coins',
-                title: tr(context, 'emptyHistory'),
+                title: uf(
+                  context,
+                  'No Coin History Yet',
+                  'ഇതുവരെ coin history ഇല്ല',
+                ),
+                subtitle: uf(
+                  context,
+                  'Start earning coins and explore exciting rewards!',
+                  'Coins നേടി rewards കണ്ടെത്തൂ!',
+                ),
               );
             }
             return Column(
@@ -3419,6 +3771,7 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
   final current = TextEditingController();
   String? error;
   bool busy = false, otpSent = false;
+  bool showPin = false, showConfirm = false;
   int cooldown = 0;
   Timer? otpTimer;
   @override
@@ -3475,103 +3828,212 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
     }
   }
 
-  Widget pinField(TextEditingController controller, String label) => TextField(
+  Widget pinField(
+    TextEditingController controller,
+    String label, {
+    bool confirmation = false,
+  }) => TextField(
     controller: controller,
-    obscureText: true,
+    obscureText: confirmation ? !showConfirm : !showPin,
     keyboardType: TextInputType.number,
     inputFormatters: [
       FilteringTextInputFormatter.digitsOnly,
       LengthLimitingTextInputFormatter(4),
     ],
-    decoration: InputDecoration(labelText: tr(context, label)),
+    decoration: InputDecoration(
+      labelText: tr(context, label),
+      prefixIcon: const Icon(Icons.lock_outline, color: growthPurple),
+      suffixIcon: IconButton(
+        tooltip: tr(
+          context,
+          (confirmation ? showConfirm : showPin)
+              ? 'hidePassword'
+              : 'showPassword',
+        ),
+        onPressed: () => setState(() {
+          if (confirmation) {
+            showConfirm = !showConfirm;
+          } else {
+            showPin = !showPin;
+          }
+        }),
+        icon: Icon(
+          (confirmation ? showConfirm : showPin)
+              ? Icons.visibility_outlined
+              : Icons.visibility_off_outlined,
+        ),
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide.none,
+      ),
+    ),
   );
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(
-      tr(
-        context,
-        widget.setup
-            ? (widget.changing ? 'changePin' : 'setupPin')
-            : 'releasePin',
-      ),
+    insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+    backgroundColor: const Color(0xfff8f5ff),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+    title: Column(
+      children: [
+        if (widget.setup)
+          Image.asset(
+            'assets/design/pin_shield.png',
+            height: 105,
+            excludeFromSemantics: true,
+          ),
+        Text(
+          tr(
+            context,
+            widget.setup
+                ? (widget.changing ? 'changePin' : 'setupPin')
+                : 'releasePin',
+          ),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: growthInk,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (widget.setup)
+          Text(
+            uf(
+              context,
+              'Keep your account more secure',
+              'നിങ്ങളുടെ account കൂടുതൽ സുരക്ഷിതമാക്കുക',
+            ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+          ),
+      ],
     ),
-    content: SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.shield_rounded, color: growthPurple, size: 54),
-          const SizedBox(height: 8),
-          if (!widget.setup) Text(tr(context, 'enterPin')),
-          if (widget.setup) ...[
-            OutlinedButton(
-              onPressed: busy || cooldown > 0 || widget.sendOtp == null
-                  ? null
-                  : () async {
-                      setState(() {
-                        busy = true;
-                        error = null;
-                      });
-                      try {
-                        await widget.sendOtp!();
-                        if (mounted) {
+    content: SizedBox(
+      width: 360,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!widget.setup)
+              const Icon(Icons.shield_rounded, color: growthPurple, size: 54),
+            const SizedBox(height: 8),
+            if (!widget.setup) Text(tr(context, 'enterPin')),
+            if (widget.setup) ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.mail_outline),
+                  onPressed: busy || cooldown > 0 || widget.sendOtp == null
+                      ? null
+                      : () async {
                           setState(() {
-                            otpSent = true;
-                            cooldown = 60;
+                            busy = true;
+                            error = null;
                           });
-                          otpTimer?.cancel();
-                          otpTimer = Timer.periodic(
-                            const Duration(seconds: 1),
-                            (timer) {
-                              if (!mounted) {
-                                timer.cancel();
-                                return;
-                              }
-                              setState(() => cooldown--);
-                              if (cooldown == 0) timer.cancel();
-                            },
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          setState(() => error = friendlyError(context, e));
-                        }
-                      } finally {
-                        if (mounted) setState(() => busy = false);
-                      }
-                    },
-              child: Text(
-                '${tr(context, 'sendPinOtp')}${cooldown > 0 ? ' ($cooldown)' : ''}',
+                          try {
+                            await widget.sendOtp!();
+                            if (mounted) {
+                              setState(() {
+                                otpSent = true;
+                                cooldown = 60;
+                              });
+                              otpTimer?.cancel();
+                              otpTimer = Timer.periodic(
+                                const Duration(seconds: 1),
+                                (timer) {
+                                  if (!mounted) {
+                                    timer.cancel();
+                                    return;
+                                  }
+                                  setState(() => cooldown--);
+                                  if (cooldown == 0) timer.cancel();
+                                },
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              setState(() => error = friendlyError(context, e));
+                            }
+                          } finally {
+                            if (mounted) setState(() => busy = false);
+                          }
+                        },
+                  label: Text(
+                    '${tr(context, 'sendPinOtp')}${cooldown > 0 ? ' ($cooldown)' : ''}',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: const Color(0xffe9def9),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            if (otpSent) Text(tr(context, 'otpSentPin')),
-            TextField(
-              controller: current,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(6),
-              ],
-              decoration: InputDecoration(labelText: tr(context, 'otp')),
-            ),
+              const SizedBox(height: 8),
+              if (otpSent) Text(tr(context, 'otpSentPin')),
+              TextField(
+                controller: current,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                decoration: InputDecoration(
+                  labelText: tr(context, 'otp'),
+                  prefixIcon: const Icon(
+                    Icons.lock_outline,
+                    color: growthPurple,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            pinField(pin, widget.setup ? 'newPin' : 'releasePin'),
+            if (widget.setup) ...[
+              const SizedBox(height: 8),
+              pinField(confirm, 'confirmPin', confirmation: true),
+            ],
+            if (error != null)
+              Text(
+                error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
           ],
-          pinField(pin, widget.setup ? 'newPin' : 'releasePin'),
-          if (widget.setup) pinField(confirm, 'confirmPin'),
-          if (error != null)
-            Text(
-              error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-        ],
+        ),
       ),
     ),
     actions: [
       TextButton(
         onPressed: busy ? null : () => Navigator.pop(context),
+        style: TextButton.styleFrom(
+          side: const BorderSide(color: Color(0xffa68ccf)),
+          shape: const StadiumBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+        ),
         child: Text(tr(context, 'cancel')),
       ),
-      FilledButton(
-        onPressed: busy ? null : submit,
-        child: Text(tr(context, widget.setup ? 'save' : 'yesConfirm')),
+      SizedBox(
+        width: 125,
+        child: GrowthPrimaryButton(
+          onPressed: busy ? null : submit,
+          label: tr(context, widget.setup ? 'save' : 'yesConfirm'),
+        ),
       ),
     ],
   );
@@ -3964,15 +4426,31 @@ class ProfileLayout extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                   children: [
                     Center(
-                      child: CircleAvatar(
-                        radius: 40,
-                        backgroundColor: const Color(0xffc5f64b),
-                        child: Text(
-                          profileInitials(name),
-                          style: const TextStyle(
-                            fontSize: 27,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xff171a13),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xffc5a8fa),
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: growthPurple.withValues(alpha: .12),
+                              blurRadius: 12,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 36,
+                          backgroundColor: const Color(0xffc5f64b),
+                          child: Text(
+                            profileInitials(name),
+                            style: const TextStyle(
+                              fontSize: 27,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xff171a13),
+                            ),
                           ),
                         ),
                       ),
@@ -4025,6 +4503,7 @@ class ProfileLayout extends StatelessWidget {
                           ProfileStat(
                             value: balance?.toString() ?? '—',
                             label: tr(context, 'coins'),
+                            icon: Icons.toll,
                           ),
                           Container(
                             width: 1,
@@ -4034,6 +4513,7 @@ class ProfileLayout extends StatelessWidget {
                           ProfileStat(
                             value: info?.usernames.length.toString() ?? '—',
                             label: tr(context, 'profileAccounts'),
+                            icon: Icons.person,
                           ),
                           Container(
                             width: 1,
@@ -4043,6 +4523,7 @@ class ProfileLayout extends StatelessWidget {
                           ProfileStat(
                             value: info?.referralCount.toString() ?? '—',
                             label: tr(context, 'profileReferrals'),
+                            icon: Icons.share,
                           ),
                         ],
                       ),
@@ -4162,7 +4643,7 @@ class ProfileLayout extends StatelessWidget {
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute<void>(
-                                builder: (_) => const UserHelpPage(),
+                                builder: (_) => UserHelpPage(client: db),
                               ),
                             ),
                           ),
@@ -4207,12 +4688,19 @@ class ProfileLayout extends StatelessWidget {
 }
 
 class ProfileStat extends StatelessWidget {
-  const ProfileStat({super.key, required this.value, required this.label});
+  const ProfileStat({
+    super.key,
+    required this.value,
+    required this.label,
+    this.icon,
+  });
   final String value, label;
+  final IconData? icon;
   @override
   Widget build(BuildContext context) => Expanded(
     child: Column(
       children: [
+        if (icon != null) Icon(icon, size: 18, color: growthPurple),
         Text(
           value,
           style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
@@ -4397,24 +4885,72 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                   'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് rewards നേടുക',
                 ),
                 icon: Icons.card_giftcard_rounded,
+                background: 'referral_background',
               ),
               const SizedBox(height: 16),
             ],
             if (widget.accounts) ...[
-              FilledButton.icon(
-                onPressed: search,
-                icon: const Icon(Icons.search),
-                label: Text(tr(context, 'instagramSearch')),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: search,
+                        icon: const Icon(Icons.search),
+                        label: Text(tr(context, 'instagramSearch')),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: const Color(0xffeee7fa),
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                        ),
+                      ),
+                      if (info.usernames.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            uf(
+                              context,
+                              'No Instagram usernames added yet.',
+                              'Instagram usernames ചേർത്തിട്ടില്ല.',
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      TextButton.icon(
+                        onPressed: input,
+                        icon: const Icon(Icons.add_circle),
+                        label: Text(tr(context, 'addAccount')),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               if (info.usernames.isEmpty)
                 GrowthEmpty(
                   art: 'accounts',
-                  title: tr(context, 'noAccounts'),
+                  title: uf(
+                    context,
+                    'No Instagram Accounts Yet!',
+                    'Instagram accounts ചേർത്തിട്ടില്ല!',
+                  ),
                   subtitle: uf(
                     context,
                     'Add your Instagram username to manage your account here.',
                     'നിങ്ങളുടെ Instagram username ചേർക്കുക.',
+                  ),
+                  action: GrowthActionButton(
+                    onPressed: input,
+                    icon: Icons.add,
+                    label: uf(
+                      context,
+                      'Add Instagram username',
+                      'Instagram username ചേർക്കുക',
+                    ),
                   ),
                 ),
               for (final username in info.usernames)
@@ -4428,101 +4964,155 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                     ),
                   ),
                 ),
-              TextButton.icon(
-                onPressed: input,
-                icon: const Icon(Icons.add),
-                label: Text(tr(context, 'addAccount')),
-              ),
             ] else ...[
-              Text(tr(context, 'referralNoReward')),
-              for (final reward in info.referralRewards.entries)
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.toll_outlined),
-                    title: Text(
-                      reward.key == 'invite'
-                          ? (Localizations.localeOf(context).languageCode ==
-                                    'ml'
-                                ? 'ഓരോ invite-നും'
-                                : 'Each referral')
-                          : '${reward.key.split('_').last} invites · ${Localizations.localeOf(context).languageCode == 'ml' ? 'അധിക bonus' : 'extra bonus'}',
-                    ),
-                    trailing: Text('${reward.value} ${tr(context, 'coins')}'),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              Text(tr(context, 'referralCode')),
-              SelectableText(
-                info.referralCode,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              TextButton.icon(
-                onPressed: () async {
-                  await Clipboard.setData(
-                    ClipboardData(text: info.referralCode),
-                  );
-                  if (context.mounted) toast(context, tr(context, 'copied'));
-                },
-                icon: const Icon(Icons.copy),
-                label: Text(tr(context, 'copyCode')),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: () async {
-                  try {
-                    await SharePlus.instance.share(
-                      ShareParams(
-                        text:
-                            '${tr(context, 'referralCode')}: ${info.referralCode}',
-                      ),
-                    );
-                  } catch (_) {
-                    if (context.mounted) toast(context, tr(context, 'error'));
-                  }
-                },
-                icon: const Icon(Icons.share_outlined),
-                label: Text(tr(context, 'shareReferral')),
-              ),
-              Text('${tr(context, 'referralCount')}: ${info.referralCount}'),
-              Builder(
-                builder: (context) {
-                  final next = [
-                    5,
-                    10,
-                    15,
-                  ].where((n) => n > info.referralCount).firstOrNull;
-                  return next == null
-                      ? Text(
-                          uf(
-                            context,
-                            'All referral milestones reached.',
-                            'എല്ലാ referral milestones-ഉം പൂർത്തിയായി.',
-                          ),
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 8),
-                            Text(
-                              '${uf(context, 'Next milestone', 'അടുത്ത milestone')}: ${info.referralCount}/$next',
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.card_giftcard, color: growthPurple),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              tr(context, 'referralNoReward'),
+                              style: const TextStyle(fontSize: 11),
                             ),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: (info.referralCount / next).clamp(
-                                0.0,
-                                1.0,
+                          ),
+                        ],
+                      ),
+                      for (final reward in info.referralRewards.entries)
+                        Card(
+                          color: const Color(0xfff2edfb),
+                          elevation: 0,
+                          child: ListTile(
+                            dense: true,
+                            minLeadingWidth: 20,
+                            leading: const Icon(
+                              Icons.radio_button_unchecked,
+                              color: growthPurple,
+                              size: 18,
+                            ),
+                            title: Text(
+                              reward.key == 'invite'
+                                  ? (Localizations.localeOf(context)
+                                                .languageCode ==
+                                            'ml'
+                                        ? 'ഓരോ invite-നും'
+                                        : 'Each referral')
+                                  : '${reward.key.split('_').last} invites · ${Localizations.localeOf(context).languageCode == 'ml' ? 'അധിക bonus' : 'extra bonus'}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: Text(
+                              '${reward.value} ${tr(context, 'coins')}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: growthPurple,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ],
-                        );
-                },
-              ),
-              if (info.referralJoined)
-                Text(tr(context, 'referralJoined'))
-              else
-                TextButton(
-                  onPressed: input,
-                  child: Text(tr(context, 'referralEnter')),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      Text(
+                        tr(context, 'referralCode'),
+                        textAlign: TextAlign.center,
+                      ),
+                      Container(
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffeee5fa),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xffc9b3ed)),
+                        ),
+                        child: SelectableText(
+                          info.referralCode,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: growthInk,
+                          ),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: info.referralCode),
+                          );
+                          if (context.mounted) {
+                            toast(context, tr(context, 'copied'));
+                          }
+                        },
+                        icon: const Icon(Icons.copy),
+                        label: Text(tr(context, 'copyCode')),
+                      ),
+                      FilledButton.tonalIcon(
+                        onPressed: () async {
+                          try {
+                            await SharePlus.instance.share(
+                              ShareParams(
+                                text:
+                                    '${tr(context, 'referralCode')}: ${info.referralCode}',
+                              ),
+                            );
+                          } catch (_) {
+                            if (context.mounted) {
+                              toast(context, tr(context, 'error'));
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.share_outlined),
+                        label: Text(tr(context, 'shareReferral')),
+                      ),
+                      Text(
+                        '${tr(context, 'referralCount')}: ${info.referralCount}',
+                      ),
+                      Builder(
+                        builder: (context) {
+                          final next = [
+                            5,
+                            10,
+                            15,
+                          ].where((n) => n > info.referralCount).firstOrNull;
+                          return next == null
+                              ? Text(
+                                  uf(
+                                    context,
+                                    'All referral milestones reached.',
+                                    'എല്ലാ referral milestones-ഉം പൂർത്തിയായി.',
+                                  ),
+                                )
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '${uf(context, 'Next milestone', 'അടുത്ത milestone')}: ${info.referralCount}/$next',
+                                    ),
+                                    const SizedBox(height: 8),
+                                    LinearProgressIndicator(
+                                      value: (info.referralCount / next).clamp(
+                                        0.0,
+                                        1.0,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                        },
+                      ),
+                      if (info.referralJoined)
+                        Text(tr(context, 'referralJoined'))
+                      else
+                        TextButton(
+                          onPressed: input,
+                          child: Text(tr(context, 'referralEnter')),
+                        ),
+                    ],
+                  ),
                 ),
+              ),
             ],
           ],
         );
