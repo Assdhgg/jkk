@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'admin_operations.dart';
+import 'admin_design.dart';
 import 'app_updates.dart';
 
 class AdminAppReleasesPage extends StatefulWidget {
@@ -177,10 +178,108 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
     }
   }
 
+  Widget releaseForm(bool wide) {
+    final codeField = TextField(
+      controller: code,
+      enabled: !busy,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(
+        labelText: 'APK version code (build number)',
+      ),
+    );
+    final nameField = TextField(
+      controller: name,
+      enabled: !busy,
+      maxLength: 60,
+      decoration: const InputDecoration(labelText: 'Version name'),
+    );
+    final notesField = TextField(
+      controller: notes,
+      enabled: !busy,
+      maxLength: 4000,
+      maxLines: 3,
+      decoration: const InputDecoration(labelText: 'What is new?'),
+    );
+    final choose = OutlinedButton.icon(
+      onPressed: busy ? null : pick,
+      icon: const Icon(Icons.upload_file),
+      label: Text(apk?.name ?? 'Choose signed APK'),
+    );
+    final publishButton = FilledButton.icon(
+      onPressed: busy ? null : publish,
+      icon: const Icon(Icons.publish),
+      label: Text(busy ? 'Uploading & publishing…' : 'Publish update'),
+    );
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (wide) ...[
+              const SizedBox(
+                width: 200,
+                child: AdminIllustration('release', height: 210),
+              ),
+              const SizedBox(width: 20),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Upload new release',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  if (wide)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: codeField),
+                        const SizedBox(width: 12),
+                        Expanded(child: nameField),
+                        const SizedBox(width: 12),
+                        Expanded(child: notesField),
+                      ],
+                    )
+                  else ...[
+                    codeField,
+                    const SizedBox(height: 12),
+                    nameField,
+                    notesField,
+                  ],
+                  const SizedBox(height: 8),
+                  if (wide)
+                    Row(
+                      children: [
+                        Expanded(child: choose),
+                        const SizedBox(width: 12),
+                        Expanded(child: publishButton),
+                      ],
+                    )
+                  else ...[
+                    choose,
+                    const SizedBox(height: 12),
+                    publishButton,
+                  ],
+                  if (busy) const LinearProgressIndicator(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('App releases'),
+    appBar: AdminPageBar(
+      title: 'App releases',
+      icon: Icons.rocket_launch,
+      desktop: MediaQuery.sizeOf(context).width >= 1100,
+      subtitle: 'Manage app updates and release history.',
       actions: [
         IconButton(
           onPressed: busy ? null : () => setState(load),
@@ -191,7 +290,9 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
     ),
     body: Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 900),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width >= 1100 ? 1600 : 900,
+        ),
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
@@ -205,56 +306,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
             ),
             const SizedBox(height: 20),
             if (widget.canEdit)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextField(
-                        controller: code,
-                        enabled: !busy,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'APK version code (build number)',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: name,
-                        enabled: !busy,
-                        maxLength: 60,
-                        decoration: const InputDecoration(
-                          labelText: 'Version name',
-                        ),
-                      ),
-                      TextField(
-                        controller: notes,
-                        enabled: !busy,
-                        maxLength: 4000,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'What is new?',
-                        ),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: busy ? null : pick,
-                        icon: const Icon(Icons.upload_file),
-                        label: Text(apk?.name ?? 'Choose signed APK'),
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: busy ? null : publish,
-                        icon: const Icon(Icons.publish),
-                        label: Text(
-                          busy ? 'Uploading & publishing…' : 'Publish update',
-                        ),
-                      ),
-                      if (busy) const LinearProgressIndicator(),
-                    ],
-                  ),
-                ),
-              ),
+              releaseForm(MediaQuery.sizeOf(context).width >= 1100),
             if (error != null)
               Padding(
                 padding: const EdgeInsets.all(12),
