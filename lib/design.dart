@@ -5,7 +5,7 @@ const growthInk = Color(0xff171047);
 const growthGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xff8d43ff), Color(0xff4c0edc), Color(0xff290a96)],
+  colors: [Color(0xff31118f), Color(0xff3c11b6), Color(0xff742aff)],
 );
 
 /// The soft waves frame the content without intercepting taps or scrolling.
@@ -15,7 +15,7 @@ class GrowthBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: const Color(0xfff8f6ff),
+    color: const Color(0xfff6f3ff),
     child: Stack(
       fit: StackFit.expand,
       children: [
@@ -46,17 +46,17 @@ class _WavePainter extends CustomPainter {
       ..close();
     canvas.drawPath(topInner, Paint()..color = const Color(0xffd3bdf8));
     final wave = Path()
-      ..moveTo(0, h * .84)
-      ..cubicTo(w * .22, h * .79, w * .31, h * .98, w * .58, h * .91)
-      ..cubicTo(w * .80, h * .86, w * .88, h * .80, w, h * .84)
+      ..moveTo(0, h * .78)
+      ..cubicTo(w * .18, h * .75, w * .33, h * .92, w * .54, h * .90)
+      ..cubicTo(w * .75, h * .88, w * .89, h * .79, w, h * .79)
       ..lineTo(w, h)
       ..lineTo(0, h)
       ..close();
     canvas.drawPath(wave, Paint()..color = const Color(0xffe7dbfb));
     final lower = Path()
-      ..moveTo(0, h * .90)
-      ..cubicTo(w * .23, h * .85, w * .35, h * 1.02, w * .60, h * .95)
-      ..cubicTo(w * .83, h * .90, w * .91, h * .87, w, h * .90)
+      ..moveTo(0, h * .84)
+      ..cubicTo(w * .20, h * .80, w * .34, h * .98, w * .56, h * .94)
+      ..cubicTo(w * .79, h * .90, w * .89, h * .84, w, h * .85)
       ..lineTo(w, h)
       ..lineTo(0, h)
       ..close();
@@ -87,20 +87,122 @@ class GrowthArt extends StatelessWidget {
   );
 }
 
+class GrowthActionButton extends StatelessWidget {
+  const GrowthActionButton({
+    super.key,
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xff8c36ff), Color(0xff3a00bc)],
+      ),
+      borderRadius: BorderRadius.circular(32),
+      boxShadow: [
+        BoxShadow(
+          color: growthPurple.withValues(alpha: .25),
+          blurRadius: 14,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    child: FilledButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text(label),
+      style: FilledButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+      ),
+    ),
+  );
+}
+
+class GrowthPrimaryButton extends StatelessWidget {
+  const GrowthPrimaryButton({
+    super.key,
+    required this.onPressed,
+    required this.label,
+    this.icon,
+  });
+  final VoidCallback? onPressed;
+  final String label;
+  final IconData? icon;
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: onPressed == null
+            ? [const Color(0xffbfb3dd), const Color(0xffaca0ca)]
+            : [const Color(0xff893aff), const Color(0xff3900b8)],
+      ),
+      borderRadius: BorderRadius.circular(32),
+      boxShadow: [
+        BoxShadow(
+          color: growthPurple.withValues(alpha: .20),
+          blurRadius: 14,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    ),
+    child: FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(50),
+        backgroundColor: Colors.transparent,
+        disabledBackgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Center(child: Text(label, textAlign: TextAlign.center)),
+          if (icon != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Icon(icon, size: 20),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
 class GrowthHero extends StatelessWidget {
   const GrowthHero({
     super.key,
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.art,
+    this.background,
   });
   final String title, subtitle;
   final IconData icon;
+  final String? art;
+  final String? background;
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(22),
+    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
     decoration: BoxDecoration(
       gradient: growthGradient,
+      image: background == null
+          ? null
+          : DecorationImage(
+              image: AssetImage('assets/design/$background.png'),
+              fit: BoxFit.fill,
+            ),
       borderRadius: BorderRadius.circular(22),
       boxShadow: [
         BoxShadow(
@@ -120,23 +222,152 @@ class GrowthHero extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 5),
               Text(
                 subtitle,
-                style: const TextStyle(color: Colors.white70, height: 1.35),
+                style: const TextStyle(
+                  color: Colors.white70,
+                  height: 1.35,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(width: 12),
-        Icon(icon, color: const Color(0xffe3d4ff), size: 62),
+        if (background != null)
+          const SizedBox(width: 112, height: 82)
+        else if (art != null)
+          Image.asset(
+            'assets/design/$art.png',
+            height: 82,
+            width: 112,
+            fit: BoxFit.contain,
+            excludeFromSemantics: true,
+          )
+        else
+          Icon(icon, color: const Color(0xffe3d4ff), size: 62),
       ],
     ),
   );
+}
+
+/// Rounded navigation bar used by all four main screens.
+class GrowthNavigation extends StatelessWidget {
+  const GrowthNavigation({
+    super.key,
+    required this.selected,
+    required this.labels,
+    required this.onSelected,
+  });
+  final int selected;
+  final List<String> labels;
+  final ValueChanged<int> onSelected;
+  @override
+  Widget build(BuildContext context) {
+    const icons = [
+      Icons.home_outlined,
+      Icons.explore_outlined,
+      Icons.campaign_outlined,
+      Icons.person_outline,
+    ];
+    const active = [
+      Icons.home_rounded,
+      Icons.explore,
+      Icons.campaign,
+      Icons.person,
+    ];
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(36),
+          boxShadow: [
+            BoxShadow(
+              color: growthPurple.withValues(alpha: .16),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < labels.length; i++)
+              Expanded(
+                child: Semantics(
+                  button: true,
+                  selected: selected == i,
+                  label: labels[i],
+                  child: InkWell(
+                    onTap: () => onSelected(i),
+                    borderRadius: BorderRadius.circular(30),
+                    child: Container(
+                      height: 58,
+                      decoration: BoxDecoration(
+                        gradient: selected == i && i == 0
+                            ? const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Color(0xff762aff), Color(0xff3500b6)],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: selected == i && i != 0
+                                  ? const Color(0xffd6bcff)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Icon(
+                              selected == i ? active[i] : icons[i],
+                              size: 23,
+                              color: selected == i
+                                  ? (i == 0 ? Colors.white : growthPurple)
+                                  : growthInk,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              labels[i],
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: selected == i
+                                    ? (i == 0 ? Colors.white : growthPurple)
+                                    : growthInk,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class GrowthEmpty extends StatelessWidget {
@@ -146,16 +377,18 @@ class GrowthEmpty extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.action,
+    this.artHeight = 170,
   });
   final String art, title;
   final String? subtitle;
   final Widget? action;
+  final double artHeight;
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
     child: Column(
       children: [
-        GrowthArt(art),
+        GrowthArt(art, height: artHeight),
         const SizedBox(height: 12),
         Text(
           title,
