@@ -24,7 +24,9 @@ export function createHandler({secret, workerSecret, claim, send, finish}) {
       const results = await Promise.all(jobs.map(async job => {
         let outcome = {success: false, permanent: false};
         try {
-          const [title, body] = messages[job.kind] ?? ['Freelan Space', 'Open Freelan Space to see your update.'];
+          const [title, body] = job.kind === 'admin_message' && typeof job.title === 'string' && typeof job.body === 'string'
+            ? [job.title, job.body]
+            : messages[job.kind] ?? ['Freelan Space', 'Open Freelan Space to see your update.'];
           outcome = await send(job.token, title, body, job.kind);
         } catch (_) { /* Leased jobs are retried on transient errors. */ }
         try { await finish(job.job_id, job.lease_id, outcome.success, outcome.permanent); return outcome.success ? 'sent' : 'retry'; }

@@ -35,7 +35,7 @@ async function rpc(name: string, body: Record<string, unknown>) {
 const handler = createHandler({
   secret: serviceKey,
   workerSecret: Deno.env.get('PUSH_WORKER_SECRET') ?? '',
-  claim: async () => { await accessToken(); return await rpc('claim_push_jobs', {p_limit: 10}); },
+  claim: async () => { await accessToken(); return await rpc('claim_push_jobs_v2', {p_limit: 10}); },
   send: async (fid: string, title: string, body: string, kind: string) => {
     const token = await accessToken();
     const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(project)}/messages:send`, {method: 'POST', headers: {authorization: `Bearer ${token}`, 'content-type': 'application/json'}, body: JSON.stringify({message: {fid, notification: {title, body}, data: {kind}}}), signal: AbortSignal.timeout(10000)});

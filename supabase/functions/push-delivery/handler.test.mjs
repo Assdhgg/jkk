@@ -45,3 +45,13 @@ test('all push notification messages use the new app name', async () => {
     assert.doesNotMatch(`${message.title} ${message.body}`, /Growth Circle/i);
   }
 });
+
+test('admin messages send their own title and body without changing existing messages', async () => {
+ const sent=[];
+ const jobs=[{job_id:'a',lease_id:'1',token:'device-a',kind:'admin_message',title:'Maintenance',body:'We are updating the app.'},{job_id:'b',lease_id:'2',token:'device-b',kind:'approved',title:null,body:null}];
+ const handler=createHandler({secret:'local-secret',claim:async()=>jobs,send:async(...args)=>{sent.push(args);return {success:true,permanent:false}},finish:async()=>{}});
+ const res=await handler(new Request('https://worker.test',{method:'POST',headers:{authorization:'Bearer local-secret'}}));
+ assert.equal(res.status,200);
+ assert.deepEqual(sent[0],['device-a','Maintenance','We are updating the app.','admin_message']);
+ assert.deepEqual(sent[1],['device-b','Submission approved','Open Freelan Space to see your update.','approved']);
+});
