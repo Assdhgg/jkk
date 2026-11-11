@@ -28,7 +28,13 @@ Publishing inserts an in-app notification for existing wallet accounts and queue
 4. Deploy this branch's `push-delivery` Edge Function with JWT verification enabled so push messages use the Freelan Space name. Reuse the Firebase and Cron/Vault setup in `docs/USER_FEATURES.md` and the same projects; do not create another worker schedule. In Supabase Authentication → Email Templates, update the subjects and content of the existing Confirm signup, Magic Link and any other templates containing the old name. Use `supabase/templates/magic_link.html` for the PIN OTP template; keep the required OTP token and recovery behavior intact. Saved dashboard templates do not change when repository files change.
 
 <!-- /coderabbit-ai-generated:v1 -->
-5. Build and distribute the updated Windows admin app and an Android APK containing the new updater **before publishing an R2 release**. Existing clients construct Supabase URLs and cannot download R2 releases. Install this transition APK manually, or publish it through the old Supabase uploader if it fits the project's limit. Users who miss this transition need a manual update. Keep the same package ID and signing key.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:8d5e838da566c3d39295a75391caf952b00617ca033a925433aa1aeb86ee84df -->
+
+5. Build and distribute the updated Windows admin app and the first `space.freelan.app` Android APK **before publishing an R2 release**. The new package cannot replace the old `com.growthcircle.growth_circle` installation: distribute this first APK manually and ask users to sign in again. Do not publish this APK as an update for the old package; its installer correctly rejects a different package ID. Supabase accounts and server data are retained. Subsequent releases for the new app must keep `space.freelan.app` and the same production signing key.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Admin chooses and publishes the APK as before. R2 uploads are limited to 200 MiB by this app. If the publication response is lost, refresh release history before retrying. Failed uploads and failed publication can leave objects in R2; staging lifecycle cleans temporary objects. Release objects may also be orphaned after a failed or uncertain publication: reconcile with `app_releases` before removing any object, and never delete a published release. Downloads validate size, SHA-256, package, version and signer as before. Hosted deployment and a real-device update must be verified separately.
 
@@ -44,7 +50,13 @@ Admin chooses and publishes the APK as before. R2 uploads are limited to 200 MiB
 
 <!-- /coderabbit-ai-generated:v1 -->
 
-Keep the existing application ID `com.growthcircle.growth_circle` and the production signing keystore used by installed copies. Follow the release-signing setup in `README.md`; signing credentials remain outside source control. Build a universal APK with a strictly higher build number, for example:
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:001d3a42a2464e0a83c528db000318f726879e135742d16d96af536aa54172bf -->
+
+Use application ID `space.freelan.app` and retain its production signing keystore for every future update. Download the matching Firebase Android configuration to `android/app/google-services.json` from the existing Firebase project; editing the package name in the old JSON does not register a new Firebase app. Follow the release-signing setup in `README.md`; signing credentials remain outside source control. Build a universal APK with a build number higher than all published releases (the release history is shared), for example:
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ```bash
 flutter build apk --release --build-name=1.2.0 --build-number=8 \

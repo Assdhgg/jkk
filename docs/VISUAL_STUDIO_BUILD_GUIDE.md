@@ -177,14 +177,26 @@ $BuildTools = Join-Path $env:LOCALAPPDATA "Android\Sdk\build-tools\36.0.0"
 & "$BuildTools\aapt.exe" dump badging ".\build\app\outputs\flutter-apk\app-release.apk"
 ```
 
-SDK വേറെ സ്ഥലത്താണെങ്കിൽ `$BuildTools` മാറ്റുക. `Verifies` കാണണം. പഴയ APK ഉണ്ടെങ്കിൽ അതിലും `apksigner verify --verbose --print-certs "C:\path\old.apk"` പ്രവർത്തിപ്പിച്ച് certificate SHA-256 fingerprint താരതമ്യം ചെയ്യുക. AAPT output-ൽ package `com.growthcircle.growth_circle`, version code, minimum SDK, native architectures എന്നിവ കാണാം.
+SDK വേറെ സ്ഥലത്താണെങ്കിൽ `$BuildTools` മാറ്റുക. `Verifies` കാണണം. പഴയ APK ഉണ്ടെങ്കിൽ അതിലും `apksigner verify --verbose --print-certs "C:\path\old.apk"` പ്രവർത്തിപ്പിച്ച് certificate SHA-256 fingerprint താരതമ്യം ചെയ്യുക. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cc9d98b78a39ce4b088e3a93802f1f119cc3791eee26a9358ec130fb753026a2 -->
+
+AAPT output-ൽ package `space.freelan.app`, version code, minimum SDK, native architectures എന്നിവ കാണാം. ഈ package പഴയ app-നെ update ചെയ്യില്ല; ആദ്യ APK പുതിയ app ആയി install ചെയ്ത് വീണ്ടും login ചെയ്യണം. Firebase Console-ൽ ഈ package രജിസ്റ്റർ ചെയ്ത് പുതിയ `google-services.json` `android/app/`-ൽ വയ്ക്കണം.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Phone-ൽ Developer options → USB debugging enable ചെയ്ത് USB വഴി connect ചെയ്താൽ:
 
 ```powershell
 $Adb = Join-Path $env:LOCALAPPDATA "Android\Sdk\platform-tools\adb.exe"
 & $Adb devices
-& $Adb shell dumpsys package com.growthcircle.growth_circle | Select-String "versionCode"
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:99971ce62631fff673e8474aae0cd0bf76090bd2c0fb78103880e4e0e20720ae -->
+
+& $Adb shell dumpsys package space.freelan.app | Select-String "versionCode"
+
+<!-- /coderabbit-ai-generated:v1 -->
 & $Adb install -r ".\build\app\outputs\flutter-apk\app-release.apk"
 ```
 
@@ -207,7 +219,13 @@ build\windows\x64\runner\Release\growth_circle_admin.exe
 ഇത് Windows **EXE** ആണ്; APK Android-നുള്ളതാണ്. `Release` folder-ലെ EXE മാത്രം copy ചെയ്യരുത്: അതിനോടൊപ്പം ഉള്ള DLL-കളും `data` folder-ഉം ഉൾപ്പെടെ മുഴുവൻ folder share ചെയ്യുക. ZIP ഉണ്ടാക്കാൻ:
 
 ```powershell
-Compress-Archive -Path .\build\windows\x64\runner\Release\* -DestinationPath .\growth-circle-admin-windows.zip -Force
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:4a6289eabc5726cd678045f356ff10f8ed4ebda558d86bf3f6de8ef8ded830fd -->
+
+Compress-Archive -Path .\build\windows\x64\runner\Release\* -DestinationPath .\freelan-space-admin-windows.zip -Force
+
+<!-- /coderabbit-ai-generated:v1 -->
 ```
 
 ZIP extract ചെയ്ത് `growth_circle_admin.exe` തുറക്കുക. ആദ്യ screen-ൽ അതേ Supabase **project URL** ഉം **publishable/anon key** ഉം നൽകുക; തുടർന്ന് മുമ്പ് provision ചെയ്ത admin email/password ഉപയോഗിച്ച് sign in ചെയ്യുക. Windows build-ന് Android keystore വേണ്ടതില്ല. Admin app-ൽ user access, action controls, campaign list, pending submission inspection ലഭ്യമാണ്.

@@ -10,7 +10,13 @@ The app still displays in-app notifications without Firebase. Android push requi
 
 <!-- coderabbit-ai-generated-section:v1:dc06e6a6769c1328898ef6387a68cc8c8f524a0098444d99b8a4dc382b7b5743 -->
 
-1. The Android package `com.growthcircle.growth_circle` uses the supplied Firebase public configuration in `android/app/google-services.json`. The Gradle plugin includes these resources so Firebase can initialize when Android starts the app for a notification. Configure the Firebase Cloud Messaging API for that project. For another Firebase project, replace this file with that project's matching Android app configuration.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:59befc06a50f5b63fd38685a51b941b750861606d5e242f87ef980e4c0d8fb08 -->
+
+1. In the existing Firebase project (`growth-circle-c8efe`), register a new Android app with package `space.freelan.app`. Download its public `google-services.json` into `android/app/`. Do not edit the package field of the old client configuration: the new app needs its own registered Firebase app ID. The old package configuration was removed. Release packaging requires the new file, and the Google Services plugin checks that its client matches the application ID. Debug builds can compile without Firebase but cannot receive push messages. Keep the existing Firebase project, Cloud Messaging API and worker service account. Users enable notifications again after signing into the new Android installation.
+
+<!-- /coderabbit-ai-generated:v1 -->
 2. Build the user app with the normal Supabase defines from the main README. Firebase initializes from the Android configuration file; explicit Firebase Dart defines are optional and must match the same project if provided. Do not put service-account credentials or Supabase service-role keys in the app. Users must choose **Enable push notifications** in Profile and grant Android notification permission. Push is Android only.
 
 <!-- /coderabbit-ai-generated:v1 -->
