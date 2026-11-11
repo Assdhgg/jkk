@@ -1,3 +1,6 @@
+// FCM HTTP v1 delivery requires token compatibility APIs, not FIDs.
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -32,14 +35,32 @@ Future<void> firebaseBackgroundMessage(RemoteMessage message) async {
   }
 }
 
+class PushPermissionDenied implements Exception {
+  const PushPermissionDenied();
+}
+
 class PushCoordinator {
   PushCoordinator._();
+  PushCoordinator.forTesting({
+    required Future<void> Function() initialize,
+    required Future<bool> Function() permission,
+    required Future<String?> Function() tokenLoader,
+    required Stream<String> tokenChanges,
+  }) : _testInitialize = initialize,
+       _testPermission = permission,
+       _testTokenLoader = tokenLoader,
+       _testTokenChanges = tokenChanges;
+  Future<void> Function()? _testInitialize;
+  Future<bool> Function()? _testPermission;
+  Future<String?> Function()? _testTokenLoader;
+  Stream<String>? _testTokenChanges;
   static final instance = PushCoordinator._();
   StreamSubscription<String>? _refresh;
   String? _token;
   int _generation = 0;
   Future<void> _writes = Future.value();
   Future<void> _initialize() async {
+    if (_testInitialize != null) return _testInitialize!();
     if (!pushConfigured) throw StateError('Push configuration unavailable.');
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -53,11 +74,10 @@ class PushCoordinator {
     final id = client.auth.currentUser?.id;
     if (id == null) throw StateError('Sign in first.');
     await _initialize();
-    final setting = await FirebaseMessaging.instance.requestPermission();
-    if (setting.authorizationStatus != AuthorizationStatus.authorized &&
-        setting.authorizationStatus != AuthorizationStatus.provisional) {
-      return false;
-    }
+    final granted = _testPermission != null
+        ? await _testPermission!()
+        : await _requestPermission();
+    if (!granted) return false;
     await _register(client);
     if (client.auth.currentUser?.id != id) return false;
     final preferences = await SharedPreferences.getInstance();
@@ -68,8 +88,15 @@ class PushCoordinator {
   Future<bool> isEnabled(SupabaseClient client) async {
     final id = client.auth.currentUser?.id;
     if (id == null) return false;
-    return (await SharedPreferences.getInstance()).getBool('push_opt_in_$id') ==
-        true;
+    if ((await SharedPreferences.getInstance()).getBool('push_opt_in_$id') !=
+        true) {
+      return false;
+    }
+    await _initialize();
+    if (_testPermission != null) return _testPermission!();
+    final settings = await FirebaseMessaging.instance.getNotificationSettings();
+    return settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
   }
 
   Future<void> disable(SupabaseClient client) async {
@@ -120,12 +147,12 @@ class PushCoordinator {
     final generation = ++_generation;
     await _refresh?.cancel();
     if (generation != _generation) throw StateError('Registration cancelled.');
-    final registered = Completer<void>();
-    _refresh = FirebaseMessaging.instance.onRegistered.listen((value) {
+    Future<void> writeToken(String value) {
       final write = _writes.then((_) async {
         if (generation != _generation || client.auth.currentUser?.id != id) {
           throw StateError('Registration cancelled.');
         }
+        if (value.isEmpty) throw StateError('No messaging token.');
         await client.rpc('register_push_token', params: {'p_token': value});
         final previous = _token;
         _token = value;
@@ -137,17 +164,39 @@ class PushCoordinator {
         }
       });
       _writes = write.catchError((Object _) {});
-      write.then(
-        (_) {
-          if (!registered.isCompleted) registered.complete();
-        },
-        onError: (Object error, StackTrace stack) {
-          if (!registered.isCompleted) registered.completeError(error, stack);
-        },
-      );
-    });
-    await FirebaseMessaging.instance.register();
-    await registered.future.timeout(const Duration(seconds: 20));
+      return write;
+    }
+
+    // The HTTP v1 worker requires an FCM token, not the Installation ID
+    // emitted by onRegistered. Fetch the cached token as well as future changes.
+    final changes =
+        _testTokenChanges ?? FirebaseMessaging.instance.onTokenRefresh;
+    _refresh = changes.listen((value) {
+      unawaited(writeToken(value).catchError((Object _) {}));
+    }, onError: (Object _) {});
+    try {
+      final token =
+          await (_testTokenLoader?.call() ??
+                  FirebaseMessaging.instance.getToken())
+              .timeout(const Duration(seconds: 20));
+      if (token == null || token.isEmpty) {
+        throw StateError('No messaging token.');
+      }
+      await writeToken(token);
+    } catch (_) {
+      if (generation == _generation) {
+        ++_generation;
+        await _refresh?.cancel();
+        _refresh = null;
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> _requestPermission() async {
+    final settings = await FirebaseMessaging.instance.requestPermission();
+    return settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
   }
 
   Future<void> stop(SupabaseClient client) async {

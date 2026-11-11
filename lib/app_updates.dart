@@ -59,7 +59,7 @@ class AppRelease {
 }
 
 /// Sits above the Navigator so pushed pages and dialogs cannot cover the gate.
-/// Checks fail closed for signed-in Android users, including after restart.
+/// Checks run silently; only a confirmed newer release blocks access.
 class AppUpdateGate extends StatefulWidget {
   const AppUpdateGate({
     super.key,
@@ -226,7 +226,7 @@ class _AppUpdateGateState extends State<AppUpdateGate>
   Widget build(BuildContext context) {
     final required =
         latest != null && installed != null && latest!.versionCode > installed!;
-    final blocked = supported && active && (required || checking || failed);
+    final blocked = supported && active && required;
     return Stack(
       fit: StackFit.expand,
       children: [
