@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Disposable PostgreSQL only; runner seeds pre-upgrade IDs and mock Vault/net."""
 import concurrent.futures
 import json
@@ -14,7 +15,7 @@ def sql(query,user=None,fails=False):
     if user:
         claims=json.dumps({'email':'synthetic@example.test','phone':''})
         prefix=f"set role authenticated;select set_config('request.jwt.claim.sub','{user}',false);select set_config('request.jwt.claims','{claims}',false);"
-    result=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+query],text=True,capture_output=True)
+    result=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+query],text=True,capture_output=True)
     if fails:
         if result.returncode==0: raise AssertionError('Unexpected success')
     elif result.returncode: raise AssertionError(result.stderr)
@@ -55,6 +56,7 @@ class IdentifierPushTests(unittest.TestCase):
 
     def test_03_bulk_notification_wakes_once_and_retry_is_idempotent(self):
         sql(f"insert into public.admin_members(user_id) values('{OWNER}')")
+        enroll_test_admins(DB)
         for user in [OWNER,OTHER]:
             sql("select public.register_push_token('synthetic-device-"+user+"')",user)
         before=int(sql('select count(*) from public.test_wakeups'))

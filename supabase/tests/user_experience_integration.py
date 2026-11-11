@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Disposable PostgreSQL only: test bootstrap and every migration."""
 import json, subprocess, sys, unittest
 DB=sys.argv[1];sys.argv=sys.argv[:1]
@@ -5,7 +6,7 @@ O='81000000-0000-4000-8000-000000000001'; U='81000000-0000-4000-8000-00000000000
 PNG='iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGPcHdrBwMDAxMDAwMDAAAATfQGcYGP+awAAAABJRU5ErkJggg=='
 def sql(q,uid=None,role='authenticated',fail=False):
  prefix=f"set role {role}; select set_config('request.jwt.claim.sub','{uid}',false); " if uid else (f'set role {role}; ' if role!='owner' else '')
- r=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+q],capture_output=True,text=True)
+ r=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+q],capture_output=True,text=True)
  if fail:
   if r.returncode==0: raise AssertionError('Unexpected success: '+q)
  elif r.returncode: raise AssertionError(r.stderr)
@@ -18,6 +19,7 @@ class UserExperience(unittest.TestCase):
   insert into public.campaigns(id,\"ownerId\",type,link,status,requested,remaining,reward_per_task) values('{C}','{O}','like','https://instagram.com/p/TEST/','active',2,2,1);
   insert into public.campaign_claims(campaign_id,user_id,submission_id,status,instagram_handle) values('{C}','{U}','{S}','pending','sample');
   insert into public.claim_evidence(campaign_id,user_id,mime_type,data_base64) values('{C}','{U}','image/png','{PNG}');""",role='owner')
+  enroll_test_admins(DB)
  def test_01_feedback_owner_and_history(self):
   q=f"select public.review_claim_with_feedback('{C}','{U}','{S}',false,null,'Please retry')"
   sql(q,X,fail=True);self.assertEqual(sql(q,O),'ok')

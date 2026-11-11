@@ -8,6 +8,7 @@ import 'support_page.dart';
 import 'user_features.dart';
 import 'push_notifications.dart';
 import 'personal_information.dart';
+import 'secure_auth_storage.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -25,9 +26,18 @@ final language = ValueNotifier<Locale>(const Locale('en'));
 SupabaseClient get db => Supabase.instance.client;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final configured = supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;
+  final configured = validClientConfiguration(supabaseUrl, supabaseKey);
   if (configured) {
-    await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey);
+    await Supabase.initialize(
+      url: supabaseUrl,
+      publishableKey: supabaseKey,
+      authOptions: FlutterAuthClientOptions(
+        localStorage: ProtectedAuthStorage(
+          'sb-${Uri.parse(supabaseUrl).host.split('.').first}-auth-token',
+        ),
+        pkceAsyncStorage: ProtectedPkceStorage(Uri.parse(supabaseUrl).host),
+      ),
+    );
   }
   runApp(GrowthApp(configured: configured));
 }

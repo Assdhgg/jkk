@@ -49,7 +49,7 @@ export function createHandler({authorize, signUpload, copyUpload, publish, publi
       if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash) throw new Error('invalid public base');
       const name = `${randomUUID()}.apk`;
       const target = `releases/${name}`;
-      await copyUpload(data.key, target, data.size);
+      await copyUpload(data.key, target, data.size, {sha256: data.sha256, versionCode: data.versionCode, versionName: data.versionName.trim()});
       if (await authorize(authorization) !== userId) return json(403, {error: 'access_denied'});
       const downloadUrl = `${base.href.replace(/\/$/, '')}/${target}`;
       await publish({userId, name, downloadUrl, data});

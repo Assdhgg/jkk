@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Disposable local database only: bootstrap, storage fixture and all migrations."""
 import subprocess
 import sys
@@ -13,9 +14,9 @@ U='94000000-0000-4000-8000-000000000006'
 R1='10000000-0000-4000-8000-000000000001'
 R2='10000000-0000-4000-8000-000000000002'
 
-def sql(q,user=None,aal='aal1',role=None,fails=False):
+def sql(q,user=None,aal='aal2',role=None,fails=False):
  prefix=f"set role authenticated; select set_config('request.jwt.claim.sub','{user}',false); select set_config('request.jwt.claims','{{\"email\":\"synthetic@example.test\",\"aal\":\"{aal}\"}}',false); " if user else (f'set role {role}; ' if role else '')
- p=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+q],capture_output=True,text=True)
+ p=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+q],capture_output=True,text=True)
  if fails:
   if p.returncode==0: raise AssertionError('unexpected success')
  elif p.returncode: raise AssertionError(p.stderr)
@@ -29,12 +30,13 @@ class AdminNotifications(unittest.TestCase):
   sql('insert into auth.users(id) values '+','.join(f"('{u}')" for u in (E,V,A,B,C)))
   sql(f"insert into auth.users(id,email_confirmed_at) values ('{U}',null)")
   sql(f"insert into public.admin_members(user_id,role) values ('{E}','editor'),('{V}','viewer')")
+  enroll_test_admins(DB)
   for u in (A,B,C): sql(f"select public.register_push_token('synthetic-token-{u}')",u)
   sql(f"insert into public.user_access(user_id,blocked) values ('{C}',true)")
   sql(f"insert into auth.mfa_factors(id,user_id,status) values (gen_random_uuid(),'{E}','verified')")
   sql(send(R1, f"'{A}'"),A,fails=True)
   sql(send(R1, f"'{A}'"),V,fails=True)
-  sql(send(R1, f"'{A}'"),E,fails=True)
+  sql(send(R1, f"'{A}'"),E,aal='aal1',fails=True)
   sql(send(R1, f"'{A}'"),role='anon',fails=True)
   self.assertEqual(sql(send(R1,f"'{A}'"),E,aal='aal2'),'1')
   self.assertEqual(sql(send(R1,f"'{A}'"),E,aal='aal2'),'1')

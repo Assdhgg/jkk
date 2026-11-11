@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Disposable DB: bootstrap, mock Storage schema and all migrations required."""
 import subprocess
 import sys
@@ -11,7 +12,7 @@ PATH = '12345678-1234-1234-1234-123456789abc.apk'
 OTHER = '12345678-1234-1234-1234-123456789abd.apk'
 def sql(query, user=None, fails=False):
     prefix = '' if not user else f"set role authenticated; select set_config('request.jwt.claim.sub','{user}',false); select set_config('request.jwt.claims','{{\"email\":\"synthetic@example.test\",\"phone\":\"\"}}',false); "
-    result = subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+query],capture_output=True,text=True)
+    result = subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+query],capture_output=True,text=True)
     if fails:
         if result.returncode == 0: raise AssertionError('Unexpected success')
     elif result.returncode: raise AssertionError(result.stderr)
@@ -23,6 +24,7 @@ class Updates(unittest.TestCase):
     def setUpClass(cls):
         sql('insert into auth.users(id) values '+','.join(f"('{u}')" for u in [EDITOR,VIEWER,USER]))
         sql(f"insert into public.admin_members(user_id,role) values('{EDITOR}','editor'),('{VIEWER}','viewer')")
+        enroll_test_admins(DB)
         for u in [EDITOR,VIEWER,USER]: sql('select public.initialize_wallet()',u)
         sql("select public.register_push_token('synthetic-update-token-12345')",USER)
         for p in [PATH,OTHER]: sql(f"insert into storage.objects(bucket_id,name,metadata) values('app-releases','{p}','{{\"size\":100}}')")
