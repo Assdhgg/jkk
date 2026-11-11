@@ -378,12 +378,12 @@ const words = <String, List<String>>{
   'copyCode': ['Copy code', 'കോഡ് പകർത്തുക'],
   'copied': ['Code copied.', 'കോഡ് പകർത്തി.'],
   'apply': ['Apply', 'ചേർക്കുക'],
-  'releasePin': ['Coin release PIN', 'Coin release PIN'],
+  'releasePin': ['Security PIN', 'Security PIN'],
   'setupPin': ['Set up 4-digit PIN', '4 അക്ക PIN സജ്ജമാക്കുക'],
   'changePin': ['Change / reset PIN', 'PIN മാറ്റുക / reset ചെയ്യുക'],
   'enterPin': [
-    'Enter your 4-digit PIN to release the coin.',
-    'Coin നൽകാൻ 4 അക്ക PIN നൽകുക.',
+    'Enter your 4-digit Security PIN to continue.',
+    'തുടരാൻ 4 അക്ക Security PIN നൽകുക.',
   ],
   'currentPin': ['Current PIN', 'നിലവിലെ PIN'],
   'newPin': ['New 4-digit PIN', 'പുതിയ 4 അക്ക PIN'],
@@ -391,8 +391,8 @@ const words = <String, List<String>>{
   'pinMismatch': ['Enter matching 4-digit PINs.', 'ഒരേ 4 അക്ക PIN നൽകുക.'],
   'pinSaved': ['PIN saved.', 'PIN സേവ് ചെയ്തു.'],
   'pin_missing': [
-    'Set up a coin release PIN in your profile first.',
-    'ആദ്യം പ്രൊഫൈലിൽ coin release PIN സജ്ജമാക്കുക.',
+    'Set up a Security PIN in your profile first.',
+    'ആദ്യം പ്രൊഫൈലിൽ Security PIN സജ്ജമാക്കുക.',
   ],
   'invalid_pin': [
     'Incorrect PIN. Try again.',
@@ -1858,16 +1858,33 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
+  Timer? _pushRetry;
   int selected = 0;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(PushCoordinator.instance.restore(db));
+    // Recover registration after an offline startup or a failed token refresh.
+    _pushRetry = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        unawaited(PushCoordinator.instance.restore(db));
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(PushCoordinator.instance.restore(db));
+    }
   }
 
   @override
   void dispose() {
+    _pushRetry?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(PushCoordinator.instance.stop(db));
     super.dispose();
   }
@@ -3634,17 +3651,20 @@ class Profile extends StatelessWidget {
     super.key,
     required this.user,
     this.gateway,
+    this.authorizeChange,
     this.onNotifications,
     this.notifications,
   });
   final User user;
   final ProfileGateway? gateway;
+  final Future<bool> Function()? authorizeChange;
   final VoidCallback? onNotifications;
   final Stream<List<Map<String, dynamic>>>? notifications;
   @override
   Widget build(BuildContext context) => ProfileFeatures(
     user: user,
     gateway: gateway,
+    authorizeChange: authorizeChange,
     onNotifications: onNotifications,
     notifications: notifications,
   );
@@ -4090,6 +4110,7 @@ class ProfileInfo {
   const ProfileInfo({
     this.referralRewards = const {},
     this.publicUserId,
+    this.photo,
     required this.usernames,
     required this.referralCode,
     required this.referralCount,
@@ -4097,6 +4118,7 @@ class ProfileInfo {
     required this.pinSet,
   });
   final String? publicUserId;
+  final Uint8List? photo;
   final List<String> usernames;
   final String referralCode;
   final int referralCount;
@@ -4130,10 +4152,12 @@ class SupabaseProfileGateway implements ProfileGateway {
       client.rpc('referral_info'),
       client.rpc('release_pin_is_set'),
       client.from('coin_settings').select(),
+      _loadProfilePhoto(),
     ]);
     final accounts = values[0] as List;
     final referral = Map<String, dynamic>.from(values[1] as Map);
     return ProfileInfo(
+      photo: values[4] as Uint8List?,
       usernames: [
         for (final account in accounts) account['username'] as String,
       ],
@@ -4153,6 +4177,15 @@ class SupabaseProfileGateway implements ProfileGateway {
             row['key'] as String: row['amount'] as int,
       },
     );
+  }
+
+  Future<Uint8List?> _loadProfilePhoto() async {
+    try {
+      final value = await client.rpc('profile_photo');
+      return value == null ? null : await decodeProfilePhoto(value as String);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
@@ -4246,11 +4279,13 @@ class ProfileFeatures extends StatefulWidget {
     super.key,
     required this.user,
     this.gateway,
+    this.authorizeChange,
     this.onNotifications,
     this.notifications,
   });
   final User user;
   final ProfileGateway? gateway;
+  final Future<bool> Function()? authorizeChange;
   final VoidCallback? onNotifications;
   final Stream<List<Map<String, dynamic>>>? notifications;
   @override
@@ -4273,6 +4308,7 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
           uid: widget.user.id,
           gateway: gateway,
           accounts: accounts,
+          authorizeChange: widget.authorizeChange,
         ),
       ),
     );
@@ -4318,12 +4354,14 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
         onRetry: reload,
         onPersonalInfo: !details.hasData
             ? null
-            : () => Navigator.push(
+            : () async {
+                await Navigator.push(
                 context,
                 MaterialPageRoute<void>(
                   builder: (_) => PersonalInformationPage(
                     user: widget.user,
                     publicId: details.data?.publicUserId,
+                    authorizeChange: widget.authorizeChange ?? () => confirmSecurityPin(context),
                     gateway: SupabasePersonalInformationGateway(
                       db,
                       () => SupabaseClient(
@@ -4337,7 +4375,9 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
                     ),
                   ),
                 ),
-              ),
+              );
+              if (mounted) reload();
+              },
         onAccounts: () => openDetails(true),
         onReferrals: () => openDetails(false),
         onHistory: () => Navigator.push(
@@ -4477,7 +4517,8 @@ class ProfileLayout extends StatelessWidget {
                         child: CircleAvatar(
                           radius: 36,
                           backgroundColor: const Color(0xffc5f64b),
-                          child: Text(
+                          backgroundImage: info?.photo == null ? null : MemoryImage(info!.photo!),
+                          child: info?.photo != null ? null : Text(
                             profileInitials(name),
                             style: const TextStyle(
                               fontSize: 27,
@@ -4814,10 +4855,12 @@ class ProfileDetailsPage extends StatefulWidget {
     required this.uid,
     required this.gateway,
     required this.accounts,
+    this.authorizeChange,
   });
   final String uid;
   final ProfileGateway gateway;
   final bool accounts;
+  final Future<bool> Function()? authorizeChange;
   @override
   State<ProfileDetailsPage> createState() => _ProfileDetailsPageState();
 }
@@ -4834,6 +4877,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       builder: (_) => ProfileInputDialog(titleKey: title),
     );
     if (value == null || value.isEmpty || !mounted) return;
+    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) return;
     try {
       if (widget.accounts) {
         await widget.gateway.addAccount(value);
@@ -4862,6 +4906,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       builder: (_) => InstagramSearchDialog(gateway: widget.gateway),
     );
     if (username == null || !mounted) return;
+    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) return;
     try {
       await widget.gateway.addAccount(username);
       if (mounted) reload();
@@ -4878,6 +4923,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
   }
 
   Future<void> remove(String username) async {
+    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) return;
     try {
       await widget.gateway.removeAccount(username);
       if (mounted) reload();
@@ -4998,6 +5044,11 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
               for (final username in info.usernames)
                 Card(
                   child: ListTile(
+                    leading: IconButton(
+                      tooltip: 'Open @$username on Instagram',
+                      icon: const InstagramLogo(),
+                      onPressed: () => openInstagramProfile(context, username),
+                    ),
                     title: Text('@$username'),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
@@ -5320,7 +5371,8 @@ class _InstagramSearchDialogState extends State<InstagramSearchDialog> {
 }
 
 class UserSettingsPage extends StatefulWidget {
-  const UserSettingsPage({super.key, this.enabledLoader, this.pushUpdater});
+  const UserSettingsPage({super.key, this.enabledLoader, this.pushUpdater, this.authorizeChange});
+  final Future<bool> Function()? authorizeChange;
   final Future<bool> Function()? enabledLoader;
   final Future<void> Function(bool)? pushUpdater;
   @override
@@ -5368,6 +5420,8 @@ class _UserSettingsPageState extends State<UserSettingsPage>
   }
 
   Future<void> changePush(bool value) async {
+    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) return;
+    if (!mounted) return;
     setState(() => busy = true);
     try {
       if (widget.pushUpdater != null) {
@@ -5456,8 +5510,8 @@ class _UserSettingsPageState extends State<UserSettingsPage>
                 DropdownMenuItem(value: 'en', child: Text('English')),
                 DropdownMenuItem(value: 'ml', child: Text('മലയാളം')),
               ],
-              onChanged: (value) {
-                if (value != null) language.value = Locale(value);
+              onChanged: (value) async {
+                if (value != null && await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) language.value = Locale(value);
               },
             ),
           ),
@@ -5465,5 +5519,63 @@ class _UserSettingsPageState extends State<UserSettingsPage>
         if (loading || busy) const LinearProgressIndicator(),
       ],
     ),
+  );
+}
+
+// The existing PIN hash and server lockout are shared with coin confirmation.
+Future<bool> confirmSecurityPin(BuildContext context) async {
+  final userId = db.auth.currentUser?.id;
+  try {
+    final pin = await showDialog<String>(
+      context: context,
+      builder: (_) => const ReleasePinDialog(setup: false),
+    );
+    if (pin == null || !context.mounted) return false;
+    final result = await db.rpc('verify_security_pin', params: {'p_pin': pin});
+    if (result == 'ok' && userId != null && db.auth.currentUser?.id == userId) return true;
+    if (context.mounted) toast(context, tr(context, result.toString()));
+  } catch (error) {
+    if (context.mounted) toast(context, friendlyError(context, error));
+  }
+  return false;
+}
+
+Future<void> openInstagramProfile(BuildContext context, String username) async {
+  if (!RegExp(r'^[A-Za-z0-9_.]{1,30}$').hasMatch(username)) return;
+  try {
+    final native = Uri(scheme: 'instagram', host: 'user', queryParameters: {'username': username});
+    if (await launchUrl(native, mode: LaunchMode.externalApplication)) return;
+  } catch (_) { /* Fall back to the public profile when Instagram is absent. */ }
+  if (context.mounted) await openInstagram(context, 'https://www.instagram.com/$username/');
+}
+
+class InstagramLogo extends StatelessWidget {
+  const InstagramLogo({super.key});
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 28, height: 28,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(8),
+      gradient: const LinearGradient(
+        begin: Alignment.bottomLeft, end: Alignment.topRight,
+        colors: [Color(0xffffc837), Color(0xffe1306c), Color(0xff833ab4)],
+      ),
+    ),
+    child: Center(child: Container(
+      width: 20, height: 20,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white, width: 2),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Stack(children: [
+        Center(child: Container(width: 9, height: 9, decoration: BoxDecoration(
+          shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2),
+        ))),
+        const Positioned(top: 2, right: 2, child: DecoratedBox(
+          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+          child: SizedBox(width: 3, height: 3),
+        )),
+      ]),
+    )),
   );
 }

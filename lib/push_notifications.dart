@@ -122,20 +122,27 @@ class PushCoordinator {
     );
   }
 
-  Future<void> restore(SupabaseClient client) async {
-    if (!pushConfigured) return;
+  Future<void>? _restoring;
+
+  Future<void> restore(SupabaseClient client) {
+    // Resume and connectivity retries must not replace each other's listeners.
+    return _restoring ??= _restore(client).whenComplete(() => _restoring = null);
+  }
+
+  Future<void> _restore(SupabaseClient client) async {
+    if (!pushConfigured && _testInitialize == null) return;
+    final generation = _generation;
     try {
       final id = client.auth.currentUser?.id;
       if (id == null) return;
       final preferences = await SharedPreferences.getInstance();
       if (preferences.getBool('push_opt_in_$id') != true) return;
       await _initialize();
-      final setting = await FirebaseMessaging.instance
-          .getNotificationSettings();
-      if (setting.authorizationStatus == AuthorizationStatus.authorized ||
-          setting.authorizationStatus == AuthorizationStatus.provisional) {
-        await _register(client);
-      }
+      final granted = _testPermission != null
+          ? await _testPermission!()
+          : await _hasPermission();
+      if (generation != _generation || client.auth.currentUser?.id != id) return;
+      if (granted) await _register(client);
     } catch (_) {
       /* The rest of the app works when push is unavailable. */
     }
@@ -191,6 +198,12 @@ class PushCoordinator {
       }
       rethrow;
     }
+  }
+
+  Future<bool> _hasPermission() async {
+    final settings = await FirebaseMessaging.instance.getNotificationSettings();
+    return settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
   }
 
   Future<bool> _requestPermission() async {

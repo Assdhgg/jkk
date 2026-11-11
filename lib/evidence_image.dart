@@ -68,8 +68,8 @@ import 'dart:ui' as ui;
 }
 
 // Evidence is untrusted, including rows uploaded before server hardening.
-Future<void> validateEvidenceImage(Uint8List bytes) async {
-  if (bytes.length < 24 || bytes.length > 524288) {
+Future<void> validateEvidenceImage(Uint8List bytes, {int maxBytes = 524288}) async {
+  if (bytes.length < 24 || bytes.length > maxBytes) {
     throw const FormatException('Invalid evidence');
   }
   final (width, height) = _imageDimensions(bytes);
@@ -97,5 +97,16 @@ Future<Uint8List> decodeEvidenceImage(String data) async {
   if (data.length > 699052) throw const FormatException('Invalid evidence');
   final bytes = base64Decode(data);
   await validateEvidenceImage(bytes);
+  return bytes;
+}
+
+const maxProfilePhotoBytes = 5 * 1024 * 1024;
+
+Future<Uint8List> decodeProfilePhoto(String data) async {
+  if (data.length > ((maxProfilePhotoBytes + 2) ~/ 3) * 4) {
+    throw const FormatException('Profile photo exceeds 5 MB');
+  }
+  final bytes = base64Decode(data);
+  await validateEvidenceImage(bytes, maxBytes: maxProfilePhotoBytes);
   return bytes;
 }

@@ -8,7 +8,7 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:usesCleartextTraffic="false"
         android:label="Freelan Space"
-        android:name="${applicationName}"
+        android:name=".FreelanApplication"
         android:icon="@drawable/ic_growth_circle">
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="freelan_updates" />
         <provider android:name="androidx.core.content.FileProvider"

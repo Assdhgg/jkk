@@ -107,6 +107,31 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 10));
       }
       expect(writes, contains('synthetic-refreshed-fcm-token'));
+      // Simulate a new process after an app update: only saved opt-in remains.
+      final restored = PushCoordinator.forTesting(
+        initialize: () async {},
+        permission: () async => allowed,
+        tokenLoader: () async => 'synthetic-token-after-update',
+        tokenChanges: events.stream,
+      );
+      fail = true;
+      await restored.restore(client);
+      expect(writes, isNot(contains('synthetic-token-after-update')));
+      fail = false;
+      await Future.wait([restored.restore(client), restored.restore(client)]);
+      expect(writes.where((v) => v == 'synthetic-token-after-update').length, 1);
+      allowed = false;
+      final beforeDenied = writes.length;
+      await restored.restore(client);
+      expect(writes.length, beforeDenied);
+      allowed = true;
+      await (await SharedPreferences.getInstance()).setBool(
+        'push_opt_in_same-user', false,
+      );
+      await restored.restore(client);
+      expect(writes.length, beforeDenied);
+      await restored.stop(client);
+
     } finally {
       await push.stop(client);
       await events.close();
