@@ -40,6 +40,18 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "growth_circle/app_updates").setMethodCallHandler { call, result ->
             when (call.method) {
+                "openNotificationSettings" -> {
+                    try {
+                        val settings = if (Build.VERSION.SDK_INT >= 26) {
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                        } else {
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))
+                        }
+                        startActivity(settings)
+                        result.success(null)
+                    } catch (_: Exception) { result.error("permission", "Unable to open notification settings.", null) }
+                }
                 "installedVersion" -> result.success(code(packageManager.getPackageInfo(packageName, 0)))
                 "installUpdate" -> {
                     val url = call.argument<String>("url") ?: ""

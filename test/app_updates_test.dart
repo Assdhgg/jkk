@@ -39,7 +39,7 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.text('Home access'), findsNothing);
+      expect(find.text('Home access'), findsOneWidget);
       stream.add([release(7)]);
       await tester.pumpAndSettle();
       expect(find.text('Home access'), findsOneWidget);
@@ -84,7 +84,7 @@ void main() {
   );
 
   testWidgets(
-    'mandatory check fails closed, retries, polls and checks on sign-in',
+    'update checks and errors stay silent, while confirmed updates still block',
     (tester) async {
       var fail = true, loads = 0;
       final auth = StreamController<bool>.broadcast();
@@ -112,10 +112,10 @@ void main() {
       expect(loads, 0);
       auth.add(true);
       await tester.pumpAndSettle();
-      expect(find.text('App access'), findsNothing);
-      expect(find.textContaining('Connect to the internet'), findsOneWidget);
+      expect(find.text('App access'), findsOneWidget);
+      expect(find.textContaining('Connect to the internet'), findsNothing);
       fail = false;
-      await tester.tap(find.text('Check again'));
+      await tester.pump(const Duration(seconds: 10));
       await tester.pumpAndSettle();
       expect(find.text('App access'), findsOneWidget);
       await tester.pump(const Duration(seconds: 10));

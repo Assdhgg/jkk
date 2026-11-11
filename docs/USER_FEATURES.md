@@ -1,5 +1,7 @@
 <!-- coderabbit-ai-generated:v1 -->
 
+<!-- coderabbit-ai-generated-section:v1:b988bed8340863d804126a8caada9ee20150201f27b83ad636ee493e119e7415 -->
+
 # User app features and Android push setup
 
 Apply `20261107130000_user_experience.sql` after all earlier migrations before distributing the updated user app. The migration backfills the currently retained submission for each claim; attempts overwritten before this migration cannot be recovered. New attempts retain their own review status and optional rejection reason. Saved tasks do not reserve a campaign slot. Campaign status counts describe the current submissions, not the complete historical count. Submission history date filters use UTC days.
@@ -77,3 +79,10 @@ Event notification content remains generic. Administrator-authored notifications
 <!-- /coderabbit-ai-generated:v1 --> Registrations belong to the signed-in account and are removed on sign-out when the server is reachable; a device registration is reassigned on the next successful sign-in. Push only covers events created after a device is registered. Check function logs and Cron/pg_net results, then test permission, sign-out and all four notification types on an actual Android device before distribution. Firebase, the worker, its schedule, and the migration require separate deployment; committing files does not activate them.
 
 For isolated local verification, apply all migrations to a disposable PostgreSQL database using the test bootstrap and run `python3 supabase/tests/user_experience_integration.py DATABASE_NAME`, `node --test supabase/functions/push-delivery/handler.test.mjs`, `flutter analyze` and `flutter test`. Provider delivery and Android background behavior require the configured Firebase project and a physical device or suitable emulator.
+
+## Android push registration compatibility
+
+Settings registers the current FCM token directly and listens for token refreshes. The HTTP v1 worker requires this token; firebase_messaging 17.0.1 onRegistered supplies an Installation ID and is not used as its replacement. The getToken/onTokenRefresh compatibility API remains deliberately in use despite its deprecation. Opt-in is saved only after a successful authenticated register_push_token RPC. Permission denial leaves the switch off and offers Open settings; after allowing notifications, return and turn the switch on again. Settings reloads effective permission on resume. Cached-token, backend-failure, refresh and permission handling are covered with synthetic tests; actual device delivery remains a separate acceptance check.
+
+
+<!-- /coderabbit-ai-generated:v1 -->

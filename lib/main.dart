@@ -5322,12 +5322,25 @@ class UserSettingsPage extends StatefulWidget {
   State<UserSettingsPage> createState() => _UserSettingsPageState();
 }
 
-class _UserSettingsPageState extends State<UserSettingsPage> {
+class _UserSettingsPageState extends State<UserSettingsPage>
+    with WidgetsBindingObserver {
   bool enabled = false, loading = true, busy = false;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !busy) load();
   }
 
   Future<void> load() async {
@@ -5356,11 +5369,37 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
         await widget.pushUpdater!(value);
       } else if (value) {
         final granted = await PushCoordinator.instance.enable(db);
-        if (!granted) throw StateError('Permission not granted');
+        if (!granted) throw const PushPermissionDenied();
       } else {
         await PushCoordinator.instance.disable(db);
       }
       if (mounted) setState(() => enabled = value);
+    } on PushPermissionDenied {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              uf(
+                context,
+                'Allow notifications in Android settings, then turn this switch on again.',
+                'Android settings-ൽ notifications അനുവദിച്ച ശേഷം switch വീണ്ടും ON ചെയ്യുക.',
+              ),
+            ),
+            action: SnackBarAction(
+              label: uf(context, 'Open settings', 'Settings തുറക്കുക'),
+              onPressed: () async {
+                try {
+                  await updateChannel.invokeMethod<void>(
+                    'openNotificationSettings',
+                  );
+                } catch (_) {
+                  if (mounted) toast(context, tr(context, 'error'));
+                }
+              },
+            ),
+          ),
+        );
+      }
     } catch (_) {
       if (mounted) {
         toast(
