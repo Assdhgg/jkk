@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "981980740814",
+    "project_id": "freelan-space",
+    "storage_bucket": "freelan-space.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:981980740814:android:1c8dd669784a3218a4649f",
+        "android_client_info": {
+          "package_name": "space.freelan.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUO-OpW6rLtCPnMiGV4gQvJ2TiGRiQyiU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

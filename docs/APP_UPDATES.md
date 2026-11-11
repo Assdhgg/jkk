@@ -25,7 +25,13 @@ Publishing inserts an in-app notification for existing wallet accounts and queue
 
 <!-- coderabbit-ai-generated-section:v1:d5baef2f8240fdde7b5bdd8935299c20138560a0f903a61b390a5776ec418100 -->
 
-4. Deploy this branch's `push-delivery` Edge Function with JWT verification enabled so push messages use the Freelan Space name. Reuse the Firebase and Cron/Vault setup in `docs/USER_FEATURES.md` and the same projects; do not create another worker schedule. In Supabase Authentication → Email Templates, update the subjects and content of the existing Confirm signup, Magic Link and any other templates containing the old name. Use `supabase/templates/magic_link.html` for the PIN OTP template; keep the required OTP token and recovery behavior intact. Saved dashboard templates do not change when repository files change.
+4. Deploy this branch's `push-delivery` Edge Function with JWT verification enabled so push messages use the Freelan Space name. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:01664b4338f6f4a2ad24f660065ca2276f89a3f533da3d1da4f9d96a7461a002 -->
+
+Review the Firebase project and Cron/Vault setup in `docs/USER_FEATURES.md`. The supplied new app config uses `freelan-space` while the older app used `growth-circle-c8efe`; check the worker credentials and delivery impact before changing its Firebase project. Do not create another worker schedule.
+
+<!-- /coderabbit-ai-generated:v1 --> In Supabase Authentication → Email Templates, update the subjects and content of the existing Confirm signup, Magic Link and any other templates containing the old name. Use `supabase/templates/magic_link.html` for the PIN OTP template; keep the required OTP token and recovery behavior intact. Saved dashboard templates do not change when repository files change.
 
 <!-- /coderabbit-ai-generated:v1 -->
 <!-- coderabbit-ai-generated:v1 -->

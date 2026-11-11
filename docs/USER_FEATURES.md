@@ -14,7 +14,13 @@ The app still displays in-app notifications without Firebase. Android push requi
 
 <!-- coderabbit-ai-generated-section:v1:59befc06a50f5b63fd38685a51b941b750861606d5e242f87ef980e4c0d8fb08 -->
 
-1. In the existing Firebase project (`growth-circle-c8efe`), register a new Android app with package `space.freelan.app`. Download its public `google-services.json` into `android/app/`. Do not edit the package field of the old client configuration: the new app needs its own registered Firebase app ID. The old package configuration was removed. Release packaging requires the new file, and the Google Services plugin checks that its client matches the application ID. Debug builds can compile without Firebase but cannot receive push messages. Keep the existing Firebase project, Cloud Messaging API and worker service account. Users enable notifications again after signing into the new Android installation.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:e7b1c60584c05ac897ce00feb7a52be5130eaefb8017769e42543867ec96f81c -->
+
+1. The supplied `android/app/google-services.json` registers package `space.freelan.app` in Firebase project `freelan-space`. The old Android app used Firebase project `growth-circle-c8efe`. Before releasing, verify that the push worker's `FCM_PROJECT_ID` and service account match the Firebase project used by the APK. The worker sends to one Firebase project, so switching it to `freelan-space` can stop push delivery to devices registered under the old project. To retain the existing project instead, register `space.freelan.app` in `growth-circle-c8efe` and replace this file with the downloaded matching configuration. Do not edit the package field of an old file: each app needs its registered Firebase app ID. Enable Cloud Messaging and use an authorized service account in the chosen project. Users enable notifications again after signing into the new Android installation.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 2. Build the user app with the normal Supabase defines from the main README. Firebase initializes from the Android configuration file; explicit Firebase Dart defines are optional and must match the same project if provided. Do not put service-account credentials or Supabase service-role keys in the app. Users must choose **Enable push notifications** in Profile and grant Android notification permission. Push is Android only.
