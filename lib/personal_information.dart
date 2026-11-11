@@ -98,6 +98,7 @@ class PersonalInformationPage extends StatefulWidget {
     this.picker,
     this.emailChangeEnabled = const bool.fromEnvironment(
       'SECURE_EMAIL_CHANGE_ENABLED',
+      defaultValue: true,
     ),
   });
   final User user;

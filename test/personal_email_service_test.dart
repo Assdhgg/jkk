@@ -62,7 +62,12 @@ void main() {
             ),
           );
         } else if (body['email'] == 'old@example.test') {
-          r.response.write('{}');
+          r.response.write(
+            jsonEncode({
+              'msg': 'Confirmation link accepted. Please proceed to confirm link sent to the other email',
+              'code': '200',
+            }),
+          );
         } else {
           r.response.write(
             jsonEncode(session('new@example.test', 'verified-session')),

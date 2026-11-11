@@ -106,7 +106,7 @@ void main() {
   });
 
   testWidgets(
-    'email change is disabled unless secure configuration is enabled',
+    'email change can be disabled when secure configuration is unavailable',
     (tester) async {
       final api = FakePersonalGateway();
       await tester.pumpWidget(
@@ -115,6 +115,7 @@ void main() {
             user: user,
             publicId: null,
             gateway: api,
+            emailChangeEnabled: false,
           ),
         ),
       );
@@ -140,7 +141,6 @@ void main() {
           user: user,
           publicId: '12345678',
           gateway: api,
-          emailChangeEnabled: true,
         ),
       ),
     );
