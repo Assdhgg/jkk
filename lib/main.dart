@@ -7,6 +7,7 @@ import 'evidence_image.dart';
 import 'support_page.dart';
 import 'user_features.dart';
 import 'push_notifications.dart';
+import 'personal_information.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -4307,6 +4308,28 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
         loading: details.connectionState != ConnectionState.done,
         error: details.hasError,
         onRetry: reload,
+        onPersonalInfo: !details.hasData
+            ? null
+            : () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => PersonalInformationPage(
+                    user: widget.user,
+                    publicId: details.data?.publicUserId,
+                    gateway: SupabasePersonalInformationGateway(
+                      db,
+                      () => SupabaseClient(
+                        supabaseUrl,
+                        supabaseKey,
+                        authOptions: const AuthClientOptions(
+                          autoRefreshToken: false,
+                          authFlowType: AuthFlowType.implicit,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
         onAccounts: () => openDetails(true),
         onReferrals: () => openDetails(false),
         onHistory: () => Navigator.push(
@@ -4337,6 +4360,7 @@ class ProfileLayout extends StatelessWidget {
     required this.loading,
     required this.error,
     required this.onRetry,
+    required this.onPersonalInfo,
     required this.onAccounts,
     required this.onReferrals,
     required this.onHistory,
@@ -4352,6 +4376,7 @@ class ProfileLayout extends StatelessWidget {
   final ProfileInfo? info;
   final int? balance;
   final bool loading, error;
+  final VoidCallback? onPersonalInfo;
   final VoidCallback onRetry,
       onAccounts,
       onReferrals,
@@ -4620,6 +4645,15 @@ class ProfileLayout extends StatelessWidget {
                                 letterSpacing: .5,
                               ),
                             ),
+                          ),
+                          ProfileMenuTile(
+                            icon: Icons.person_outline,
+                            title: uf(
+                              context,
+                              'Personal information',
+                              'വ്യക്തിഗത വിവരങ്ങൾ',
+                            ),
+                            onTap: onPersonalInfo,
                           ),
                           ProfileMenuTile(
                             icon: Icons.alternate_email,
