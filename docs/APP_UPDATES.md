@@ -18,14 +18,26 @@ Publishing inserts an in-app notification for existing wallet accounts and queue
 
 ## Hosted deployment required
 
-1. Apply all migrations in order, including `20261109110000_app_updates.sql` and `20261110100000_r2_app_releases.sql`. Existing Supabase releases remain downloadable. The original publication RPC remains available for older admin builds.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:ccc8e9dcd93472e4bfa0eb6b362e142afa110a1fd726eea40720b20f1a81aeb6 -->
+
+1. Apply all migrations in order, including `20261109110000_app_updates.sql` and `20261111042338_r2_app_releases.sql`. The R2 migration version matches the migration applied to the linked project. Existing Supabase releases remain downloadable. The original publication RPC remains available for older admin builds.
+
+<!-- /coderabbit-ai-generated:v1 -->
 2. Create a Cloudflare R2 Standard bucket and an R2 API token restricted to that bucket with object read/write access. Enable a public custom domain for the bucket; use a stable HTTPS URL without a path, query or fragment. Configure a lifecycle rule to expire objects under `staging/` after one day; do not expire `releases/`. The bucket contains public APKs. Configure the domain and bucket so public writes are disabled. The free tier has usage limits and may require a billing setup; see [R2 pricing](https://developers.cloudflare.com/r2/pricing/).
 3. Set Supabase Edge Function secrets `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_PUBLIC_BASE_URL` (for example `https://updates.example.com`) using `supabase secrets set --env-file <secure-file-outside-repository>`. The platform provides Supabase URL, anon key and service role key. Keep credentials outside clients, source control and chat. Deploy with `supabase functions deploy app-release-upload` and keep JWT verification enabled. The function authorizes each request through the existing editor/MFA rule, signs a bounded temporary upload, copies it to a separate release key, and publishes metadata. Restrict R2 credentials and dashboard access: direct edits to release objects bypass this protection.
 <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:d5baef2f8240fdde7b5bdd8935299c20138560a0f903a61b390a5776ec418100 -->
 
-4. Deploy this branch's `push-delivery` Edge Function with JWT verification enabled so push messages use the Freelan Space name. Reuse the Firebase and Cron/Vault setup in `docs/USER_FEATURES.md` and the same projects; do not create another worker schedule. In Supabase Authentication → Email Templates, update the subjects and content of the existing Confirm signup, Magic Link and any other templates containing the old name. Use `supabase/templates/magic_link.html` for the PIN OTP template; keep the required OTP token and recovery behavior intact. Saved dashboard templates do not change when repository files change.
+4. Deploy this branch's `push-delivery` Edge Function with JWT verification enabled so push messages use the Freelan Space name. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:01664b4338f6f4a2ad24f660065ca2276f89a3f533da3d1da4f9d96a7461a002 -->
+
+Review the Firebase project and Cron/Vault setup in `docs/USER_FEATURES.md`. The supplied new app config uses `freelan-space` while the older app used `growth-circle-c8efe`; check the worker credentials and delivery impact before changing its Firebase project. Do not create another worker schedule.
+
+<!-- /coderabbit-ai-generated:v1 --> In Supabase Authentication → Email Templates, update the subjects and content of the existing Confirm signup, Magic Link and any other templates containing the old name. Use `supabase/templates/magic_link.html` for the PIN OTP template; keep the required OTP token and recovery behavior intact. Saved dashboard templates do not change when repository files change.
 
 <!-- /coderabbit-ai-generated:v1 -->
 <!-- coderabbit-ai-generated:v1 -->
