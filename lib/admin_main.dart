@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'evidence_image.dart';
 import 'admin_operations.dart';
 import 'admin_app_releases.dart';
+import 'admin_notifications.dart';
 import 'admin_design.dart';
 
 import 'dart:typed_data';
@@ -53,6 +54,7 @@ const labels = <String, List<String>>{
   ],
   'directory': ['MEMBER DIRECTORY', 'MEMBER DIRECTORY'],
   'coinSettings': ['Coin settings', 'Coin settings'],
+  'sendNotifications': ['Send notification', 'Notification അയയ്ക്കുക'],
   'workspaceMenu': ['Workspace', 'Workspace'],
   'overview': ['Overview', 'അവലോകനം'],
   'activity': ['Admin activity', 'Admin പ്രവർത്തനങ്ങൾ'],
@@ -1420,6 +1422,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   height: 1.4,
                 ),
               ),
+              if (widget.gateway is SupabaseAdminGateway && canEdit)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.send_outlined),
+                    label: Text(at(context, 'sendNotifications')),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => AdminSendNotificationPage(
+                          gateway: SupabaseAdminNotificationGateway(
+                            (widget.gateway as SupabaseAdminGateway).client,
+                          ),
+                          canEdit: canEdit,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -3442,6 +3463,12 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       client: (widget.gateway as SupabaseAdminGateway).client,
       canEdit: role == 'editor',
     ),
+    'sendNotifications' => AdminSendNotificationPage(
+      gateway: SupabaseAdminNotificationGateway(
+        (widget.gateway as SupabaseAdminGateway).client,
+      ),
+      canEdit: role == 'editor',
+    ),
     'operations' => AdminOperationsPage(
       client: (widget.gateway as SupabaseAdminGateway).client,
       canEdit: role == 'editor',
@@ -3477,6 +3504,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       ('actionControls', Icons.tune),
       ('coinSettings', Icons.toll_outlined),
       if (widget.gateway is SupabaseAdminGateway) ...[
+        ('sendNotifications', Icons.send_outlined),
         ('updates', Icons.system_update),
         ('operations', Icons.settings_outlined),
       ],

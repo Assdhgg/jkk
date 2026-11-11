@@ -1770,6 +1770,8 @@ class NotificationsPage extends StatelessWidget {
                         )
                       : null,
                   title: Text(switch (item['kind']) {
+                    'admin_message' =>
+                      item['title'] as String? ?? tr(context, 'notifications'),
                     'app_update' => uf(
                       context,
                       'App update available',
@@ -1784,6 +1786,9 @@ class NotificationsPage extends StatelessWidget {
                   }),
                   subtitle: Text(
                     [
+                      if (item['kind'] == 'admin_message' &&
+                          item['body'] is String)
+                        item['body'] as String,
                       if (item['read_at'] == null)
                         tr(context, 'notificationUnread'),
                       if (DateTime.tryParse(
