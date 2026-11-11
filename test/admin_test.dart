@@ -191,6 +191,13 @@ Future<void> login(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('admin header displays Freelan Space', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: AdminBrand())),
+    );
+    expect(find.text('Freelan Space'), findsOneWidget);
+  });
+
   test('configuration accepts only HTTPS and public client credentials', () {
     expect(
       validAdminConfig(

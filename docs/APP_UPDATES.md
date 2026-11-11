@@ -12,16 +12,37 @@ Publishing inserts an in-app notification for existing wallet accounts and queue
 
 **Update app** opens Android's installation permission settings if necessary. After allowing installation, tap **Update app** again. The app downloads over HTTPS into private cache, validates the exact size and SHA-256, then checks the APK package ID, increasing version code and signing identity against the installed app before opening the Android installer. The user confirms installation. Failed downloads can be retried. No automatic silent installation is attempted.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:81245e085e574a0856b92d7f9e0e902c108b6e14b3098c3e4f4a00418605eb3f -->
+
 ## Hosted deployment required
 
-1. Apply all migrations in order, including the preceding identifiers migration and `supabase/migrations/20261109110000_app_updates.sql`. The update migration creates `app_releases`, the public `app-releases` Storage bucket, access rules, notification trigger and Realtime publication entry. Only APK files are public; release publication requires editor credentials.
-2. Confirm the project's global Storage upload limit permits the APK size. The bucket limit is 200 MiB; a lower project or plan limit still takes precedence.
-3. Deploy this branch's `push-delivery` Edge Function with JWT verification enabled. Reuse the Firebase service-account secrets, worker secret and Cron/Vault setup described in `docs/USER_FEATURES.md`. Use the same Supabase and Firebase projects as the installed app. Do not create a second duplicate worker schedule. The existing schedule processes queued jobs; background delivery is not activated by committing source files.
-4. Build and distribute the updated Windows admin application and the first Android APK containing this updater. Existing installations without updater code need that first APK installed manually. Subsequent compatible releases can use the in-app flow.
+1. Apply all migrations in order, including `20261109110000_app_updates.sql` and `20261110100000_r2_app_releases.sql`. Existing Supabase releases remain downloadable. The original publication RPC remains available for older admin builds.
+2. Create a Cloudflare R2 Standard bucket and an R2 API token restricted to that bucket with object read/write access. Enable a public custom domain for the bucket; use a stable HTTPS URL without a path, query or fragment. Configure a lifecycle rule to expire objects under `staging/` after one day; do not expire `releases/`. The bucket contains public APKs. Configure the domain and bucket so public writes are disabled. The free tier has usage limits and may require a billing setup; see [R2 pricing](https://developers.cloudflare.com/r2/pricing/).
+3. Set Supabase Edge Function secrets `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_PUBLIC_BASE_URL` (for example `https://updates.example.com`) using `supabase secrets set --env-file <secure-file-outside-repository>`. The platform provides Supabase URL, anon key and service role key. Keep credentials outside clients, source control and chat. Deploy with `supabase functions deploy app-release-upload` and keep JWT verification enabled. The function authorizes each request through the existing editor/MFA rule, signs a bounded temporary upload, copies it to a separate release key, and publishes metadata. Restrict R2 credentials and dashboard access: direct edits to release objects bypass this protection.
+<!-- coderabbit-ai-generated:v1 -->
 
-Hosted SQL, Storage, function deployment and real FCM delivery were not performed from this workspace because authenticated Supabase management access is unavailable. Local checks do not establish that these hosted services are configured.
+<!-- coderabbit-ai-generated-section:v1:d5baef2f8240fdde7b5bdd8935299c20138560a0f903a61b390a5776ec418100 -->
+
+4. Deploy this branch's `push-delivery` Edge Function with JWT verification enabled so push messages use the Freelan Space name. Reuse the Firebase and Cron/Vault setup in `docs/USER_FEATURES.md` and the same projects; do not create another worker schedule. In Supabase Authentication → Email Templates, update the subjects and content of the existing Confirm signup, Magic Link and any other templates containing the old name. Use `supabase/templates/magic_link.html` for the PIN OTP template; keep the required OTP token and recovery behavior intact. Saved dashboard templates do not change when repository files change.
+
+<!-- /coderabbit-ai-generated:v1 -->
+5. Build and distribute the updated Windows admin app and an Android APK containing the new updater **before publishing an R2 release**. Existing clients construct Supabase URLs and cannot download R2 releases. Install this transition APK manually, or publish it through the old Supabase uploader if it fits the project's limit. Users who miss this transition need a manual update. Keep the same package ID and signing key.
+
+Admin chooses and publishes the APK as before. R2 uploads are limited to 200 MiB by this app. If the publication response is lost, refresh release history before retrying. Failed uploads and failed publication can leave objects in R2; staging lifecycle cleans temporary objects. Release objects may also be orphaned after a failed or uncertain publication: reconcile with `app_releases` before removing any object, and never delete a published release. Downloads validate size, SHA-256, package, version and signer as before. Hosted deployment and a real-device update must be verified separately.
+
+
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:1958843adfac4a381b88cd3a5d6086b9facbbf60ca47d6a068b92c666c4c67f9 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Build each production APK
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Keep the existing application ID `com.growthcircle.growth_circle` and the production signing keystore used by installed copies. Follow the release-signing setup in `README.md`; signing credentials remain outside source control. Build a universal APK with a strictly higher build number, for example:
 

@@ -30,6 +30,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(GrowthArt), findsOneWidget);
+    expect(find.text('Freelan\nSpace'), findsOneWidget);
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
     expect(calls, 2);

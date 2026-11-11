@@ -1,6 +1,12 @@
 <!-- coderabbit-ai-generated:v1 -->
 
-# Instagram live search setup — Growth Circle
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:10150c6a2a32f016c7801180ef089da512cff4dd282b6d8b4f54a98ce8976c44 -->
+
+# Instagram live search setup — Freelan Space
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ഈ guide project `stpxbshwdiupigymakfy`-നുള്ളതാണ്. Project URL: `https://stpxbshwdiupigymakfy.supabase.co`.
 

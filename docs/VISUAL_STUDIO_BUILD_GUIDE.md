@@ -1,6 +1,12 @@
 <!-- coderabbit-ai-generated:v1 -->
 
-# Growth Circle: Visual Studio ഉപയോഗിച്ച് Android, Windows build ചെയ്യാം
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:934c545457bfb12a35896430a40eb7ccb646bc5ee3a30293dbb1deeed8b56d03 -->
+
+# Freelan Space: Visual Studio ഉപയോഗിച്ച് Android, Windows build ചെയ്യാം
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ഈ guide Windows 10/11 64-bit PC-യ്ക്കുള്ളതാണ്. **Visual Studio** Windows desktop build-ന് ആവശ്യമാണ്. താഴെയുള്ള commands Visual Studio-യുടെ **View → Terminal**-ലെ PowerShell-ൽ പ്രവർത്തിപ്പിക്കാം. Android SDK ഒരുക്കാൻ Android Studioയും വേണം. Visual Studio Code ഒരു വേറിട്ട editor ആണ്; അത് മാത്രം Windows C++ build tools നൽകില്ല.
 

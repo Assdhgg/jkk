@@ -6,7 +6,13 @@
 
 <!-- coderabbit-ai-generated-section:v1:839d4b92f805dbbd5ccc6ba2ae0b5f0ccd8ece1d43944e89c5b6bbc554843b15 -->
 
-# Growth Circle
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:ca9b04827a87f2d2f3eae1355e3f106724ec14bc924ef7e7bd5dfad44b7baf83 -->
+
+# Freelan Space
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagram engagement campaigns. Claims are not verified Instagram actions. Instagram passwords are never collected.
 
@@ -28,7 +34,13 @@ Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagr
 
 <!-- coderabbit-ai-generated-section:v1:bb7f26bba409c994aff694dc36a35cfe61121fc0a0fdc824b10cbe631281c292 -->
 
-1. Enable email/password authentication and **Confirm email** in Supabase Authentication. Configure custom SMTP. In Authentication → Email templates → Confirm signup, replace the confirmation link with `<p>Your Growth Circle verification code is: <strong>{{ .Token }}</strong></p>`. Configure email OTP length to 6 digits. Keep the password recovery template intact. Signup uses `signUp(email, password)`, then `verifyOTP(type: signup)` on a separate in-memory client; verification never logs the main app in. The user must then sign in using email and password. Invalid credentials display a signup suggestion because Supabase does not distinguish an unknown email from a wrong password. Signup/resend have a 60-second client cooldown; server rate limits still apply. The Already received a code option lets an unconfirmed user resume after app restart.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:fa0348a4265fec4bf157e4bdf167474e26bce42a9640b0322dda6ef8fec283e8 -->
+
+1. Enable email/password authentication and **Confirm email** in Supabase Authentication. Configure custom SMTP. In Authentication → Email templates → Confirm signup, replace the confirmation link with `<p>Your Freelan Space verification code is: <strong>{{ .Token }}</strong></p>`. Configure email OTP length to 6 digits. Keep the password recovery template intact. Signup uses `signUp(email, password)`, then `verifyOTP(type: signup)` on a separate in-memory client; verification never logs the main app in. The user must then sign in using email and password. Invalid credentials display a signup suggestion because Supabase does not distinguish an unknown email from a wrong password. Signup/resend have a 60-second client cooldown; server rate limits still apply. The Already received a code option lets an unconfirmed user resume after app restart.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -38,7 +50,13 @@ Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagr
 
 <!-- coderabbit-ai-generated-section:v1:ae87e7b9ad6474da4755d50a24fed3ca759194e89d12befb8fdb545ba30a95b9 -->
 
-3. In the SQL Editor, apply `supabase/migrations/20261107000000_growth_circle.sql` to a new project, then apply `supabase/migrations/20261107010000_owner_review.sql` once. Existing Growth Circle projects that already have the first migration only need the second. The second migration changes the coin contract: new submissions require owner approval. It disables immediate claims from old APKs; distribute the upgraded APK after applying the migration. <!-- coderabbit-ai-generated:v1 -->
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:f281b6fbd28e9a638d156e70d9294f3f4bfc60de25d3c896fe7468217c62bdec -->
+
+3. In the SQL Editor, apply `supabase/migrations/20261107000000_growth_circle.sql` to a new project, then apply `supabase/migrations/20261107010000_owner_review.sql` once. Existing Freelan Space projects that already have the first migration only need the second. The second migration changes the coin contract: new submissions require owner approval. It disables immediate claims from old APKs; distribute the upgraded APK after applying the migration. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:3030a55e17c45b50c9148e9cc745817009e204d58213b7dcdbe8d5ecd6754fe0 -->
 
@@ -206,7 +224,13 @@ The campaign owner retains the approval decision; administrators can inspect pen
 
 <!-- /coderabbit-ai-generated:v1 -->
 
-Apply `supabase/migrations/20261107040000_admin_action_controls.sql` after the preceding migrations and distribute updated user and administrator apps. In the administrator app, open Action controls to enable or disable Follow, Like, Share and Comment independently. Disabling an action blocks new campaigns and submissions for that action on the server, including requests from older clients. Operations already in progress can finish before the change commits. Existing submissions remain available for owner review or withdrawal, and campaign cancellation still refunds unused coins. These controls apply inside Growth Circle; they cannot control actions directly on Instagram.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:d9800465e09a152836be6b55f9a44f07370ef3fafecdc1cb0bda326b5e83b80f -->
+
+Apply `supabase/migrations/20261107040000_admin_action_controls.sql` after the preceding migrations and distribute updated user and administrator apps. In the administrator app, open Action controls to enable or disable Follow, Like, Share and Comment independently. Disabling an action blocks new campaigns and submissions for that action on the server, including requests from older clients. Operations already in progress can finish before the change commits. Existing submissions remain available for owner review or withdrawal, and campaign cancellation still refunds unused coins. These controls apply inside Freelan Space; they cannot control actions directly on Instagram.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated:v1 -->
 
@@ -250,7 +274,13 @@ A referral is credited when a signed-in user successfully applies another accoun
 ### Email OTP configuration and PIN recovery
 
 1. In Supabase Authentication, keep **Email** authentication enabled. Configure SMTP/email sending and provider rate limits for production. This app uses email accounts; phone OTP is not an app login flow.
-2. In **Authentication → Email Templates → Magic Link**, use the `{{ .Token }}` variable to display the six-digit login OTP instead of requiring a link. For example: `<p>Your Growth Circle verification code is: {{ .Token }}</p>`. The existing signup confirmation template is separate. See [Supabase email OTP setup](https://supabase.com/docs/guides/auth/auth-email-passwordless#with-email-otp).
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:a55fdd09bd5f1bf05679e8a231eb4b5a4395525edfb11b809a88e3ddabde8912 -->
+
+2. In **Authentication → Email Templates → Magic Link**, use the `{{ .Token }}` variable to display the six-digit login OTP instead of requiring a link. For example: `<p>Your Freelan Space verification code is: {{ .Token }}</p>`. The existing signup confirmation template is separate. See [Supabase email OTP setup](https://supabase.com/docs/guides/auth/auth-email-passwordless#with-email-otp).
+
+<!-- /coderabbit-ai-generated:v1 -->
 3. In Profile, choose **Coin release PIN → Set up** or **Change / reset PIN**. Send the OTP to the signed-in email, enter that code, then enter and confirm the new four-digit PIN. The app permits resend after 60 seconds; Supabase may impose a longer sending limit.
 4. OTP verification uses a separate short-lived client so the main password session is preserved. The server requires a signed Auth JWT with a recent `otp` authentication event (within five minutes of verification), and consumes that event once across token refreshes. Password-only, stale and reused proof cannot change a PIN. The old `p_current_pin` RPC parameter is retained for compatibility but is no longer authorization. See [Supabase JWT authentication methods](https://supabase.com/docs/guides/auth/jwt-fields#authentication-methods-amrmethod).
 5. A successful email-verified reset clears PIN lockout. Releasing coins still requires the PIN and retains the five-failure, 15-minute lock. Verify email delivery, first setup, forgotten-PIN recovery and approval on your live project before distributing builds.

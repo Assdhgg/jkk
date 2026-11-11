@@ -295,7 +295,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
     String? pendingFactor;
     try {
       final result = await widget.client.auth.mfa.enroll(
-        friendlyName: 'Growth Circle admin',
+        friendlyName: 'Freelan Space admin',
       );
       pendingFactor = result.id;
       if (!mounted) {

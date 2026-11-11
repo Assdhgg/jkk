@@ -48,8 +48,8 @@ const labels = <String, List<String>>{
   'users': ['Users', 'ഉപയോക്താക്കൾ'],
   'workspace': ['ADMIN WORKSPACE', 'ADMIN WORKSPACE'],
   'usersIntro': [
-    'Find members and manage their access to Growth Circle.',
-    'അംഗങ്ങളെ കണ്ടെത്തി Growth Circle-ലേക്കുള്ള access നിയന്ത്രിക്കുക.',
+    'Find members and manage their access to Freelan Space.',
+    'അംഗങ്ങളെ കണ്ടെത്തി Freelan Space-ലേക്കുള്ള access നിയന്ത്രിക്കുക.',
   ],
   'directory': ['MEMBER DIRECTORY', 'MEMBER DIRECTORY'],
   'coinSettings': ['Coin settings', 'Coin settings'],
@@ -86,8 +86,8 @@ const labels = <String, List<String>>{
   'activeCampaigns': ['Active campaigns', 'സജീവ campaigns'],
   'coinsCredited': ['Coins credited', 'ലഭിച്ച coins'],
   'overviewHelp': [
-    'A live snapshot of Growth Circle activity.',
-    'Growth Circle പ്രവർത്തനങ്ങളുടെ നിലവിലെ സ്ഥിതി.',
+    'A live snapshot of Freelan Space activity.',
+    'Freelan Space പ്രവർത്തനങ്ങളുടെ നിലവിലെ സ്ഥിതി.',
   ],
   'exportCsv': ['Export CSV', 'CSV എക്സ്പോർട്ട്'],
   'alertsHelp': [
@@ -576,7 +576,7 @@ class _AdminAppState extends State<AdminApp> {
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
-    title: 'Growth Circle Admin',
+    title: 'Freelan Space Admin',
     locale: locale,
     supportedLocales: const [Locale('en'), Locale('ml')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -718,7 +718,7 @@ class AdminBrand extends StatelessWidget {
         const SizedBox(width: 12),
         const Flexible(
           child: Text(
-            'Growth Circle',
+            'Freelan Space',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 16,
@@ -905,7 +905,7 @@ class AdminFrame extends StatelessWidget {
           children: [
             if (!wide) ...[
               const Text(
-                'GROWTH CIRCLE  /  ADMIN',
+                'FREELAN SPACE  /  ADMIN',
                 style: TextStyle(
                   color: adminViolet,
                   fontSize: 11,
@@ -964,8 +964,8 @@ class AdminFrame extends StatelessWidget {
                                   Localizations.localeOf(context)
                                               .languageCode ==
                                           'ml'
-                                      ? 'Growth Circle admin workspace തുറക്കുക.'
-                                      : 'Access your Growth Circle admin workspace.',
+                                      ? 'Freelan Space admin workspace തുറക്കുക.'
+                                      : 'Access your Freelan Space admin workspace.',
                                   style: const TextStyle(
                                     color: adminMuted,
                                     fontSize: 15,
@@ -1073,7 +1073,7 @@ class _AdminSignInState extends State<AdminSignIn> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Growth Circle',
+                  'Freelan Space',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -3011,7 +3011,7 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
     try {
       final location = await getSaveLocation(
         suggestedName:
-            'growth-circle-report-${_dateOnly(start)}-${_dateOnly(end)}.csv',
+            'freelan-space-report-${_dateOnly(start)}-${_dateOnly(end)}.csv',
         acceptedTypeGroups: [
           const XTypeGroup(label: 'CSV', extensions: ['csv']),
         ],
@@ -3503,7 +3503,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Growth Circle',
+                            'Freelan Space',
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,

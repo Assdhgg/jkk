@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.growthcircle" "\0"
-            VALUE "FileDescription", "Growth Circle Admin" "\0"
+            VALUE "CompanyName", "Freelan Space" "\0"
+            VALUE "FileDescription", "Freelan Space Admin" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "growth_circle_admin" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.growthcircle. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Freelan Space. All rights reserved." "\0"
             VALUE "OriginalFilename", "growth_circle_admin.exe" "\0"
-            VALUE "ProductName", "Growth Circle Admin" "\0"
+            VALUE "ProductName", "Freelan Space Admin" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
