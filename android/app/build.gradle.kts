@@ -7,7 +7,8 @@ plugins {
 }
 
 // Firebase must initialize natively when Android starts the process for a push.
-if (file("google-services.json").isFile) {
+val firebaseConfigFile = file("google-services.json")
+if (firebaseConfigFile.isFile) {
     apply(plugin = "com.google.gms.google-services")
 }
 
@@ -20,7 +21,10 @@ val hasSigningProperties = keyPropertiesFile.isFile && missingSigningProperties.
 
 // Never produce an unsigned artifact for distribution. Debug builds do not
 // require a release keystore.
-fun requireReleaseSigning() {
+fun requireReleaseConfiguration() {
+    if (!firebaseConfigFile.isFile) {
+        throw GradleException("Firebase configuration is required for release push notifications. Register space.freelan.app in Firebase and download android/app/google-services.json; see docs/USER_FEATURES.md.")
+    }
     if (!keyPropertiesFile.isFile) {
         throw GradleException("Release signing is required. Configure android/key.properties and a release keystore; see README.md.")
     }
@@ -36,12 +40,12 @@ val releasePackagingTasks = setOf("packageRelease", "packageReleaseBundle", "sig
 // the check, and fail before compiling a release that cannot be distributed.
 gradle.taskGraph.whenReady {
     if (allTasks.any { it.project == project && it.name in releasePackagingTasks }) {
-        requireReleaseSigning()
+        requireReleaseConfiguration()
     }
 }
 
 android {
-    namespace = "com.growthcircle.growth_circle"
+    namespace = "space.freelan.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -51,8 +55,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.growthcircle.growth_circle"
+        applicationId = "space.freelan.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -1,4 +1,4 @@
-package com.growthcircle.growth_circle
+package space.freelan.app
 
 import android.content.Intent
 import android.content.pm.PackageInfo

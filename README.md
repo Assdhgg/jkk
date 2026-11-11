@@ -80,7 +80,13 @@ The app shows a setup screen if values are missing. For a distributable release 
 
 Release APK and app bundle packaging fails with an actionable error when signing configuration is missing or incomplete, rather than creating an uninstallable unsigned package. Debug builds do not require this file. Keep using the same signing key for updates; an APK signed with a different key cannot update an installed app. To diagnose an existing APK, run `apksigner verify --verbose --print-certs app-release.apk` from Android SDK Build-Tools and compare the certificate with the installed release.
 
-<!-- /coderabbit-ai-generated:v1 --> The package name is `com.growthcircle.growth_circle`.
+<!-- /coderabbit-ai-generated:v1 --> <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:e34f99d2a3fd37fcb3ae604015065399b2a5b886fc2fdd92354a37f11c57367c -->
+
+The Android package name is `space.freelan.app`. This is a new Android installation: it cannot replace `com.growthcircle.growth_circle`. Users install it manually and sign in again; their existing Supabase accounts and server data remain available. Register `space.freelan.app` in the existing Firebase project and download its new `google-services.json` into `android/app/` before a release build. The old Firebase client configuration was removed because it belongs to the old package. Production packaging requires both this configuration and the signing keystore. The existing Supabase auth callback remains `io.supabase.growthcircle://login-callback/`; it is independent of the Android package ID.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated:v1 -->
 
