@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Disposable PostgreSQL only: bootstrap.sql and all migrations must be applied.
 Auth claims here are a privileged local mock, not a signature/email delivery test.
 """
@@ -24,7 +25,7 @@ def sql(query, user=None, claims=None, fails=False):
     if user:
         claims = {'email':'synthetic@example.test','phone':'', **(claims or {})}
         prefix = f"set role authenticated; select set_config('request.jwt.claim.sub','{user}',false); select set_config('request.jwt.claims','{json.dumps(claims)}',false); "
-    result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', prefix+query], capture_output=True, text=True)
+    result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', test_claims(prefix)+query], capture_output=True, text=True)
     if fails:
         if result.returncode == 0:
             raise AssertionError('Unexpected success: '+query)
@@ -50,6 +51,7 @@ class EconomyTests(unittest.TestCase):
     def setUpClass(cls):
         sql('insert into auth.users(id) values '+','.join(f"('{u}')" for u in [ADMIN,OWNER,ACTOR,INVITER]))
         sql(f"insert into public.admin_members(user_id) values ('{ADMIN}')")
+        enroll_test_admins(DB)
         for u in [ADMIN,OWNER,ACTOR,INVITER]:
             sql('select public.initialize_wallet()', u)
 

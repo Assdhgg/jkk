@@ -1,4 +1,6 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Isolated PostgreSQL database only, after all three migrations."""
+from pin_test_support import issue_pin_nonce
 import concurrent.futures
 import json
 import subprocess
@@ -14,8 +16,8 @@ D='10000000-0000-4000-8000-000000000004'
 PNG='iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGPcHdrBwMDAxMDAwMDAAAATfQGcYGP+awAAAABJRU5ErkJggg=='
 def sql(q,uid=None,role='authenticated',fails=False):
     prefix=f'set role {role}; '
-    if uid:prefix+=f"select set_config('request.jwt.claim.sub','{uid}',false); "
-    r=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+q],capture_output=True,text=True)
+    if uid:prefix+=f"select set_config('request.jwt.claim.sub','{uid}',false); select set_config('request.jwt.claims','{{\"email\":\"owner@example.test\",\"phone\":\"\"}}',false); "
+    r=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+q],capture_output=True,text=True)
     if fails:
         if r.returncode==0:raise AssertionError('Unexpected success: '+q[:100])
     elif r.returncode:raise AssertionError(r.stderr)
@@ -26,6 +28,7 @@ class AdminTests(unittest.TestCase):
     def setUpClass(cls):
         values=','.join(f"('{u}','{email}',now(),'{{}}')" for u,email in [(A,'admin@example.test'),(B,'person@example.test'),(C,'owner@example.test'),(D,'admin2@example.test')])
         subprocess.run(['psql','-X','-q','-v','ON_ERROR_STOP=1','-d',DB,'-c',f"insert into auth.users(id,email,created_at,raw_user_meta_data) values {values}; insert into public.admin_members(user_id) values ('{A}'),('{D}');"],check=True)
+        enroll_test_admins(DB)
         for u in (A,B,C,D):sql('select public.initialize_wallet()',u)
     def test_01_admin_only_and_pagination(self):
         self.assertEqual(sql('select public.admin_is_admin()',A),'t')
@@ -64,9 +67,11 @@ class AdminTests(unittest.TestCase):
         sql(submit,B)
         sid=sql(f"select submission_id from public.campaign_claims where campaign_id='{cid}'",C)
         sql(f"select public.admin_set_blocked('{C}',true)",A)
-        sql(f"select public.review_claim('{cid}','{B}','{sid}',true)",C,fails=True)
+        sql(f"select public.review_claim_with_pin('{cid}','{B}','{sid}',true,'1234')",C,fails=True)
         sql(f"select public.admin_set_blocked('{C}',false)",A)
-        sql(f"select public.review_claim('{cid}','{B}','{sid}',true)",C)
+        issue_pin_nonce(DB,C)
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",C),'ok')
+        sql(f"select public.review_claim_with_pin('{cid}','{B}','{sid}',true,'1234')",C)
         self.assertEqual(balance(B),11)
         self.assertEqual(sql(f"select status from public.campaigns where id='{cid}'",C),'completed')
     def test_04_concurrent_block_and_operation_fail_closed(self):
@@ -83,7 +88,7 @@ class AdminTests(unittest.TestCase):
         # Hold the target lock until after the action has started. Once the
         # block commits, the waiting call must observe the new status.
         q=(f"set role authenticated; select set_config('request.jwt.claim.sub','{A}',false); "
-           f"begin; select public.admin_set_blocked('{B}',true); select pg_sleep(1.5); commit;")
+           f"select set_config('request.jwt.claims','{{\"aal\":\"aal2\"}}',false); begin; select public.admin_set_blocked('{B}',true); select pg_sleep(1.5); commit;")
         proc=subprocess.Popen(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',q],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         try:
             deadline=time.monotonic()+3

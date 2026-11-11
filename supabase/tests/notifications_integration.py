@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Run only against a disposable database with bootstrap and all migrations."""
 import base64
 import json
@@ -24,7 +25,7 @@ def sql(query, user=None, role='authenticated', fails=False, claims=None):
     if claims is not None:
         claims = {'email': 'synthetic@example.test', 'phone':'', **claims}
         prefix += f"select set_config('request.jwt.claims','{json.dumps(claims)}',false); "
-    result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', prefix + query], capture_output=True, text=True)
+    result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', test_claims(prefix) + query], capture_output=True, text=True)
     if fails:
         if result.returncode == 0:
             raise AssertionError('Unexpected success: ' + query)
@@ -37,6 +38,7 @@ class NotificationsTests(unittest.TestCase):
     def test_real_review_coin_and_isolation(self):
         values = ','.join(f"('{u}')" for u in [OWNER, ACTOR, OTHER, ADMIN])
         subprocess.run(['psql', '-X', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', f"insert into auth.users(id) values {values}; insert into public.admin_members(user_id) values ('{ADMIN}')"], check=True, capture_output=True)
+        enroll_test_admins(DB)
         for user in [OWNER, ACTOR, OTHER]:
             sql('select public.initialize_wallet()', user)
         self.assertEqual(sql("select count(*) from public.notifications where kind='coins_received' and amount=10", ACTOR), '1')

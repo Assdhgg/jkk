@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Isolated disposable PostgreSQL only, after all five migrations."""
 import json
 import subprocess
@@ -19,7 +20,7 @@ def sql(query, user=ADMIN, fails=False, claims=None):
     if claims is not None:
         claims = {'email': 'owner@example.test', 'phone':'', **claims}
         prefix += f"select set_config('request.jwt.claims','{json.dumps(claims)}',false); "
-    result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', prefix + query], text=True, capture_output=True)
+    result = subprocess.run(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', test_claims(prefix) + query], text=True, capture_output=True)
     if fails:
         if result.returncode == 0: raise AssertionError('Unexpected success: ' + query)
     elif result.returncode: raise AssertionError(result.stderr)
@@ -33,6 +34,7 @@ class ActionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         subprocess.run(['psql','-X','-v','ON_ERROR_STOP=1','-d',DB,'-c',f"insert into auth.users(id,email) values ('{ADMIN}','admin@example.test'),('{OWNER}','owner@example.test'),('{PARTICIPANT}','participant@example.test'); insert into public.admin_members(user_id) values ('{ADMIN}')"], check=True, capture_output=True)
+        enroll_test_admins(DB)
         for user in (ADMIN, OWNER, PARTICIPANT): sql('select public.initialize_wallet()', user)
 
     def test_actions_enforce_controls_and_preserve_pending_review(self):
@@ -71,7 +73,7 @@ class ActionTests(unittest.TestCase):
 
     def test_toggle_commit_precedes_waiting_creation(self):
         command = (f"set application_name='gc_action_lock_test'; set role authenticated; "
-                   f"select set_config('request.jwt.claim.sub','{ADMIN}',false); begin; "
+                   f"select set_config('request.jwt.claim.sub','{ADMIN}',false); select set_config('request.jwt.claims','{{\"aal\":\"aal2\"}}',false); begin; "
                    "select public.admin_set_action_enabled('follow',false); select pg_sleep(1.5); commit;")
         process = subprocess.Popen(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         try:

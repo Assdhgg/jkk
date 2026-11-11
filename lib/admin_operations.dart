@@ -11,19 +11,85 @@ String op(BuildContext c, String en, String ml) => supportText(c, en, ml);
 Future<bool> verifyAdminMfa(BuildContext context, SupabaseClient client) async {
   final factors = await client.auth.mfa.listFactors();
   final available = [...factors.totp, ...factors.phone];
-  if (available.isEmpty) return factors.webauthn.isEmpty;
+  if (available.isEmpty) {
+    if (!context.mounted || factors.webauthn.isNotEmpty) return false;
+    final enrollment = await client.auth.mfa.enroll(
+      issuer: 'Freelan Space Admin',
+      friendlyName: 'Admin authenticator',
+    );
+    if (!context.mounted) {
+      await client.auth.mfa.unenroll(enrollment.id);
+      return false;
+    }
+    var input = '';
+    try {
+      final code = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => AlertDialog(
+          title: const Text('Set up administrator MFA'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Add this setup key to your authenticator. Keep recovery access to your Supabase project.',
+                ),
+                SelectableText(enrollment.totp!.secret),
+                TextFormField(
+                  onChanged: (value) => input = value,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Authenticator code',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(c, input.trim()),
+              child: const Text('Verify'),
+            ),
+          ],
+        ),
+      );
+      if (code == null || code.isEmpty) {
+        await client.auth.mfa.unenroll(enrollment.id);
+        return false;
+      }
+      final challenge = await client.auth.mfa.challenge(
+        factorId: enrollment.id,
+      );
+      await client.auth.mfa.verify(
+        factorId: enrollment.id,
+        challengeId: challenge.id,
+        code: code,
+      );
+      return true;
+    } catch (_) {
+      await client.auth.mfa
+          .unenroll(enrollment.id)
+          .catchError((_) => throw StateError('MFA setup failed'));
+      rethrow;
+    }
+  }
   final challenge = await client.auth.mfa.challenge(
     factorId: available.first.id,
   );
   if (!context.mounted) return false;
-  final controller = TextEditingController();
+  var draft = '';
   final code = await showDialog<String>(
     context: context,
     barrierDismissible: false,
     builder: (c) => AlertDialog(
       title: Text(op(c, 'Verify administrator', 'Admin verification')),
-      content: TextField(
-        controller: controller,
+      content: TextFormField(
+        onChanged: (value) => draft = value,
         keyboardType: TextInputType.number,
         obscureText: true,
         decoration: InputDecoration(
@@ -36,13 +102,12 @@ Future<bool> verifyAdminMfa(BuildContext context, SupabaseClient client) async {
           child: Text(op(c, 'Cancel', 'റദ്ദാക്കുക')),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(c, controller.text.trim()),
+          onPressed: () => Navigator.pop(c, draft.trim()),
           child: Text(op(c, 'Verify', 'സ്ഥിരീകരിക്കുക')),
         ),
       ],
     ),
   );
-  controller.dispose();
   if (code == null || code.isEmpty) return false;
   await client.auth.mfa.verify(
     factorId: available.first.id,

@@ -34,7 +34,7 @@ test('prepare signs a bounded staging upload owned by the editor', async () => {
 test('publication copies first to a separate immutable release key', async () => {
   const {handler, calls} = fixture();
   assert.equal((await handler(request(metadata))).status, 200);
-  assert.deepEqual(calls[0], ['copy', key, `releases/${id}.apk`, 100]);
+  assert.deepEqual(calls[0], ['copy', key, `releases/${id}.apk`, 100, {sha256: metadata.sha256, versionCode: 8, versionName: '1.2.0'}]);
   assert.equal(calls[1][1].downloadUrl, `https://releases.example.test/releases/${id}.apk`);
   assert.equal(calls[1][1].userId, user);
 });

@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Isolated disposable PostgreSQL database with all migrations applied."""
 import concurrent.futures
 import subprocess
@@ -13,7 +14,7 @@ OTHER = '50000000-0000-4000-8000-000000000003'
 def sql(query, user=USER, fails=False, role='authenticated'):
     prefix = f"set role {role}; "
     if user: prefix += f"select set_config('request.jwt.claim.sub','{user}',false); "
-    result = subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+query], capture_output=True, text=True)
+    result = subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+query], capture_output=True, text=True)
     if fails:
         if result.returncode == 0: raise AssertionError('Unexpected success: '+query)
     elif result.returncode: raise AssertionError(result.stderr)
@@ -23,6 +24,7 @@ class LookupQuotaTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         subprocess.run(['psql','-X','-v','ON_ERROR_STOP=1','-d',DB,'-c',f"insert into auth.users(id) values ('{ADMIN}'),('{USER}'),('{OTHER}'); insert into public.admin_members(user_id) values ('{ADMIN}')"], check=True, capture_output=True)
+        enroll_test_admins(DB)
 
     def test_quota_concurrency_reset_and_block(self):
         sql('select public.reserve_instagram_lookup()', None, fails=True, role='anon')

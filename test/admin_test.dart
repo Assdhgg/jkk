@@ -191,6 +191,24 @@ Future<void> login(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('administrator locks after inactivity and when hidden', (
+    tester,
+  ) async {
+    final gateway = FakeAdmin();
+    await tester.pumpWidget(AdminApp(gateway: gateway));
+    await login(tester);
+    await tester.pump(const Duration(minutes: 10, seconds: 1));
+    await tester.pumpAndSettle();
+    expect(gateway.signOuts, 1);
+    expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+    await login(tester);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    await tester.pumpAndSettle();
+    expect(gateway.signOuts, 2);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets('admin header displays Freelan Space', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: AdminBrand())),

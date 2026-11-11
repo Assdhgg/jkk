@@ -536,30 +536,92 @@ class AdminApp extends StatefulWidget {
   State<AdminApp> createState() => _AdminAppState();
 }
 
-class _AdminAppState extends State<AdminApp> {
+class _AdminAppState extends State<AdminApp> with WidgetsBindingObserver {
+  final navigator = GlobalKey<NavigatorState>();
+  Timer? idle;
+  StreamSubscription<AuthState>? authEvents;
+  Timer? accessCheck;
+  bool locking = false;
+  void connected(AdminGateway value) {
+    gateway = value;
+    authEvents?.cancel();
+    accessCheck?.cancel();
+    if (value is SupabaseAdminGateway) {
+      authEvents = value.client.auth.onAuthStateChange.listen((event) {
+        if (authorized && event.session == null) {
+          unawaited(logout());
+        }
+      });
+      accessCheck = Timer.periodic(const Duration(minutes: 1), (_) async {
+        if (!authorized) return;
+        try {
+          if (!await value.isAdmin()) {
+            await logout();
+          }
+        } catch (_) {
+          await logout();
+        }
+      });
+    }
+  }
+
+  void activity() {
+    if (!authorized) return;
+    idle?.cancel();
+    idle = Timer(const Duration(minutes: 10), () => unawaited(logout()));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (authorized &&
+        (state == AppLifecycleState.hidden ||
+            state == AppLifecycleState.paused)) {
+      unawaited(logout());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    idle?.cancel();
+    accessCheck?.cancel();
+    authEvents?.cancel();
+    super.dispose();
+  }
+
   Locale locale = const Locale('en');
   AdminGateway? gateway;
   bool authorized = false;
   @override
   void initState() {
     super.initState();
-    gateway = widget.gateway;
+    WidgetsBinding.instance.addObserver(this);
+    if (widget.gateway != null) connected(widget.gateway!);
   }
 
   void changeLanguage() => setState(
     () => locale = Locale(locale.languageCode == 'en' ? 'ml' : 'en'),
   );
   Future<void> logout() async {
+    if (locking) return;
+    locking = true;
+    idle?.cancel();
+    navigator.currentState?.popUntil((route) => route.isFirst);
+    if (mounted) setState(() => authorized = false);
     try {
       await gateway?.signOut();
     } catch (_) {
       // The SDK clears the local session before attempting remote sign-out.
     } finally {
       if (mounted) setState(() => authorized = false);
+      locking = false;
     }
   }
 
   Future<void> changeProject() async {
+    idle?.cancel();
+    accessCheck?.cancel();
+    await authEvents?.cancel();
     final old = gateway;
     try {
       await old?.signOut();
@@ -579,14 +641,25 @@ class _AdminAppState extends State<AdminApp> {
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     title: 'Freelan Space Admin',
+    navigatorKey: navigator,
     locale: locale,
     supportedLocales: const [Locale('en'), Locale('ml')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     theme: adminTheme(),
-    builder: (context, child) => AdminBackdrop(child: child!),
+    builder: (context, child) => Listener(
+      onPointerDown: (_) => activity(),
+      onPointerSignal: (_) => activity(),
+      child: Focus(
+        onKeyEvent: (_, _) {
+          activity();
+          return KeyEventResult.ignored;
+        },
+        child: AdminBackdrop(child: child!),
+      ),
+    ),
     home: gateway == null
         ? AdminSetup(
-            onConnect: (value) => setState(() => gateway = value),
+            onConnect: (value) => setState(() => connected(value)),
             onLanguage: changeLanguage,
           )
         : authorized
@@ -605,7 +678,10 @@ class _AdminAppState extends State<AdminApp> {
           )
         : AdminSignIn(
             gateway: gateway!,
-            onSuccess: () => setState(() => authorized = true),
+            onSuccess: () {
+              setState(() => authorized = true);
+              activity();
+            },
             onChangeProject: changeProject,
             onLanguage: changeLanguage,
           ),

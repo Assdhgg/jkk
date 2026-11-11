@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Run against an isolated disposable database after bootstrap and all migrations."""
 import json, subprocess, sys, unittest
 DB = sys.argv[1]; sys.argv = sys.argv[:1]
@@ -9,7 +10,7 @@ CAMPAIGN='62000000-0000-4000-8000-000000000001'
 SUBMISSION='63000000-0000-4000-8000-000000000001'
 def sql(query, uid=None, fails=False):
     prefix = f"set role authenticated; select set_config('request.jwt.claim.sub','{uid}',false); " if uid else ''
-    r=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+query],capture_output=True,text=True)
+    r=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+query],capture_output=True,text=True)
     if fails:
         if r.returncode == 0: raise AssertionError('Unexpected success: '+query)
     elif r.returncode: raise AssertionError(r.stderr)
@@ -22,6 +23,7 @@ class WorkspaceTests(unittest.TestCase):
         insert into public.campaigns(id,\"ownerId\",type,link,requested,remaining,status) values ('{CAMPAIGN}','{OWNER}','like','https://instagram.com/p/TEST/',5,5,'active');
         insert into public.campaign_claims(campaign_id,user_id,submission_id,status,created_at) values ('{CAMPAIGN}','{USER}','{SUBMISSION}','pending',now()-interval '2 days');
         insert into public.coin_ledger(user_id,amount,reason) values ('{USER}',1000,'welcome');""")
+        enroll_test_admins(DB)
     def test_access_and_roles(self):
         self.assertEqual(sql('select public.admin_workspace_role()', VIEWER),'viewer')
         for q in ['select public.admin_workspace_overview()', 'select * from public.admin_daily_report(current_date,current_date)', 'select * from public.admin_activity()', 'select * from public.admin_alerts()', 'select * from public.admin_roles()', f"select public.admin_user_details('{USER}')", 'select * from public.admin_filtered_submissions()']:

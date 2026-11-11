@@ -1,3 +1,4 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Run only on an isolated disposable database after all migrations."""
 import json
 import subprocess
@@ -21,7 +22,7 @@ def sql(query, user=ADMIN, fails=False, claims=None):
     if claims is not None:
         claims = {'email': 'synthetic@example.test', 'phone':'', **claims}
         prefix += f"select set_config('request.jwt.claims','{json.dumps(claims)}',false); "
-    result = subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+query], capture_output=True, text=True)
+    result = subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+query], capture_output=True, text=True)
     if fails:
         if result.returncode == 0: raise AssertionError('Unexpected success: '+query)
     elif result.returncode: raise AssertionError(result.stderr)
@@ -32,6 +33,7 @@ class InspectionTests(unittest.TestCase):
     def setUpClass(cls):
         values = ','.join(f"('{u}')" for u in (ADMIN, OWNER, ACTOR, OTHER, ADMIN2))
         subprocess.run(['psql','-X','-v','ON_ERROR_STOP=1','-d',DB,'-c',f"insert into auth.users(id) values {values}; insert into public.admin_members(user_id) values ('{ADMIN}'),('{ADMIN2}')"], check=True, capture_output=True)
+        enroll_test_admins(DB)
         for user in (ADMIN, OWNER, ACTOR, OTHER, ADMIN2): sql('select public.initialize_wallet()', user)
 
     def test_inspection_privacy_presence_lifecycle_and_stale_submission(self):

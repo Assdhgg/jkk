@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, HeadObjectCommand, CopyObjectCommand, DeleteObjectCommand } from 'npm:@aws-sdk/client-s3@3.899.0';
+import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand } from 'npm:@aws-sdk/client-s3@3.899.0';
 import { getSignedUrl } from 'npm:@aws-sdk/s3-request-presigner@3.899.0';
 import { createHandler } from './handler.mjs';
 
@@ -10,10 +10,13 @@ const bucket = Deno.env.get('R2_BUCKET') ?? '';
 const accessKeyId = Deno.env.get('R2_ACCESS_KEY_ID') ?? '';
 const secretAccessKey = Deno.env.get('R2_SECRET_ACCESS_KEY') ?? '';
 const publicBase = Deno.env.get('R2_PUBLIC_BASE_URL') ?? '';
+const validatorUrl = Deno.env.get('APK_VALIDATOR_URL') ?? '';
+const validatorSecret = Deno.env.get('APK_VALIDATOR_SECRET') ?? '';
 const contentType = 'application/vnd.android.package-archive';
 const s3 = new S3Client({ region: 'auto', endpoint: `https://${account}.r2.cloudflarestorage.com`, credentials: { accessKeyId, secretAccessKey }, requestChecksumCalculation: 'WHEN_REQUIRED' });
 
 async function authorize(authorization: string): Promise<string | null> {
+  if (!validatorUrl.startsWith('https://') || validatorSecret.length < 32) throw new Error('APK validator not configured');
   if (!supabaseUrl || !anonKey || !serviceKey || !/^[a-f0-9]{32}$/.test(account) || !bucket || !accessKeyId || !secretAccessKey || !publicBase) throw new Error('Missing configuration');
   const headers = { apikey: anonKey, authorization };
   const user = await fetch(`${supabaseUrl}/auth/v1/user`, {headers, signal: AbortSignal.timeout(8000)});
@@ -28,9 +31,16 @@ Deno.serve(createHandler({
   publicBase,
   authorize,
   signUpload: (key: string, size: number) => getSignedUrl(s3, new PutObjectCommand({Bucket: bucket, Key: key, ContentLength: size, ContentType: contentType, IfNoneMatch: '*'}), {expiresIn: 900, signableHeaders: new Set(['content-length', 'content-type', 'if-none-match'])}),
-  copyUpload: async (source: string, target: string, size: number) => {
+  copyUpload: async (source: string, target: string, size: number, metadata: {sha256: string; versionCode: number; versionName: string}) => {
     const head = await s3.send(new HeadObjectCommand({Bucket: bucket, Key: source}));
     if (head.ContentLength !== size || !head.ETag) throw new Error('Invalid upload');
+    const sourceUrl = await getSignedUrl(s3, new GetObjectCommand({Bucket: bucket, Key: source, IfMatch: head.ETag}), {expiresIn: 300});
+    const verification = await fetch(validatorUrl, {method: 'POST', redirect: 'error',
+      headers: {authorization: `Bearer ${validatorSecret}`, 'content-type': 'application/json'},
+      body: JSON.stringify({url: sourceUrl, etag: head.ETag, size, ...metadata}), signal: AbortSignal.timeout(180000)});
+    if (!verification.ok) throw new Error('Invalid APK');
+    const result = await verification.json();
+    if (result.sha256 !== metadata.sha256 || result.size !== size || result.versionCode !== metadata.versionCode) throw new Error('Invalid APK verification');
     await s3.send(new CopyObjectCommand({Bucket: bucket, Key: target, CopySource: `${bucket}/${source}`, CopySourceIfMatch: head.ETag}));
   },
   publish: async ({userId, name, downloadUrl, data}: {userId: string; name: string; downloadUrl: string; data: Record<string, unknown>}) => {

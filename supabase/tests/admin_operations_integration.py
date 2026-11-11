@@ -1,10 +1,11 @@
+from admin_test_support import enroll_test_admins, test_claims
 """Disposable database only: bootstrap + all migrations, with mock auth.mfa_factors."""
 import concurrent.futures, json, subprocess, sys, unittest
 DB=sys.argv[1]; sys.argv=sys.argv[:1]
 A='71000000-0000-4000-8000-000000000001'; B='71000000-0000-4000-8000-000000000002'; V='71000000-0000-4000-8000-000000000003'; U='71000000-0000-4000-8000-000000000004'; O='71000000-0000-4000-8000-000000000005'; C='72000000-0000-4000-8000-000000000001'; D='71000000-0000-4000-8000-000000000006'; F='73000000-0000-4000-8000-000000000001'
 def sql(q,uid=None,claims=None,fails=False):
     prefix=f"set role authenticated; select set_config('request.jwt.claim.sub','{uid}',false); select set_config('request.jwt.claims','{json.dumps(claims or {})}',false); " if uid else ''
-    r=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',prefix+q],capture_output=True,text=True)
+    r=subprocess.run(['psql','-X','-qAt','-v','ON_ERROR_STOP=1','-d',DB,'-c',test_claims(prefix)+q],capture_output=True,text=True)
     if fails:
         if r.returncode==0: raise AssertionError('Unexpected success: '+q)
     elif r.returncode: raise AssertionError(r.stderr)
@@ -16,6 +17,7 @@ class Operations(unittest.TestCase):
     insert into public.admin_members(user_id,role) values ('{A}','editor'),('{B}','editor'),('{V}','viewer'),('{D}','editor');
     insert into public.wallets(id,balance) values ('{U}',10),('{O}',10);
     insert into public.campaigns(id,\"ownerId\",type,link,status,requested,remaining,reward_per_task) values ('{C}','{O}','like','https://instagram.com/p/TEST/','active',5,3,2);""")
+    enroll_test_admins(DB)
  def test_01_tickets_privacy_and_events(self):
     tid=sql("select public.support_create_ticket('Help','Please help')",U)
     self.assertEqual(sql(f"select count(*) from public.support_messages('{tid}')",U),'1')
@@ -67,8 +69,8 @@ class Operations(unittest.TestCase):
     self.assertEqual(sql(f"select count(*) from public.admin_notes('user','{U}')",V),'1')
     sql(f"select * from public.admin_notes('user','{U}')",U,fails=True)
     sql(f"insert into auth.mfa_factors(id,user_id,status) values ('{F}','{A}','verified')")
-    sql('select * from public.admin_event_feed()',A,fails=True)
-    sql("select public.admin_set_coin_setting('like',2)",A,fails=True)
+    sql('select * from public.admin_event_feed()',A,{'aal':'aal1'},fails=True)
+    sql("select public.admin_set_coin_setting('like',2)",A,{'aal':'aal1'},fails=True)
     sql('select * from public.admin_event_feed()',A,{'aal':'aal2'})
     sql("select public.admin_set_coin_setting('like',2)",A,{'aal':'aal2'})
 if __name__=='__main__': unittest.main(verbosity=2)
