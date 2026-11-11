@@ -6,6 +6,8 @@ import time
 import sys
 import unittest
 
+from pin_test_support import issue_pin_nonce
+
 DB = sys.argv[1]
 sys.argv = sys.argv[:1]
 OWNER = '60000000-0000-4000-8000-000000000001'
@@ -42,7 +44,8 @@ class NotificationsTests(unittest.TestCase):
         self.assertEqual(pub.stdout.strip(), '1')
         subprocess.run(['psql', '-X', '-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', f"begin; insert into public.coin_ledger(user_id,amount,reason) values ('{ACTOR}', 8, 'welcome'); rollback"], check=True, capture_output=True)
         self.assertEqual(sql("select count(*) from public.notifications where amount=8", ACTOR), '0')
-        sql("select public.set_release_pin('1234',null)", OWNER, claims={'amr':[{'method':'otp','timestamp':int(time.time())}]})
+        issue_pin_nonce(DB, OWNER)
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')", OWNER, claims={}), 'ok')
         campaign = sql("select public.create_campaign('like','https://instagram.com/p/ABC/',2)", OWNER)
         self.assertEqual(sql("select count(*) from public.notifications", OWNER), '1')  # spend creates no notification
         def submit():

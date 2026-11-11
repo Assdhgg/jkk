@@ -290,14 +290,32 @@ A referral is credited when a signed-in user successfully applies another accoun
 
 <!-- coderabbit-ai-generated-section:v1:a55fdd09bd5f1bf05679e8a231eb4b5a4395525edfb11b809a88e3ddabde8912 -->
 
-2. In **Authentication → Email Templates → Magic Link**, use the `{{ .Token }}` variable to display the six-digit login OTP instead of requiring a link. For example: `<p>Your Freelan Space verification code is: {{ .Token }}</p>`. The existing signup confirmation template is separate. See [Supabase email OTP setup](https://supabase.com/docs/guides/auth/auth-email-passwordless#with-email-otp).
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:eac21dc7e8ecb624c9b7563a920cf20f7f33f96059e00a693e534b8fba760b99 -->
+
+2. In **Authentication → Email Templates → Reauthentication**, use `supabase/templates/reauthentication.html` with `{{ .Token }}` and subject **Freelan Space PIN verification**. Set email OTP length to six digits. PIN setup/reset uses authenticated `reauthenticate()`, not Magic Link. Signup and password recovery templates are separate. Apply the latest `pin_reauthentication` migration and distribute the updated Android build; see [PIN reauthentication](docs/PIN_REAUTHENTICATION.md).
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 3. In Profile, choose **Coin release PIN → Set up** or **Change / reset PIN**. Send the OTP to the signed-in email, enter that code, then enter and confirm the new four-digit PIN. The app permits resend after 60 seconds; Supabase may impose a longer sending limit.
-4. OTP verification uses a separate short-lived client so the main password session is preserved. The server requires a signed Auth JWT with a recent `otp` authentication event (within five minutes of verification), and consumes that event once across token refreshes. Password-only, stale and reused proof cannot change a PIN. The old `p_current_pin` RPC parameter is retained for compatibility but is no longer authorization. See [Supabase JWT authentication methods](https://supabase.com/docs/guides/auth/jwt-fields#authentication-methods-amrmethod).
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:f76d3dd6d80d9ecd3e66371fd5a4070029651941292f002a821d5745dc56ccf8 -->
+
+4. The signed-in session sends the Reauthentication email, then calls `set_release_pin_reauthenticated` with the PIN and nonce. The server checks current verified email identity, a five-minute nonce lifetime and at most five incorrect attempts per issued nonce; successful use consumes the nonce atomically. Passwords and sessions are unchanged. The previous `set_release_pin` endpoint now returns `otp_required`; old clients cannot set/reset PINs. Existing PIN hashes and coin release lockout remain intact. This intentionally supersedes the earlier Magic Link / OTP-AMR proof contract.
+
+<!-- /coderabbit-ai-generated:v1 -->
 5. A successful email-verified reset clears PIN lockout. Releasing coins still requires the PIN and retains the five-failure, 15-minute lock. Verify email delivery, first setup, forgotten-PIN recovery and approval on your live project before distributing builds.
 
-Local verification uses Flutter tests plus `python3 supabase/tests/economy_integration.py DATABASE_NAME` after `bootstrap.sql` and all migrations in an isolated PostgreSQL database. The test bootstrap's `auth.jwt()` is a privileged mock; **never install that bootstrap in Supabase**. Notification/action/admin inspection tests also accept explicit mock OTP claims for setup. Existing `profile_integration.py` documents/tests the earlier four-migration PIN contract and must use that earlier schema.
+Local verification uses Flutter tests plus `python3 supabase/tests/economy_integration.py DATABASE_NAME` after `bootstrap.sql` and all migrations in an isolated PostgreSQL database. The test bootstrap's `auth.jwt()` is a privileged mock; **never install that bootstrap in Supabase**. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:568a3f680279c7cafcd1ebb18a7d222eec126f871abadff8a2d03003ff8ca51b -->
+
+Notification/action/admin inspection tests seed a synthetic Auth reauthentication nonce through `pin_test_support.py` for setup; they do not exercise email delivery.
+
+<!-- /coderabbit-ai-generated:v1 --> Existing `profile_integration.py` documents/tests the earlier four-migration PIN contract and must use that earlier schema.
 
 Live rollout is not performed by committing SQL or pushing GitHub. Apply only unapplied migrations in the correct project, configure email templates/SMTP, and verify actual email and Realtime delivery. No Edge Function or Meta credentials are required for these features. Instagram live search remains separate.
 

@@ -66,6 +66,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(find.textContaining('128'), findsNothing);
+      await tester.tap(
+        find.text(locale == 'en' ? 'Check balance' : 'Balance പരിശോധിക്കുക'),
+      );
+      await tester.pumpAndSettle();
       expect(find.textContaining('128'), findsOneWidget);
       final menus = find.byType(ProfileMenuTile);
       await tester.scrollUntilVisible(find.byIcon(Icons.explore_outlined), 200);

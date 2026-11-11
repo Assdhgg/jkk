@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -53,6 +55,275 @@ class AppRelease {
       throw const FormatException('Invalid release');
     }
     return result;
+  }
+}
+
+/// Sits above the Navigator so pushed pages and dialogs cannot cover the gate.
+/// Checks fail closed for signed-in Android users, including after restart.
+class AppUpdateGate extends StatefulWidget {
+  const AppUpdateGate({
+    super.key,
+    required this.child,
+    this.client,
+    this.releaseLoader,
+    this.versionLoader,
+    this.installer,
+    this.signedIn,
+    this.authChanges,
+    this.pollInterval = const Duration(minutes: 1),
+  });
+  final Widget child;
+  final SupabaseClient? client;
+  final Stream<List<Map<String, dynamic>>> Function()? releaseLoader;
+  final Future<int?> Function()? versionLoader;
+  final Future<String?> Function(AppRelease)? installer;
+  final bool? signedIn;
+  final Stream<bool>? authChanges;
+  final Duration pollInterval;
+  @override
+  State<AppUpdateGate> createState() => _AppUpdateGateState();
+}
+
+class _AppUpdateGateState extends State<AppUpdateGate>
+    with WidgetsBindingObserver {
+  StreamSubscription<bool>? auth;
+  StreamSubscription<List<Map<String, dynamic>>>? releases;
+  Timer? timer, checkTimeout;
+  AppRelease? latest;
+  int? installed;
+  bool checking = true, failed = false, active = false;
+  int generation = 0;
+  bool get supported =>
+      widget.versionLoader != null ||
+      (!kIsWeb && defaultTargetPlatform == TargetPlatform.android);
+  SupabaseClient get client => widget.client ?? Supabase.instance.client;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (!supported) {
+      checking = false;
+      return;
+    }
+    active = widget.signedIn ?? (client.auth.currentSession != null);
+    auth =
+        (widget.authChanges ??
+                (widget.signedIn != null
+                    ? const Stream<bool>.empty()
+                    : client.auth.onAuthStateChange.map(
+                        (event) => event.session != null,
+                      )))
+            .listen((value) {
+              if (value == active) return;
+              setState(() {
+                active = value;
+                latest = null;
+                installed = null;
+              });
+              refresh();
+            });
+    timer = Timer.periodic(
+      widget.pollInterval,
+      (_) => refresh(background: true),
+    );
+    refresh();
+  }
+
+  Future<void> refresh({bool background = false}) async {
+    if (!mounted || !supported) return;
+    final request = ++generation;
+    checkTimeout?.cancel();
+    final previous = releases;
+    releases = null;
+    unawaited(previous?.cancel());
+    if (!active) {
+      setState(() {
+        checking = false;
+        failed = false;
+      });
+      return;
+    }
+    setState(() {
+      checking = !background || installed == null;
+      // Keep an existing failure blocked until a successful response.
+    });
+    try {
+      final version =
+          await (widget.versionLoader?.call() ??
+                  updateChannel.invokeMethod<int>('installedVersion'))
+              .timeout(const Duration(seconds: 15));
+      if (!mounted || request != generation) return;
+      if (version == null) throw StateError('Installed version unavailable');
+      installed = version;
+      final stream =
+          widget.releaseLoader?.call() ??
+          client
+              .from('app_releases')
+              .stream(primaryKey: ['id'])
+              .order('version_code', ascending: false)
+              .limit(1);
+      checkTimeout = Timer(const Duration(seconds: 20), () => fail(request));
+      releases = stream.listen(
+        (rows) {
+          if (!mounted || request != generation) return;
+          try {
+            final release = rows.isEmpty
+                ? null
+                : AppRelease.fromJson(rows.first);
+            checkTimeout?.cancel();
+            setState(() {
+              // Never unlock on disappearance or rollback of a known newer release.
+              if (release != null &&
+                  (latest == null ||
+                      release.versionCode >= latest!.versionCode)) {
+                latest = release;
+              }
+              checking = false;
+              failed = false;
+            });
+          } catch (_) {
+            fail(request);
+          }
+        },
+        onError: (Object _) => fail(request),
+        onDone: () {
+          if (checking) fail(request);
+        },
+      );
+    } catch (_) {
+      fail(request);
+    }
+  }
+
+  void fail(int request) {
+    if (mounted && request == generation) {
+      checkTimeout?.cancel();
+      setState(() {
+        failed = true;
+        checking = false;
+      });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) refresh();
+  }
+
+  @override
+  void dispose() {
+    generation++;
+    timer?.cancel();
+    checkTimeout?.cancel();
+    auth?.cancel();
+    releases?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final required =
+        latest != null && installed != null && latest!.versionCode > installed!;
+    final blocked = supported && active && (required || checking || failed);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ExcludeFocus(
+          excluding: blocked,
+          child: Offstage(offstage: blocked, child: widget.child),
+        ),
+        if (blocked)
+          Positioned.fill(
+            child: Material(
+              color: Colors.black87,
+              child: SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Dialog(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              supportText(
+                                context,
+                                required
+                                    ? 'Update required'
+                                    : 'Checking for updates',
+                                required
+                                    ? 'App update ചെയ്യണം'
+                                    : 'Updates പരിശോധിക്കുന്നു',
+                              ),
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            if (required) ...[
+                              Text(
+                                supportText(
+                                  context,
+                                  'Install the latest version to continue using Freelan Space.',
+                                  'Freelan Space ഉപയോഗിക്കാൻ പുതിയ version install ചെയ്യുക.',
+                                ),
+                              ),
+                              AppUpdateView(
+                                key: ValueKey(latest!.versionCode),
+                                client: widget.client,
+                                releaseLoader: () => Stream.value([
+                                  {
+                                    'version_code': latest!.versionCode,
+                                    'version_name': latest!.versionName,
+                                    'apk_path': latest!.path,
+                                    'sha256': latest!.hash,
+                                    'size_bytes': latest!.size,
+                                    'notes': latest!.notes,
+                                    'download_url': latest!.downloadUrl,
+                                    'storage_provider':
+                                        latest!.downloadUrl == null
+                                        ? 'supabase'
+                                        : 'r2',
+                                  },
+                                ]),
+                                versionLoader: () async => installed,
+                                installer: widget.installer,
+                              ),
+                            ] else if (checking)
+                              const LinearProgressIndicator(),
+                            if (failed)
+                              Text(
+                                supportText(
+                                  context,
+                                  'Connect to the internet to check for updates, then retry.',
+                                  'Updates പരിശോധിക്കാൻ internet connect ചെയ്ത് വീണ്ടും ശ്രമിക്കുക.',
+                                ),
+                              ),
+                            if (failed || required)
+                              TextButton(
+                                onPressed: refresh,
+                                child: Text(
+                                  supportText(
+                                    context,
+                                    'Check again',
+                                    'വീണ്ടും പരിശോധിക്കുക',
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 

@@ -1,9 +1,11 @@
 """Isolated disposable PostgreSQL only, after all five migrations."""
 import json
 import subprocess
-import sys
 import time
+import sys
 import unittest
+
+from pin_test_support import issue_pin_nonce
 
 DB = sys.argv[1]
 sys.argv = sys.argv[:1]
@@ -61,7 +63,8 @@ class ActionTests(unittest.TestCase):
         cid = sql(create('like'), OWNER)
         sql(f"select public.submit_claim('{cid}','sample','image/png','{PNG}')", PARTICIPANT)
         sid = sql(f"select submission_id from public.campaign_claims where campaign_id='{cid}'", OWNER)
-        self.assertEqual(sql("select public.set_release_pin('1234',null)", OWNER, claims={'amr':[{'method':'otp','timestamp':int(time.time())}]}), 'ok')
+        issue_pin_nonce(DB, OWNER)
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')", OWNER, claims={}), 'ok')
         sql("select public.admin_set_action_enabled('like',false)")
         self.assertEqual(sql(f"select public.review_claim_with_pin('{cid}','{PARTICIPANT}','{sid}',true,'1234')", OWNER), 'ok')
         self.assertEqual(sql('select balance from public.wallets', PARTICIPANT), '11')

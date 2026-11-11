@@ -10,6 +10,8 @@ import time
 import unittest
 import zlib
 
+from pin_test_support import issue_pin_nonce
+
 DB = sys.argv[1]
 sys.argv = sys.argv[:1]
 OWNER='80000000-0000-4000-8000-000000000001'
@@ -57,18 +59,19 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(sql("select count(*) from pg_tables t join pg_class c on c.relname=t.tablename join pg_namespace n on n.oid=c.relnamespace and n.nspname=t.schemaname where t.schemaname='public' and not c.relrowsecurity"),'0')
         self.assertEqual(sql("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prosecdef and has_function_privilege('anon',p.oid,'EXECUTE')"),'0')
         # Metadata supplied by the user cannot substitute for a verified email.
-        sql("select public.set_release_pin('1234',null)",UNCONFIRMED,proof(user_metadata={'email_verified':True}),fails=True)
+        sql("select public.set_release_pin_reauthenticated('1234','123456')",UNCONFIRMED,proof(user_metadata={'email_verified':True}),fails=True)
         sql('select public.initialize_wallet()',UNCONFIRMED,fails=True)
         self.assertEqual(sql('select count(*) from public.wallets',UNCONFIRMED),'0')
         sql('select public.initialize_wallet()',ACTOR,{'is_anonymous':True},fails=True)
         self.assertEqual(sql('select count(*) from public.wallets',ACTOR,{'is_anonymous':True}),'0')
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",PHONE,proof()),'email_otp_required')
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",ACTOR,proof(phone='+15555550123')),'email_otp_required')
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",ACTOR,proof(email='old-address@example.test')),'email_otp_required')
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",PHONE,proof()),'email_otp_required')
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",ACTOR,proof(phone='+15555550123')),'email_otp_required')
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",ACTOR,proof(email='old-address@example.test')),'email_otp_required')
         for amr in [None,{},[{'method':'otp','timestamp':'bad'}],[{'method':'otp','timestamp':'9'*50}]]:
-            self.assertEqual(sql("select public.set_release_pin('1234',null)",ACTOR,{'amr':amr}),'otp_required')
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",OWNER,proof()),'ok')
-        self.assertEqual(sql("select public.set_release_pin('9999',null)",OWNER,proof()),'otp_required')
+            self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",ACTOR,{'amr':amr}),'otp_required')
+        issue_pin_nonce(DB, OWNER)
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",OWNER,proof()),'ok')
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('9999','123456')",OWNER,proof()),'otp_required')
 
     def test_02_images_fail_without_partial_submission(self):
         cid=sql("select public.create_campaign_at_rate('like','https://instagram.com/p/ABC/',1,1)",OWNER)
