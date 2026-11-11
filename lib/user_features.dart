@@ -297,8 +297,8 @@ class UserHelpPage extends StatelessWidget {
       ),
       uf(context, 'PIN and approval', 'PIN, approval'): uf(
         context,
-        'Set your coin release PIN in Profile using email OTP. The PIN is required when approving submissions.',
-        'Profile-ൽ email OTP ഉപയോഗിച്ച് coin release PIN സജ്ജമാക്കുക. Submission approve ചെയ്യാൻ PIN ആവശ്യമാണ്.',
+        'Set your Security PIN in Profile using email OTP. The PIN is required to confirm account changes and approve submissions.',
+        'Profile-ൽ email OTP ഉപയോഗിച്ച് Security PIN സജ്ജമാക്കുക. Submission approve ചെയ്യാൻ PIN ആവശ്യമാണ്.',
       ),
       uf(context, 'Saved tasks', 'Saved tasks'): uf(
         context,

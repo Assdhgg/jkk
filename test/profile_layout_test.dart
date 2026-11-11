@@ -87,7 +87,7 @@ Future<void> showProfile(
     MaterialApp(
       theme: growthTheme(),
       home: Scaffold(
-        body: Profile(user: user, gateway: gateway),
+        body: Profile(user: user, gateway: gateway, authorizeChange: () async => true),
       ),
     ),
   );
@@ -111,8 +111,8 @@ void main() {
       expect(find.text('Welcome coins'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Coin release PIN'));
-      await tester.tap(find.text('Coin release PIN'));
+      await tester.ensureVisible(find.text('Security PIN'));
+      await tester.tap(find.text('Security PIN'));
       await tester.pumpAndSettle();
       expect(find.text('New 4-digit PIN'), findsOneWidget);
       await tester.tap(find.text('Send email OTP'));

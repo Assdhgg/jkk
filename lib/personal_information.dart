@@ -36,7 +36,7 @@ class SupabasePersonalInformationGateway implements PersonalInformationGateway {
   Future<Uint8List?> loadPhoto() async {
     final photo = await client.rpc('profile_photo');
     if (photo == null) return null;
-    return decodeEvidenceImage(photo as String);
+    return decodeProfilePhoto(photo as String);
   }
 
   @override
@@ -106,6 +106,7 @@ class PersonalInformationPage extends StatefulWidget {
     required this.publicId,
     required this.gateway,
     this.picker,
+    this.authorizeChange,
     this.emailChangeEnabled = const bool.fromEnvironment(
       'SECURE_EMAIL_CHANGE_ENABLED',
       defaultValue: true,
@@ -116,6 +117,7 @@ class PersonalInformationPage extends StatefulWidget {
   final PersonalInformationGateway gateway;
   final Future<XFile?> Function()? picker;
   final bool emailChangeEnabled;
+  final Future<bool> Function()? authorizeChange;
   @override
   State<PersonalInformationPage> createState() =>
       _PersonalInformationPageState();
@@ -168,17 +170,15 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
           await (widget.picker?.call() ??
               ImagePicker().pickImage(
                 source: ImageSource.gallery,
-                maxWidth: 1024,
-                maxHeight: 1024,
-                imageQuality: 60,
                 requestFullMetadata: false,
               ));
       if (file == null) return;
-      if (await file.length() > 524288) {
+      if (await file.length() > maxProfilePhotoBytes) {
         throw const FormatException('Image too large');
       }
       final bytes = await file.readAsBytes();
-      await validateEvidenceImage(bytes);
+      await validateEvidenceImage(bytes, maxBytes: maxProfilePhotoBytes);
+      if (widget.authorizeChange != null && !await widget.authorizeChange!()) return;
       final mime = bytes[0] == 0x89 ? 'image/png' : 'image/jpeg';
       await widget.gateway.savePhoto(bytes, mime);
       if (mounted) setState(() => photo = bytes);
@@ -187,8 +187,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
         setState(
           () => photoError = _t(
             context,
-            'Could not save photo. Use a JPEG or PNG under 512 KB.',
-            'ഫോട്ടോ save ചെയ്യാനായില്ല. 512 KB-ൽ താഴെയുള്ള JPEG അല്ലെങ്കിൽ PNG ഉപയോഗിക്കുക.',
+            'Could not save photo. Use a JPEG or PNG up to 5 MB.',
+            'ഫോട്ടോ save ചെയ്യാനായില്ല. 5 MB വരെ ഉള്ള JPEG അല്ലെങ്കിൽ PNG ഉപയോഗിക്കുക.',
           ),
         );
       }
@@ -227,6 +227,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       ),
     );
     if (value == null || !mounted) return;
+    if (widget.authorizeChange != null && !await widget.authorizeChange!()) return;
+    if (!mounted) return;
     setState(() => busy = true);
     try {
       await widget.gateway.saveName(value);
@@ -303,7 +305,10 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                 trailing: TextButton(
                   onPressed:
                       widget.emailChangeEnabled && widget.user.email != null
-                      ? () => Navigator.push(
+                      ? () async {
+                          if (widget.authorizeChange != null && !await widget.authorizeChange!()) return;
+                          if (!context.mounted) return;
+                          await Navigator.push(
                           context,
                           MaterialPageRoute<void>(
                             builder: (_) => EmailChangePage(
@@ -311,7 +316,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                               gateway: widget.gateway,
                             ),
                           ),
-                        )
+                        );
+                        }
                       : null,
                   child: Text(_t(context, 'Change', 'മാറ്റുക')),
                 ),

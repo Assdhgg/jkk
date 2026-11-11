@@ -21,6 +21,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: UserSettingsPage(
+          authorizeChange: () async => true,
           enabledLoader: () async => false,
           pushUpdater: (_) async => throw const PushPermissionDenied(),
         ),
@@ -44,6 +45,7 @@ void main() {
         MaterialApp(
           theme: growthTheme(),
           home: UserSettingsPage(
+          authorizeChange: () async => true,
             enabledLoader: () async => true,
             pushUpdater: (value) async {
               if (fail) throw StateError('offline');

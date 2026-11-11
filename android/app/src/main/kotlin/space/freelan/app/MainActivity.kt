@@ -1,7 +1,5 @@
 package space.freelan.app
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -40,11 +38,6 @@ class MainActivity : FlutterActivity() {
     }
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        if (Build.VERSION.SDK_INT >= 26) {
-            val channel = NotificationChannel("freelan_updates", "Freelan Space notifications", NotificationManager.IMPORTANCE_HIGH)
-            channel.description = "Account updates and messages from Freelan Space"
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "growth_circle/app_updates").setMethodCallHandler { call, result ->
             when (call.method) {
                 "openNotificationSettings" -> {

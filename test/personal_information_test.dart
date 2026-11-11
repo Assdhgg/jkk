@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/personal_information.dart';
+import 'package:growth_circle/evidence_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -55,6 +56,34 @@ class FakePersonalGateway implements PersonalInformationGateway {
 }
 
 void main() {
+  test('profile photo decoder rejects more than 5 MB before decoding', () async {
+    final oversized = Uint8List(maxProfilePhotoBytes + 1);
+    await expectLater(
+      decodeProfilePhoto(base64Encode(oversized)),
+      throwsFormatException,
+    );
+  });
+
+  testWidgets('cancelled Security PIN prevents a profile photo write', (tester) async {
+    final api = FakePersonalGateway();
+    var confirmations = 0;
+    await tester.pumpWidget(MaterialApp(home: PersonalInformationPage(
+      user: user, publicId: '12345678', gateway: api,
+      authorizeChange: () async { confirmations++; return false; },
+      picker: () async => XFile.fromData(base64Decode(png), name: 'photo.png'),
+    )));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Change photo'));
+    await tester.runAsync(() async {
+      for (var i = 0; i < 30 && confirmations == 0; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+    await tester.pumpAndSettle();
+    expect(confirmations, 1);
+    expect(api.photo, isNull);
+  });
+
   testWidgets('personal name can be added or edited and blank is rejected', (
     tester,
   ) async {
