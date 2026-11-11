@@ -18,7 +18,13 @@ Publishing inserts an in-app notification for existing wallet accounts and queue
 
 ## Hosted deployment required
 
-1. Apply all migrations in order, including `20261109110000_app_updates.sql` and `20261110100000_r2_app_releases.sql`. Existing Supabase releases remain downloadable. The original publication RPC remains available for older admin builds.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:ccc8e9dcd93472e4bfa0eb6b362e142afa110a1fd726eea40720b20f1a81aeb6 -->
+
+1. Apply all migrations in order, including `20261109110000_app_updates.sql` and `20261111042338_r2_app_releases.sql`. The R2 migration version matches the migration applied to the linked project. Existing Supabase releases remain downloadable. The original publication RPC remains available for older admin builds.
+
+<!-- /coderabbit-ai-generated:v1 -->
 2. Create a Cloudflare R2 Standard bucket and an R2 API token restricted to that bucket with object read/write access. Enable a public custom domain for the bucket; use a stable HTTPS URL without a path, query or fragment. Configure a lifecycle rule to expire objects under `staging/` after one day; do not expire `releases/`. The bucket contains public APKs. Configure the domain and bucket so public writes are disabled. The free tier has usage limits and may require a billing setup; see [R2 pricing](https://developers.cloudflare.com/r2/pricing/).
 3. Set Supabase Edge Function secrets `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_PUBLIC_BASE_URL` (for example `https://updates.example.com`) using `supabase secrets set --env-file <secure-file-outside-repository>`. The platform provides Supabase URL, anon key and service role key. Keep credentials outside clients, source control and chat. Deploy with `supabase functions deploy app-release-upload` and keep JWT verification enabled. The function authorizes each request through the existing editor/MFA rule, signs a bounded temporary upload, copies it to a separate release key, and publishes metadata. Restrict R2 credentials and dashboard access: direct edits to release objects bypass this protection.
 <!-- coderabbit-ai-generated:v1 -->
