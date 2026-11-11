@@ -2004,22 +2004,17 @@ class _BalanceCardState extends State<BalanceCard> {
             ),
           ),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: const BorderSide(color: Colors.white70),
+        IconButton.filledTonal(
+          tooltip: revealed
+              ? uf(context, 'Hide balance', 'Balance മറയ്ക്കുക')
+              : uf(context, 'Check balance', 'Balance പരിശോധിക്കുക'),
+          style: IconButton.styleFrom(
+            shape: const CircleBorder(),
+            backgroundColor: Colors.white,
+            foregroundColor: growthPurple,
           ),
           onPressed: () => setState(() => revealed = !revealed),
-          icon: Icon(
-            revealed
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
-          ),
-          label: Text(
-            revealed
-                ? uf(context, 'Hide balance', 'Balance മറയ്ക്കുക')
-                : uf(context, 'Check balance', 'Balance പരിശോധിക്കുക'),
-          ),
+          icon: Icon(revealed ? Icons.visibility_off_outlined : Icons.check),
         ),
       ],
     ),

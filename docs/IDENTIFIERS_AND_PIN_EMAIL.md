@@ -4,7 +4,13 @@
 
 ## Hosted Supabase changes required
 
-1. Apply `supabase/migrations/20261109100000_public_user_identifiers.sql` after all existing migrations. Existing users receive a unique eight-digit public User ID; authentication continues using the existing UUID. Referral codes become four capital letters followed by three digits, for example `ABCD123`. Existing codes remain accepted privately as aliases, so previously shared codes continue working. Existing referral relationships and rewards remain intact. Unique constraints and non-cycling sequences prevent duplicate allocation, including concurrent requests; exhausted ranges fail rather than reuse identifiers.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:94a73703ccd2e5ad272f8dce78860750a641932110757a1adcf629b43ff39be9 -->
+
+1. Apply migrations in order, including the latest `random_identifiers_fast_push` migration. Public User IDs are random unique eight-digit numbers; referral codes are four random capital letters followed by three random digits. PostgreSQL pgcrypto generates unbiased random samples and a private permanent reservation table prevents collisions and reuse, including after account deletion. Existing public IDs and referral codes are rotated once by this migration. Predictable old four-letter/three-digit codes are retired, including legacy aliases: users must share their new code. Earlier random UUID referral aliases remain accepted. Authentication UUIDs, accounts, existing referral relationships and earned balances remain unchanged. This intentionally replaces the earlier sequential generation and sequential-alias compatibility contract. Display identifiers are not credentials.
+
+<!-- /coderabbit-ai-generated:v1 -->
 <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:55706cd856c592372947677e9688059d6f53918d40d4d9f2c28d0c23eea647a1 -->
