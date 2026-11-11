@@ -729,7 +729,7 @@ class GrowthApp extends StatelessWidget {
   Widget build(BuildContext context) => ValueListenableBuilder<Locale>(
     valueListenable: language,
     builder: (_, locale, _) => MaterialApp(
-      title: 'Growth Circle',
+      title: 'Freelan Space',
       debugShowCheckedModeBanner: false,
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('ml')],
@@ -915,7 +915,7 @@ class _AccountGateState extends State<AccountGate> {
                           ),
                           const SizedBox(width: 6),
                           const Text(
-                            'Growth\nCircle',
+                            'Freelan\nSpace',
                             style: TextStyle(
                               color: growthInk,
                               height: 1,
@@ -1236,7 +1236,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(width: 6),
                       const Expanded(
                         child: Text(
-                          'Growth\nCircle',
+                          'Freelan\nSpace',
                           style: TextStyle(
                             fontSize: 16,
                             height: 1.05,

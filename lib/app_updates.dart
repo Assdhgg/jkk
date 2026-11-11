@@ -16,9 +16,11 @@ class AppRelease {
     required this.hash,
     required this.size,
     required this.notes,
+    this.downloadUrl,
   });
   final int versionCode, size;
   final String versionName, path, hash, notes;
+  final String? downloadUrl;
   factory AppRelease.fromJson(Map<String, dynamic> row) {
     final result = AppRelease(
       versionCode: row['version_code'] as int,
@@ -27,8 +29,22 @@ class AppRelease {
       hash: row['sha256'] as String,
       size: row['size_bytes'] as int,
       notes: row['notes'] as String? ?? '',
+      downloadUrl: row['download_url'] as String?,
     );
-    if (result.versionCode < 1 ||
+    final provider = row['storage_provider'] as String? ?? 'supabase';
+    final url = result.downloadUrl == null
+        ? null
+        : Uri.tryParse(result.downloadUrl!);
+    if ((provider == 'supabase' && url != null) ||
+        (provider == 'r2' &&
+            (url == null ||
+                url.scheme != 'https' ||
+                url.host.isEmpty ||
+                url.userInfo.isNotEmpty ||
+                url.hasQuery ||
+                url.hasFragment)) ||
+        (provider != 'supabase' && provider != 'r2') ||
+        result.versionCode < 1 ||
         result.versionCode > 2100000000 ||
         result.size < 1 ||
         result.size > maxApkBytes ||
@@ -114,9 +130,11 @@ class _AppUpdateViewState extends State<AppUpdateView>
       final result = widget.installer != null
           ? await widget.installer!(release)
           : await updateChannel.invokeMethod<String>('installUpdate', {
-              'url': (widget.client ?? Supabase.instance.client).storage
-                  .from('app-releases')
-                  .getPublicUrl(release.path),
+              'url':
+                  release.downloadUrl ??
+                  (widget.client ?? Supabase.instance.client).storage
+                      .from('app-releases')
+                      .getPublicUrl(release.path),
               'sha256': release.hash,
               'sizeBytes': release.size,
               'versionCode': release.versionCode,
@@ -129,8 +147,8 @@ class _AppUpdateViewState extends State<AppUpdateView>
           () => message = result == 'permission_required'
               ? supportText(
                   context,
-                  'Allow installation from Growth Circle in Android settings, then tap Update app again.',
-                  'Android settings-ൽ Growth Circle-ന് installation അനുവദിച്ച ശേഷം Update app വീണ്ടും അമർത്തുക.',
+                  'Allow installation from Freelan Space in Android settings, then tap Update app again.',
+                  'Android settings-ൽ Freelan Space-ന് installation അനുവദിച്ച ശേഷം Update app വീണ്ടും അമർത്തുക.',
                 )
               : supportText(
                   context,

@@ -44,4 +44,14 @@ class Updates(unittest.TestCase):
         sql('delete from public.app_releases',EDITOR,fails=True)
         sql(publish(9,OTHER),EDITOR)
         self.assertEqual(sql("select count(*) from public.notifications where kind='app_update'",USER),'2')
+        r2path = '12345678-1234-1234-1234-123456789abe.apk'
+        call = f"select public.publish_r2_app_release('{EDITOR}',10,'1.3.0','{r2path}','{'b'*64}',100,'R2 release','https://updates.example.test/releases/{r2path}')"
+        sql(call, USER, fails=True)
+        sql(call, EDITOR, fails=True)
+        self.assertTrue(sql('set role service_role; '+call))
+        self.assertEqual(sql("select storage_provider from public.app_releases where version_code=10",USER),'r2')
+        self.assertEqual(sql("select storage_provider from public.app_releases where version_code=8",USER),'supabase')
+        self.assertEqual(sql("select count(*) from public.notifications where kind='app_update'",USER),'3')
+        sql('set role service_role; '+call,fails=True)
+
 if __name__ == '__main__': unittest.main()

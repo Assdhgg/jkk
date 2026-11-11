@@ -1,9 +1,9 @@
 const messages = {
-  app_update: ['App update available', 'Open Growth Circle to download and install the latest version.'],
-  approved: ['Submission approved', 'Open Growth Circle to see your update.'],
-  rejected: ['Submission reviewed', 'Open Growth Circle to see your update.'],
-  coins_received: ['Coins received', 'Open Growth Circle to see your update.'],
-  support_reply: ['Support replied', 'Open Growth Circle to see your update.'],
+  app_update: ['App update available', 'Open Freelan Space to download and install the latest version.'],
+  approved: ['Submission approved', 'Open Freelan Space to see your update.'],
+  rejected: ['Submission reviewed', 'Open Freelan Space to see your update.'],
+  coins_received: ['Coins received', 'Open Freelan Space to see your update.'],
+  support_reply: ['Support replied', 'Open Freelan Space to see your update.'],
 };
 function equalSecret(a, b) {
   const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
@@ -24,7 +24,7 @@ export function createHandler({secret, workerSecret, claim, send, finish}) {
       const results = await Promise.all(jobs.map(async job => {
         let outcome = {success: false, permanent: false};
         try {
-          const [title, body] = messages[job.kind] ?? ['Growth Circle', 'Open Growth Circle to see your update.'];
+          const [title, body] = messages[job.kind] ?? ['Freelan Space', 'Open Freelan Space to see your update.'];
           outcome = await send(job.token, title, body, job.kind);
         } catch (_) { /* Leased jobs are retried on transient errors. */ }
         try { await finish(job.job_id, job.lease_id, outcome.success, outcome.permanent); return outcome.success ? 'sent' : 'retry'; }

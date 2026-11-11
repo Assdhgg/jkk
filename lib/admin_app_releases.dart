@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:file_selector/file_selector.dart';
@@ -128,32 +128,45 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
           bytes[1] != 0x4b) {
         throw const FormatException('Invalid APK');
       }
-      final random = Random.secure();
-      final hex = List.generate(
-        16,
-        (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
-      ).join();
-      final path =
-          '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}.apk';
-      await widget.client.storage
-          .from('app-releases')
-          .uploadBinary(
-            path,
-            bytes,
-            fileOptions: const FileOptions(
-              contentType: 'application/vnd.android.package-archive',
-              upsert: false,
-            ),
-          );
-      await widget.client.rpc(
-        'admin_publish_app_release',
-        params: {
-          'p_version_code': version,
-          'p_version_name': versionName,
-          'p_path': path,
-          'p_sha256': sha256.convert(bytes).toString(),
-          'p_size': bytes.length,
-          'p_notes': releaseNotes,
+      final hash = sha256.convert(bytes).toString();
+      final prepare = await widget.client.functions.invoke(
+        'app-release-upload',
+        body: {'action': 'prepare', 'size': bytes.length},
+      );
+      final upload = prepare.data as Map<String, dynamic>;
+      final uri = Uri.parse(upload['url'] as String);
+      if (uri.scheme != 'https' || uri.userInfo.isNotEmpty) {
+        throw const FormatException('Invalid upload URL');
+      }
+      final http = HttpClient();
+      try {
+        final request = await http.putUrl(uri);
+        request.followRedirects = false;
+        request.contentLength = bytes.length;
+        request.headers.set(
+          HttpHeaders.contentTypeHeader,
+          'application/vnd.android.package-archive',
+        );
+        request.headers.set(HttpHeaders.ifNoneMatchHeader, '*');
+        request.add(bytes);
+        final response = await request.close();
+        await response.drain<void>();
+        if (response.statusCode != 200) {
+          throw const FormatException('Upload failed');
+        }
+      } finally {
+        http.close(force: true);
+      }
+      await widget.client.functions.invoke(
+        'app-release-upload',
+        body: {
+          'action': 'publish',
+          'key': upload['key'],
+          'size': bytes.length,
+          'sha256': hash,
+          'versionCode': version,
+          'versionName': versionName,
+          'notes': releaseNotes,
         },
       );
       if (mounted) {
@@ -169,7 +182,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
       // A response can be lost after publication committed; never delete its APK.
       if (mounted) {
         setState(() {
-          error = 'Unable to confirm publication. Refresh releases before retrying. Check increasing version code, editor access, storage upload limit and connection.';
+          error = 'Unable to confirm publication. Refresh releases before retrying. Check increasing version code, editor access, R2 setup and connection.';
           load();
         });
       }

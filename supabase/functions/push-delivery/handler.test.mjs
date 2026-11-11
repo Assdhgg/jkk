@@ -31,3 +31,17 @@ test('app update uses an update notification message', async () => {
   assert.equal(notification.title, 'App update available');
   assert.match(notification.body, /download and install/);
 });
+
+
+test('all push notification messages use the new app name', async () => {
+  const kinds = ['app_update', 'approved', 'rejected', 'coins_received', 'support_reply', 'unknown'];
+  const messages = [];
+  const handler = createHandler({secret: 'secret', claim: async () => kinds.map(kind => ({job_id: kind, lease_id: 'lease', token: 'synthetic', kind})), send: async (_token, title, body) => { messages.push({title, body}); return {success: true, permanent: false}; }, finish: async () => {}});
+  const response = await handler(new Request('https://worker.test', {method: 'POST', headers: {authorization: 'Bearer secret'}}));
+  assert.equal(response.status, 200);
+  assert.equal(messages.length, kinds.length);
+  for (const message of messages) {
+    assert.match(message.body, /Freelan Space/);
+    assert.doesNotMatch(`${message.title} ${message.body}`, /Growth Circle/i);
+  }
+});

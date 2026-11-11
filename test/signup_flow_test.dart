@@ -120,6 +120,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(MaterialApp(home: AuthScreen(actions: FakeAuth())));
+    expect(find.text('Freelan\nSpace'), findsOneWidget);
     final field = find.byKey(const Key('password'));
     expect(tester.widget<TextField>(field).obscureText, isTrue);
     await tester.tap(find.byTooltip('Show password'));
