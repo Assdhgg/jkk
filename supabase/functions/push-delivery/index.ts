@@ -1,4 +1,7 @@
+import { fcmMessage } from './payload.mjs';
 import { createHandler } from './handler.mjs';
+
+declare const EdgeRuntime: { waitUntil(task: Promise<unknown>): void };
 
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -35,15 +38,20 @@ async function rpc(name: string, body: Record<string, unknown>) {
 const handler = createHandler({
   secret: serviceKey,
   workerSecret: Deno.env.get('PUSH_WORKER_SECRET') ?? '',
-  claim: async () => { await accessToken(); return await rpc('claim_push_jobs_v2', {p_limit: 10}); },
-  send: async (fid: string, title: string, body: string, kind: string) => {
+  claim: async () => { await accessToken(); return await rpc('claim_push_jobs_v2', {p_limit: 100}); },
+  send: async (deviceToken: string, title: string, body: string, kind: string) => {
     const token = await accessToken();
-    const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(project)}/messages:send`, {method: 'POST', headers: {authorization: `Bearer ${token}`, 'content-type': 'application/json'}, body: JSON.stringify({message: {fid, notification: {title, body}, data: {kind}}}), signal: AbortSignal.timeout(10000)});
+    const response = await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(project)}/messages:send`, {method: 'POST', headers: {authorization: `Bearer ${token}`, 'content-type': 'application/json'}, body: JSON.stringify(fcmMessage(deviceToken, title, body, kind)), signal: AbortSignal.timeout(10000)});
     if (response.ok) return {success: true, permanent: false};
     let permanent = false;
     try { const data = await response.json(); permanent = Array.isArray(data.error?.details) && data.error.details.some((d: {errorCode?: string}) => d.errorCode === 'UNREGISTERED'); } catch (_) { /* Retry unknown responses. */ }
     return {success: false, permanent};
   },
+  continueDelivery: () => EdgeRuntime.waitUntil(fetch(`${supabaseUrl}/functions/v1/push-delivery`, {
+    method: 'POST', headers: {authorization: `Bearer ${serviceKey}`, 'content-type': 'application/json',
+      'x-push-worker-secret': Deno.env.get('PUSH_WORKER_SECRET') ?? ''},
+    body: '{}', signal: AbortSignal.timeout(10000),
+  }).then(response => response.body?.cancel()).catch(() => {})),
   finish: async (id: string, lease: string, success: boolean, permanent: boolean) => { await rpc('finish_push_job', {p_id: id, p_lease: lease, p_success: success, p_permanent: permanent}); },
 });
 Deno.serve(handler);

@@ -121,6 +121,10 @@ void main() {
       expect(verifies.last['body'], containsPair('email', 'new@example.test'));
       expect(primary.auth.currentSession?.accessToken, 'new-session');
       expect(primary.auth.currentUser?.email, 'new@example.test');
+      await api.saveName(' New Name ');
+      expect((requests.last['body'] as Map)['data'], {'full_name': 'New Name'});
+      expect(requests.last['auth'], 'Bearer new-session');
+      await expectLater(api.saveName('   '), throwsFormatException);
     } finally {
       await primary.dispose();
       await server.close(force: true);

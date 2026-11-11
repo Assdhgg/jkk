@@ -11,7 +11,7 @@ function equalSecret(a, b) {
   for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
   return diff === 0;
 }
-export function createHandler({secret, workerSecret, claim, send, finish}) {
+export function createHandler({secret, workerSecret, claim, send, finish, continueDelivery}) {
   return async request => {
     if (request.method !== 'POST') return new Response('Method not allowed', {status: 405});
     const auth = request.headers.get('authorization') ?? '';
@@ -32,6 +32,9 @@ export function createHandler({secret, workerSecret, claim, send, finish}) {
         try { await finish(job.job_id, job.lease_id, outcome.success, outcome.permanent); return outcome.success ? 'sent' : 'retry'; }
         catch (_) { return 'unconfirmed'; }
       }));
+      if (jobs.length >= 100 && continueDelivery) {
+        try { continueDelivery(); } catch (_) { /* Cron remains a fallback. */ }
+      }
       return Response.json({processed: results.length, sent: results.filter(x => x === 'sent').length, unconfirmed: results.filter(x => x === 'unconfirmed').length});
     } catch (_) { return new Response('Push worker unavailable', {status: 503}); }
   };

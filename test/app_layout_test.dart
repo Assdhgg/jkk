@@ -68,7 +68,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('128'), findsNothing);
       await tester.tap(
-        find.text(locale == 'en' ? 'Check balance' : 'Balance പരിശോധിക്കുക'),
+        find.byTooltip(
+          locale == 'en' ? 'Check balance' : 'Balance പരിശോധിക്കുക',
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.textContaining('128'), findsOneWidget);

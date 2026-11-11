@@ -11,6 +11,7 @@ String _t(BuildContext context, String english, String malayalam) =>
     Localizations.localeOf(context).languageCode == 'ml' ? malayalam : english;
 
 abstract class PersonalInformationGateway {
+  Future<void> saveName(String name);
   Future<Uint8List?> loadPhoto();
   Future<void> savePhoto(Uint8List data, String mime);
   Future<void> requestEmailChange(String email);
@@ -22,6 +23,15 @@ class SupabasePersonalInformationGateway implements PersonalInformationGateway {
   const SupabasePersonalInformationGateway(this.client, this.newOtpClient);
   final SupabaseClient client;
   final SupabaseClient Function() newOtpClient;
+  @override
+  Future<void> saveName(String name) async {
+    final value = name.trim();
+    if (value.isEmpty || value.length > 80) {
+      throw const FormatException('Invalid name');
+    }
+    await client.auth.updateUser(UserAttributes(data: {'full_name': value}));
+  }
+
   @override
   Future<Uint8List?> loadPhoto() async {
     final photo = await client.rpc('profile_photo');
@@ -112,6 +122,9 @@ class PersonalInformationPage extends StatefulWidget {
 }
 
 class _PersonalInformationPageState extends State<PersonalInformationPage> {
+  late String name = widget.user.userMetadata?['full_name'] is String
+      ? widget.user.userMetadata!['full_name'] as String
+      : '';
   Uint8List? photo;
   bool loading = true, busy = false;
   String? photoError;
@@ -184,9 +197,61 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     }
   }
 
+  Future<void> editName() async {
+    var draft = name;
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(_t(context, 'Edit name', 'പേര് മാറ്റുക')),
+        content: TextFormField(
+          initialValue: name,
+          onChanged: (value) => draft = value,
+          maxLength: 80,
+          autofocus: true,
+          decoration: InputDecoration(labelText: _t(context, 'Name', 'പേര്')),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(_t(context, 'Cancel', 'റദ്ദാക്കുക')),
+          ),
+          TextButton(
+            onPressed: () {
+              if (draft.trim().isNotEmpty) {
+                Navigator.pop(context, draft.trim());
+              }
+            },
+            child: Text(_t(context, 'Save', 'സേവ് ചെയ്യുക')),
+          ),
+        ],
+      ),
+    );
+    if (value == null || !mounted) return;
+    setState(() => busy = true);
+    try {
+      await widget.gateway.saveName(value);
+      if (mounted) setState(() => name = value);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _t(
+                context,
+                'Could not save name. Try again.',
+                'പേര് save ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.',
+              ),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final name = widget.user.userMetadata?['full_name'];
     final created = DateTime.tryParse(widget.user.createdAt)?.toLocal();
     final joined = created == null
         ? '—'
@@ -225,9 +290,12 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
               const SizedBox(height: 16),
               ListTile(
                 title: Text(_t(context, 'Name', 'പേര്')),
-                subtitle: Text(
-                  name is String && name.trim().isNotEmpty ? name : '—',
+                trailing: IconButton(
+                  tooltip: _t(context, 'Edit name', 'പേര് മാറ്റുക'),
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: busy ? null : editName,
                 ),
+                subtitle: Text(name.trim().isNotEmpty ? name : '—'),
               ),
               ListTile(
                 title: Text(_t(context, 'Email ID', 'ഇമെയിൽ')),

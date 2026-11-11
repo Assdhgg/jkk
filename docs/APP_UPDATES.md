@@ -97,7 +97,13 @@ flutter build apk --release <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:9ed86de708e74d3bc1d20446692ea881ff78f8fa7d26bd834d5cfbfee469a982 -->
 
---build-name=1.1.5 --build-number=13
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:1bc81190bdb18f6f8436be9c7dd873713a7d9f8bb4a76abcf2fb379c80c87235 -->
+
+--build-name=1.1.6 --build-number=14
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -114,7 +120,13 @@ flutter build apk --release <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:e940d0205ae138b1ed6fd15d053a3c4e78189a2b00e10d91c0123d177682b618 -->
 
-The example build 13 supersedes the previous code-12 build;
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:48d8c3457285501dcc49d38e46a931350773efdc399bb2323f72c5af3ddcff8b -->
+
+The example build 14 supersedes the previous code-13 build;
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 --> always check installed and published versions before building.
 

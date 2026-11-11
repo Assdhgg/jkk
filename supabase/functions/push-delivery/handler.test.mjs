@@ -55,3 +55,21 @@ test('admin messages send their own title and body without changing existing mes
  assert.deepEqual(sent[0],['device-a','Maintenance','We are updating the app.','admin_message']);
  assert.deepEqual(sent[1],['device-b','Submission approved','Open Freelan Space to see your update.','approved']);
 });
+
+test('HTTP v1 uses registration token and a high importance Android channel', async () => {
+ const {fcmMessage}=await import('./payload.mjs');
+ const payload=fcmMessage('synthetic-fcm-token','Hello','Message','admin_message');
+ assert.equal(payload.message.token,'synthetic-fcm-token');
+ assert.equal('fid' in payload.message,false);
+ assert.deepEqual(payload.message.notification,{title:'Hello',body:'Message'});
+ assert.equal(payload.message.android.priority,'HIGH');
+ assert.equal(payload.message.android.notification.channel_id,'freelan_updates');
+});
+
+test('full batch immediately schedules the next batch', async () => {
+ let continued=0;
+ const handler=createHandler({secret:'secret',claim:async()=>Array.from({length:100},(_,i)=>({job_id:String(i),lease_id:'l',token:'synthetic',kind:'approved'})),send:async()=>({success:true,permanent:false}),finish:async()=>{},continueDelivery:()=>{continued++;}});
+ const response=await handler(new Request('https://worker.test',{method:'POST',headers:{authorization:'Bearer secret'}}));
+ assert.equal((await response.json()).sent,100);
+ assert.equal(continued,1);
+});

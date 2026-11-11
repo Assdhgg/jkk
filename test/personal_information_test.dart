@@ -19,6 +19,12 @@ const user = User(
 );
 
 class FakePersonalGateway implements PersonalInformationGateway {
+  String? savedName;
+  @override
+  Future<void> saveName(String name) async {
+    savedName = name;
+  }
+
   Uint8List? photo;
   String? mime;
   final calls = <String>[];
@@ -49,6 +55,32 @@ class FakePersonalGateway implements PersonalInformationGateway {
 }
 
 void main() {
+  testWidgets('personal name can be added or edited and blank is rejected', (
+    tester,
+  ) async {
+    final api = FakePersonalGateway();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PersonalInformationPage(
+          user: user,
+          publicId: '12345678',
+          gateway: api,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit name'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(api.savedName, isNull);
+    await tester.enterText(find.byType(TextField), '  Updated User  ');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(api.savedName, 'Updated User');
+    expect(find.text('Updated User'), findsOneWidget);
+  });
   testWidgets('shows personal data, copies the public ID and saves a photo', (
     tester,
   ) async {
