@@ -8,7 +8,13 @@
 
 Admin → **App releases** → choose a signed universal APK, enter its exact Android version code, version name and release notes, then publish. Editor access and the existing administrator MFA rules apply; viewers can only read releases. Uploads are limited to 200 MiB. Each publication must increase the version code. Published artifacts cannot be overwritten or removed through client credentials.
 
-Publishing inserts an in-app notification for existing wallet accounts and queues push jobs for their registered devices. The foreground Home banner and Settings → App updates compare the latest release with the installed Android version, including after returning to the app. Notification taps open the update page. Users who turn push off still see the in-app update offer.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:a927d2ebf32d56eb36c7ce26c8dc06006c6cdf831011e4e2142a7f1e88dcc957 -->
+
+Publishing inserts an in-app notification for existing wallet accounts and queues push jobs for their registered devices. Updated Android builds use a mandatory popup above the Navigator: every signed-in page is inaccessible when a newer release exists. Initial/resume checks and Realtime release changes compare the installed version, with polling every minute. Update-check errors block access with retry, including offline restarts. A known newer release stays required if it disappears from the feed during the session. Opening or cancelling the installer does not unlock the app; its installed version must reach the required version. Push settings do not disable this gate. This replaces the optional Home banner; older builds must first be replaced manually and are not remotely forced by this UI change.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 **Update app** opens Android's installation permission settings if necessary. After allowing installation, tap **Update app** again. The app downloads over HTTPS into private cache, validates the exact size and SHA-256, then checks the APK package ID, increasing version code and signing identity against the installed app before opening the Android installer. The user confirms installation. Failed downloads can be retried. No automatic silent installation is attempted.
 
@@ -37,7 +43,13 @@ Publishing inserts an in-app notification for existing wallet accounts and queue
 
 Review the Firebase project and Cron/Vault setup in `docs/USER_FEATURES.md`. The supplied new app config uses `freelan-space` while the older app used `growth-circle-c8efe`; check the worker credentials and delivery impact before changing its Firebase project. Do not create another worker schedule.
 
-<!-- /coderabbit-ai-generated:v1 --> In Supabase Authentication → Email Templates, update the subjects and content of the existing Confirm signup, Magic Link and any other templates containing the old name. Use `supabase/templates/magic_link.html` for the PIN OTP template; keep the required OTP token and recovery behavior intact. Saved dashboard templates do not change when repository files change.
+<!-- /coderabbit-ai-generated:v1 --> In Supabase Authentication → Email Templates, update the subjects and content of the existing Confirm signup, Magic Link and any other templates containing the old name. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:736b1dda3a0ca0d50fe20d23d4eac1bda3dae9943451f8c04699edb68667682b -->
+
+Use `supabase/templates/reauthentication.html` in **Reauthentication** for PIN OTP; keep the required OTP token and recovery behavior intact.
+
+<!-- /coderabbit-ai-generated:v1 --> Saved dashboard templates do not change when repository files change.
 
 <!-- /coderabbit-ai-generated:v1 -->
 <!-- coderabbit-ai-generated:v1 -->
@@ -71,16 +83,40 @@ Use application ID `space.freelan.app` and retain its production signing keystor
 <!-- /coderabbit-ai-generated:v1 -->
 
 ```bash
-flutter build apk --release --build-name=1.2.0 --build-number=8 \
+flutter build apk --release <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:bd28351a3482c73a77d305dc13ffa549c85dd0ad0d2c9359db95f11577fedc3f -->
+
+--build-name=1.1.4 --build-number=12
+
+<!-- /coderabbit-ai-generated:v1 --> \
   --dart-define=SUPABASE_URL=YOUR_PROJECT_URL \
   --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
 ```
 
-The example build 8 is suitable only when installed and published builds are lower. Upload `build/app/outputs/flutter-apk/app-release.apk` and enter the APK's matching version code/name. Do not upload an app bundle or an APK signed with another key. Flutter split-per-ABI APKs can have adjusted version codes; use the universal APK for this flow. Never distribute a debug artifact as the production update.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:eaee7c1909f5a0718c77b0f43d2ad4d1ea14df545de7d5f2bc970fa9d623f7bb -->
+
+The example build 12 is newer than hosted release 11 at implementation time; always check installed and published versions before building.
+
+<!-- /coderabbit-ai-generated:v1 --> Upload `build/app/outputs/flutter-apk/app-release.apk` and enter the APK's matching version code/name. Do not upload an app bundle or an APK signed with another key. Flutter split-per-ABI APKs can have adjusted version codes; use the universal APK for this flow. Never distribute a debug artifact as the production update.
 
 ## Verify before distributing
 
-Install an older production-signed APK containing the updater on a real Android device. Enable notifications in Settings, publish a newer APK signed with the same key, and confirm the notification, foreground banner and Settings update page. Exercise installation permission, successful installation, version detection after reopening, an interrupted download, and rejection of an APK with a different package/signing key. Confirm push-off suppresses device delivery while the foreground banner remains available. Verify the Windows administrator can choose and publish an APK and a viewer cannot publish.
+Install an older production-signed APK containing the updater on a real Android device. Enable notifications in Settings, publish a newer APK signed with the same key, and <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:04af70e6e9d412f5666c6012a8d2fd2cf1ba441431e2af919cd16ba6ab69872f -->
+
+confirm the notification, mandatory update popup over every page and Settings update page.
+
+<!-- /coderabbit-ai-generated:v1 --> Exercise installation permission, successful installation, version detection after reopening, an interrupted download, and rejection of an APK with a different package/signing key. Confirm push-off suppresses device delivery <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:5c3c3f1c82cfc402a2efd5b15ba25947ee417cf29fd312be32dfb294122e32c9 -->
+
+while the mandatory update popup remains active.
+
+<!-- /coderabbit-ai-generated:v1 --> Verify the Windows administrator can choose and publish an APK and a viewer cannot publish.
 
 Local Flutter, SQL and worker tests cover release selection, retry/permission UI, publication permissions, immutable artifacts, notifications and queue creation. A debug Android compilation checks the native integration. Actual device installation and hosted delivery remain separate acceptance checks.
 

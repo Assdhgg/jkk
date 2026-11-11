@@ -9,7 +9,14 @@ create table auth.users (
  email_confirmed_at timestamptz default now(),
  created_at timestamptz default now(),
  last_sign_in_at timestamptz,
+ reauthentication_token varchar default '',
+ reauthentication_sent_at timestamptz,
  raw_user_meta_data jsonb default '{}'::jsonb
+);
+create table auth.one_time_tokens (
+ user_id uuid references auth.users(id) on delete cascade,
+ token_type text not null,
+ token_hash text
 );
 create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid

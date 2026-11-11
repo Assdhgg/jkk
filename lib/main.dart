@@ -525,6 +525,7 @@ String? authErrorKey(AuthException e) {
     }
     if (message.contains('error sending confirmation email') ||
         message.contains('error sending recovery email') ||
+        message.contains('error sending reauthentication email') ||
         message.contains('error sending magic link email')) {
       return 'confirmationEmailFailed';
     }
@@ -736,7 +737,9 @@ class GrowthApp extends StatelessWidget {
       supportedLocales: const [Locale('en'), Locale('ml')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: growthTheme(),
-      builder: (context, child) => GrowthBackdrop(child: child!),
+      builder: (context, child) => GrowthBackdrop(
+        child: configured ? AppUpdateGate(child: child!) : child!,
+      ),
       home: configured ? const AuthGate() : const SetupScreen(),
     ),
   );
@@ -1920,14 +1923,7 @@ class _HomeShellState extends State<HomeShell> {
                 ),
               ],
             ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const AppUpdateView(compact: true),
-            Expanded(child: pages[selected]),
-          ],
-        ),
-      ),
+      body: SafeArea(child: pages[selected]),
       bottomNavigationBar: GrowthNavigation(
         selected: selected,
         labels: [for (final label in labels) tr(context, label)],
@@ -1937,61 +1933,95 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-class BalanceCard extends StatelessWidget {
+class BalanceCard extends StatefulWidget {
   const BalanceCard({super.key, required this.uid, this.balanceStream});
   final String uid;
   final Stream<List<Map<String, dynamic>>>? balanceStream;
   @override
-  Widget build(
-    BuildContext context,
-  ) => StreamBuilder<List<Map<String, dynamic>>>(
-    stream:
-        balanceStream ??
-        db.from('wallets').stream(primaryKey: ['id']).eq('id', uid),
-    builder: (context, snapshot) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
-      decoration: BoxDecoration(
-        gradient: growthGradient,
-        image: const DecorationImage(
-          image: AssetImage('assets/design/balance_background.png'),
-          fit: BoxFit.fill,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: growthPurple.withValues(alpha: .22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+  State<BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<BalanceCard> {
+  bool revealed = false;
+  late final Stream<List<Map<String, dynamic>>> balances =
+      widget.balanceStream ??
+      db.from('wallets').stream(primaryKey: ['id']).eq('id', widget.uid);
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+    decoration: BoxDecoration(
+      gradient: growthGradient,
+      image: const DecorationImage(
+        image: AssetImage('assets/design/balance_background.png'),
+        fit: BoxFit.fill,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tr(context, 'balance'),
-                  style: const TextStyle(color: Colors.white70),
+      borderRadius: BorderRadius.circular(22),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.account_balance_wallet_outlined,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                uf(context, 'Wallet', 'വാലറ്റ്'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  snapshot.hasError
-                      ? '—'
-                      : '${(snapshot.data?.isNotEmpty == true ? snapshot.data!.first['balance'] : null) ?? '…'} ${tr(context, 'coins')}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 29,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (revealed)
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: balances,
+            builder: (context, snapshot) => Text(
+              snapshot.hasError
+                  ? uf(
+                      context,
+                      'Unable to load balance. Try again later.',
+                      'Balance ലഭിച്ചില്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+                    )
+                  : !snapshot.hasData
+                  ? tr(context, 'loading')
+                  : snapshot.data!.isEmpty
+                  ? uf(context, 'Balance unavailable', 'Balance ലഭ്യമല്ല')
+                  : '${snapshot.data!.first['balance']} ${tr(context, 'coins')}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          const SizedBox(width: 110, height: 80),
-        ],
-      ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: Colors.white70),
+          ),
+          onPressed: () => setState(() => revealed = !revealed),
+          icon: Icon(
+            revealed
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+          ),
+          label: Text(
+            revealed
+                ? uf(context, 'Hide balance', 'Balance മറയ്ക്കുക')
+                : uf(context, 'Check balance', 'Balance പരിശോധിക്കുക'),
+          ),
+        ),
+      ],
     ),
   );
 }
@@ -4082,19 +4112,8 @@ abstract class ProfileGateway {
 }
 
 class SupabaseProfileGateway implements ProfileGateway {
-  const SupabaseProfileGateway(this.client, {this.otpClientFactory});
+  const SupabaseProfileGateway(this.client);
   final SupabaseClient client;
-  final SupabaseClient Function()? otpClientFactory;
-  SupabaseClient newOtpClient() =>
-      otpClientFactory?.call() ??
-      SupabaseClient(
-        supabaseUrl,
-        supabaseKey,
-        authOptions: const AuthClientOptions(
-          autoRefreshToken: false,
-          authFlowType: AuthFlowType.implicit,
-        ),
-      );
   @override
   Future<ProfileInfo> load(String uid) async {
     final values = await Future.wait<dynamic>([
@@ -4186,38 +4205,17 @@ class SupabaseProfileGateway implements ProfileGateway {
   Future<void> applyReferral(String code) async =>
       client.rpc('apply_referral', params: {'p_code': code});
   @override
-  Future<void> sendPinOtp() async {
-    final email = client.auth.currentUser?.email;
-    if (email == null) throw const AuthException('Sign in first.');
-    final isolated = newOtpClient();
-    try {
-      await isolated.auth.signInWithOtp(email: email, shouldCreateUser: false);
-    } finally {
-      await isolated.dispose();
-    }
-  }
+  Future<void> sendPinOtp() => client.auth.reauthenticate();
 
   @override
   Future<String> setPin(String pin, String? otpCode) async {
-    final user = client.auth.currentUser;
-    if (user?.email == null || otpCode == null) return 'otp_required';
-    final isolated = newOtpClient();
-    try {
-      final verified = await isolated.auth.verifyOTP(
-        email: user!.email!,
-        token: otpCode,
-        type: OtpType.email,
-      );
-      if (verified.user?.id != user.id || verified.session == null) {
-        return 'otp_required';
-      }
-      return await isolated.rpc(
-        'set_release_pin',
-        params: {'p_pin': pin, 'p_current_pin': null},
-      ) as String;
-    } finally {
-      await isolated.dispose();
+    if (client.auth.currentUser?.email == null || otpCode == null) {
+      return 'otp_required';
     }
+    return await client.rpc(
+      'set_release_pin_reauthenticated',
+      params: {'p_pin': pin, 'p_nonce': otpCode},
+    ) as String;
   }
 
   @override

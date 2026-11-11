@@ -33,6 +33,15 @@ void main() {
     expect(
       authErrorKey(
         AuthRetryableFetchException(
+          message: '{"msg":"Error sending reauthentication email"}',
+          statusCode: '500',
+        ),
+      ),
+      'confirmationEmailFailed',
+    );
+    expect(
+      authErrorKey(
+        AuthRetryableFetchException(
           message: '{"code":"unexpected_failure","msg":"Error sending confirmation email"}',
           statusCode: '500',
         ),

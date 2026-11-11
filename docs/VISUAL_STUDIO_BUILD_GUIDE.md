@@ -102,7 +102,13 @@ Security migration verified email ഉള്ള accounts-ന് മാത്ര�
 
 പുതിയ migration-നൊപ്പം user/admin builds നൽകുക. Admin dashboard-ലെ **Coin settings** വഴി registration/action/referral rewards മാറ്റാം. പഴയ campaigns-ന്റെ payout/refund നിരക്ക് മാറില്ല. പുതിയ default referral reward 100 coins; 5/10/15 invites-ന് extra 100/200/300 coins. മുമ്പത്തെ referrals-ന് backfill ഇല്ല.
 
-PIN set/reset-ന് Supabase **Authentication → Email Templates → Magic Link** template-ൽ `{{ .Token }}` നൽകി six-digit email OTP ലഭ്യമാക്കണം; signup template മാത്രം മാറ്റിയാൽ മതിയാകില്ല. Production SMTP/sending limits configure ചെയ്യുക. Profile → Coin release PIN → Change / reset PIN → Send email OTP → code + പുതിയ PIN നൽകി Save ചെയ്യുക. വിശദാംശങ്ങളും rollout നിബന്ധനകളും [README](../README.md#coin-settings-referral-rewards-and-email-otp-pin)-ൽ ഉണ്ട്. SQL commit/push ചെയ്തതുകൊണ്ട് live Supabase migration apply ആകില്ല.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:9717f6ffa09ec8ecb27830a615fc819deec4f1ad54c4ee054360202a90eba4be -->
+
+PIN set/reset-ന് Supabase **Authentication → Email Templates → Reauthentication** template-ൽ `supabase/templates/reauthentication.html` ഉപയോഗിച്ച് `{{ .Token }}` വഴി six-digit email OTP ലഭ്യമാക്കണം;
+
+<!-- /coderabbit-ai-generated:v1 --> signup template മാത്രം മാറ്റിയാൽ മതിയാകില്ല. Production SMTP/sending limits configure ചെയ്യുക. Profile → Coin release PIN → Change / reset PIN → Send email OTP → code + പുതിയ PIN നൽകി Save ചെയ്യുക. വിശദാംശങ്ങളും rollout നിബന്ധനകളും [README](../README.md#coin-settings-referral-rewards-and-email-otp-pin)-ൽ ഉണ്ട്. SQL commit/push ചെയ്തതുകൊണ്ട് live Supabase migration apply ആകില്ല.
 
 <!-- /coderabbit-ai-generated:v1 -->
 

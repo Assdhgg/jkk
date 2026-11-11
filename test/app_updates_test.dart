@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,6 +15,119 @@ Map<String, dynamic> release(int code) => {
   'notes': 'New features',
 };
 void main() {
+  testWidgets(
+    'mandatory gate covers pushed pages, retains lock on errors and cancelled install, unlocks only on installed version',
+    (tester) async {
+      final stream = StreamController<List<Map<String, dynamic>>>.broadcast();
+      addTearDown(stream.close);
+      final nav = GlobalKey<NavigatorState>();
+      var installed = 7, installs = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: nav,
+          builder: (_, child) => AppUpdateGate(
+            signedIn: true,
+            releaseLoader: () => stream.stream,
+            versionLoader: () async => installed,
+            installer: (_) async {
+              installs++;
+              return 'installer_opened';
+            },
+            child: child!,
+          ),
+          home: const Scaffold(body: Text('Home access')),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Home access'), findsNothing);
+      stream.add([release(7)]);
+      await tester.pumpAndSettle();
+      expect(find.text('Home access'), findsOneWidget);
+      nav.currentState!.push(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('Private page')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      stream.add([release(8)]);
+      await tester.pumpAndSettle();
+      expect(find.text('Update required'), findsOneWidget);
+      expect(find.text('Private page'), findsNothing);
+      await tester.tap(find.text('Update app'));
+      await tester.pumpAndSettle();
+      expect(installs, 1);
+      expect(find.text('Private page'), findsNothing);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Update required'), findsOneWidget);
+      stream.addError(StateError('offline'));
+      await tester.pumpAndSettle();
+      expect(find.text('Update required'), findsOneWidget);
+      stream.add([]);
+      await tester.pumpAndSettle();
+      expect(find.text('Update required'), findsOneWidget);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      stream.add([release(8)]);
+      await tester.pumpAndSettle();
+      expect(find.text('Update required'), findsOneWidget);
+      installed = 8;
+      await tester.tap(find.text('Check again'));
+      await tester.pump();
+      stream.add([release(8)]);
+      await tester.pumpAndSettle();
+      expect(find.text('Update required'), findsNothing);
+      expect(find.text('Home access'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'mandatory check fails closed, retries, polls and checks on sign-in',
+    (tester) async {
+      var fail = true, loads = 0;
+      final auth = StreamController<bool>.broadcast();
+      addTearDown(auth.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (_, child) => AppUpdateGate(
+            signedIn: false,
+            authChanges: auth.stream,
+            pollInterval: const Duration(seconds: 10),
+            versionLoader: () async => 7,
+            releaseLoader: () {
+              loads++;
+              return fail
+                  ? Stream.error(StateError('offline'))
+                  : Stream.value([release(loads > 2 ? 8 : 7)]);
+            },
+            child: child!,
+          ),
+          home: const Scaffold(body: Text('App access')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('App access'), findsOneWidget);
+      expect(loads, 0);
+      auth.add(true);
+      await tester.pumpAndSettle();
+      expect(find.text('App access'), findsNothing);
+      expect(find.textContaining('Connect to the internet'), findsOneWidget);
+      fail = false;
+      await tester.tap(find.text('Check again'));
+      await tester.pumpAndSettle();
+      expect(find.text('App access'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+      expect(find.text('Update required'), findsOneWidget);
+      auth.add(false);
+      await tester.pumpAndSettle();
+      expect(find.text('App access'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
   test('release rejects invalid hashes, paths and unbounded downloads', () {
     expect(
       () => AppRelease.fromJson({...release(8), 'apk_path': '../../bad.apk'}),

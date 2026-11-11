@@ -9,13 +9,25 @@
 
 <!-- coderabbit-ai-generated-section:v1:55706cd856c592372947677e9688059d6f53918d40d4d9f2c28d0c23eea647a1 -->
 
-2. In Supabase Dashboard → Authentication → Email Templates → **Magic Link**, replace the body with `supabase/templates/magic_link.html` and set the subject to **Freelan Space verification code**. Save the template. This is the template used by `signInWithOtp` for an existing email account. Changing Confirm signup alone does not fix PIN emails.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:c05ff491a7136aae88d974f691982ec2ff673be0983e619fbf06052f7a51880f -->
+
+2. In Supabase Dashboard → Authentication → Email Templates → **Reauthentication**, replace the body with `supabase/templates/reauthentication.html` and set the subject to **Freelan Space PIN verification**. Save it. Updated PIN setup/reset uses `reauthenticate()`; Magic Link and Confirm signup are separate. Apply the latest PIN reauthentication migration and distribute the updated app. See [current PIN flow](PIN_REAUTHENTICATION.md).
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 3. Under Authentication email settings, set OTP length to **6** and verify SMTP delivery. The template displays `{{ .Token }}` and contains no sign-in link. Keep the password recovery template intact.
 4. Build and install the updated app. Profile shows the new User ID. Open the gear → Settings for push notification enable/disable and language selection.
 
-The client cannot select email OTP versus a magic link through a request flag: Supabase email template configuration determines the email content. The existing isolated OTP verification session and server PIN proof checks are preserved. No hosted settings or migrations were deployed from this workspace.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:e2f468f4f3a505b7d75d1b5e6f66565e3e536e5c330a86320c096e97bb916549 -->
+
+The current client explicitly requests Reauthentication. Its server RPC consumes the email nonce with a five-minute lifetime and five-attempt limit; the former Magic Link proof endpoint is retired. Dashboard template changes are separate from code and migration deployment. Actual email delivery and device acceptance must be checked on the hosted project.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Verify after deployment
 

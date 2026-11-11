@@ -5,6 +5,8 @@ import time
 import sys
 import unittest
 
+from pin_test_support import issue_pin_nonce
+
 DB = sys.argv[1]
 sys.argv = sys.argv[:1]
 ADMIN = '40000000-0000-4000-8000-000000000001'
@@ -65,7 +67,8 @@ class InspectionTests(unittest.TestCase):
         new_sid = sql(f"select submission_id from public.campaign_claims where campaign_id='{cid}'", ACTOR)
         self.assertNotEqual(new_sid, sid)
         self.assertEqual(sql(f"select count(*) from public.admin_review_presence where submission_id='{new_sid}'", ACTOR), '0')
-        sql(f"select public.set_release_pin('1234',null)", ADMIN, claims={'amr':[{'method':'otp','timestamp':int(time.time())}]})
+        issue_pin_nonce(DB, ADMIN)
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')", ADMIN, claims={}), 'ok')
         sql(f"select public.review_claim_with_pin('{cid}','{ACTOR}','{new_sid}',true,'1234')", ADMIN, fails=True)
         self.assertEqual(sql('select balance from public.wallets', ACTOR), '10')
         self.assertEqual(subprocess.check_output(['psql','-X','-qAt','-d',DB,'-c','select count(*) from growth_internal.admin_review_audit'], text=True).strip(), '2')

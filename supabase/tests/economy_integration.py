@@ -8,6 +8,8 @@ import sys
 import time
 import unittest
 
+from pin_test_support import issue_pin_nonce
+
 DB = sys.argv[1]
 sys.argv = sys.argv[:1]
 ADMIN = '70000000-0000-4000-8000-000000000001'
@@ -75,24 +77,24 @@ class EconomyTests(unittest.TestCase):
         sql(f"select public.admin_set_blocked('{ACTOR}',false)", ADMIN)
 
     def test_02_email_proof_replay_expiry_and_reset(self):
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",OWNER),'otp_required')
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",OWNER,{'amr':[{'method':'password','timestamp':int(time.time())}]}),'otp_required')
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",OWNER,otp(int(time.time())-600)),'otp_required')
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",OWNER,otp(int(time.time())+600)),'otp_required')
-        proof = otp(int(time.time())-20)
-        self.assertEqual(sql("select public.set_release_pin('12',null)",OWNER,proof),'invalid_format')
-        self.assertEqual(sql("select public.set_release_pin('1234',null)",OWNER,proof),'ok')
-        # Same OTP remains consumed even if the access token is refreshed.
-        proof['amr'].append({'method':'token_refresh','timestamp':int(time.time())})
-        self.assertEqual(sql("select public.set_release_pin('9999','1234')",OWNER,proof),'otp_required')
-        self.assertEqual(sql("select public.set_release_pin('9999','1234')",OWNER),'otp_required')
-        # Reset can recover a locked PIN, using new email authentication only.
+        # Password-only sessions and legacy Magic Link proof cannot set a PIN.
+        self.assertEqual(sql("select public.set_release_pin('1234',null)",OWNER,otp()),'otp_required')
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",OWNER),'otp_required')
+        for age in ['10 minutes', '-10 minutes']:
+            issue_pin_nonce(DB, OWNER, age=age)
+            self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",OWNER),'otp_required')
+        issue_pin_nonce(DB, OWNER)
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('12','123456')",OWNER),'invalid_format')
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')",OWNER),'ok')
+        # Same nonce remains consumed even if the session is refreshed.
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('9999','123456')",OWNER,{'amr':[{'method':'token_refresh','timestamp':int(time.time())}]}),'otp_required')
         sql(f"update growth_internal.release_pins set failures=5,locked_until=now()+interval '15 minutes' where user_id='{OWNER}'")
-        self.assertEqual(sql("select public.set_release_pin('4321',null)",OWNER,otp(int(time.time())-10)),'ok')
+        issue_pin_nonce(DB, OWNER, nonce='654321')
+        self.assertEqual(sql("select public.set_release_pin_reauthenticated('4321','654321')",OWNER),'ok')
         self.assertEqual(sql(f"select failures||':'||(locked_until is null) from growth_internal.release_pins where user_id='{OWNER}'"),'0:true')
-        sql('select * from growth_internal.pin_otp_used',OWNER,fails=True)
+        sql('select * from growth_internal.pin_reauthentication_attempts',OWNER,fails=True)
         sql(f"select public.admin_set_blocked('{OWNER}',true)",ADMIN)
-        sql("select public.set_release_pin('1111',null)",OWNER,otp(),fails=True)
+        sql("select public.set_release_pin_reauthenticated('1111','123456')",OWNER,fails=True)
         sql(f"select public.admin_set_blocked('{OWNER}',false)",ADMIN)
 
     def test_03_campaign_snapshot_conservation_and_notifications(self):
