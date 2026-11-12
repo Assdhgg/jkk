@@ -6,6 +6,66 @@ import 'package:growth_circle/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  test('referral download uses the latest published release for both providers', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final requests = <Uri>[];
+    const path = '12345678-1234-1234-1234-123456789abc.apk';
+    Map<String, dynamic>? row = {
+      'version_code': 15,
+      'version_name': '1.1.7',
+      'apk_path': path,
+      'sha256': 'a' * 64,
+      'size_bytes': 100,
+      'notes': '',
+      'storage_provider': 'r2',
+      'download_url': 'https://updates.example.test/releases/$path',
+    };
+    final subscription = server.listen((request) async {
+      requests.add(request.uri);
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode(row == null ? [] : [row]));
+      await request.response.close();
+    });
+    final client = SupabaseClient(
+      'http://127.0.0.1:${server.port}',
+      'synthetic-key',
+    );
+    final gateway = SupabaseProfileGateway(client);
+    try {
+      expect(
+        await gateway.latestAppDownloadUrl(),
+        'https://updates.example.test/releases/$path',
+      );
+      expect(requests.last.path, '/rest/v1/app_releases');
+      expect(
+        requests.last.queryParameters['order'],
+        startsWith('version_code.desc'),
+      );
+      expect(requests.last.queryParameters['limit'], '1');
+      row = {...row, 'storage_provider': 'supabase', 'download_url': null};
+      expect(
+        await gateway.latestAppDownloadUrl(),
+        'http://127.0.0.1:${server.port}/storage/v1/object/public/app-releases/$path',
+      );
+      row = null;
+      expect(await gateway.latestAppDownloadUrl(), isNull);
+      row = {
+        'version_code': 15,
+        'version_name': '1.1.7',
+        'apk_path': path,
+        'sha256': 'a' * 64,
+        'size_bytes': 100,
+        'storage_provider': 'r2',
+        'download_url': 'http://invalid.example.test/app.apk',
+      };
+      await expectLater(gateway.latestAppDownloadUrl(), throwsFormatException);
+    } finally {
+      await client.dispose();
+      await server.close(force: true);
+      await subscription.cancel();
+    }
+  });
+
   test(
     'profile gateway uses existing account, referral and PIN APIs',
     () async {

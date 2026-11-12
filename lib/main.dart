@@ -49,6 +49,14 @@ const words = <String, List<String>>{
   'viewHistory': ['View all submissions', 'എല്ലാ submissions-ഉം കാണുക'],
   'helpGuide': ['Help & guide', 'സഹായവും മാർഗ്ഗനിർദ്ദേശവും'],
   'shareReferral': ['Share referral code', 'Referral code share ചെയ്യുക'],
+  'referralDownload': [
+    'Download Freelan Space',
+    'Freelan Space ഡൗൺലോഡ് ചെയ്യുക',
+  ],
+  'referralDownloadUnavailable': [
+    'Could not get the app download link. Please try again later.',
+    'App download link ലഭിച്ചില്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  ],
   'rejectionReason': [
     'Reason for rejection (optional)',
     'നിരസിക്കാനുള്ള കാരണം (ഐച്ഛികം)',
@@ -4454,6 +4462,7 @@ abstract class ProfileGateway {
   Future<String> searchInstagram(String username);
   Future<void> removeAccount(String username);
   Future<void> applyReferral(String code);
+  Future<String?> latestAppDownloadUrl();
   Future<void> sendPinOtp();
   Future<String> setPin(String pin, String? otpCode);
   Future<void> signOut();
@@ -4462,6 +4471,19 @@ abstract class ProfileGateway {
 class SupabaseProfileGateway implements ProfileGateway {
   const SupabaseProfileGateway(this.client);
   final SupabaseClient client;
+  @override
+  Future<String?> latestAppDownloadUrl() async {
+    final rows = await client
+        .from('app_releases')
+        .select()
+        .order('version_code', ascending: false)
+        .limit(1);
+    if (rows.isEmpty) return null;
+    final release = AppRelease.fromJson(rows.first);
+    return release.downloadUrl ??
+        client.storage.from('app-releases').getPublicUrl(release.path);
+  }
+
   @override
   Future<ProfileInfo> load(String uid) async {
     final values = await Future.wait<dynamic>([
@@ -5231,11 +5253,13 @@ class ProfileDetailsPage extends StatefulWidget {
     required this.gateway,
     required this.accounts,
     this.authorizeChange,
+    this.shareReferral,
   });
   final String uid;
   final ProfileGateway gateway;
   final bool accounts;
   final Future<bool> Function()? authorizeChange;
+  final Future<void> Function(String text)? shareReferral;
   @override
   State<ProfileDetailsPage> createState() => _ProfileDetailsPageState();
 }
@@ -5243,7 +5267,7 @@ class ProfileDetailsPage extends StatefulWidget {
 class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
   final referralCodeInput = TextEditingController();
   final accountSearchInput = TextEditingController();
-  bool applyingReferral = false;
+  bool applyingReferral = false, sharingReferral = false;
   @override
   void dispose() {
     referralCodeInput.dispose();
@@ -5277,6 +5301,39 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       }
     } finally {
       if (mounted) setState(() => applyingReferral = false);
+    }
+  }
+
+  Future<void> shareReferral(String code) async {
+    if (sharingReferral) return;
+    setState(() => sharingReferral = true);
+    try {
+      String? url;
+      try {
+        url = await widget.gateway.latestAppDownloadUrl().timeout(
+          const Duration(seconds: 15),
+        );
+      } catch (_) {
+        if (mounted) toast(context, tr(context, 'referralDownloadUnavailable'));
+        return;
+      }
+      if (!mounted) return;
+      if (url == null) {
+        toast(context, tr(context, 'referralDownloadUnavailable'));
+        return;
+      }
+      final text =
+          '${tr(context, 'referralCode')}: $code\n'
+          '${tr(context, 'referralDownload')}: $url';
+      if (widget.shareReferral != null) {
+        await widget.shareReferral!(text);
+      } else {
+        await SharePlus.instance.share(ShareParams(text: text));
+      }
+    } catch (_) {
+      if (mounted) toast(context, tr(context, 'error'));
+    } finally {
+      if (mounted) setState(() => sharingReferral = false);
     }
   }
 
@@ -5794,20 +5851,9 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                         style: FilledButton.styleFrom(
                           minimumSize: const Size(0, 38),
                         ),
-                        onPressed: () async {
-                          try {
-                            await SharePlus.instance.share(
-                              ShareParams(
-                                text:
-                                    '${tr(context, 'referralCode')}: ${info.referralCode}',
-                              ),
-                            );
-                          } catch (_) {
-                            if (context.mounted) {
-                              toast(context, tr(context, 'error'));
-                            }
-                          }
-                        },
+                        onPressed: sharingReferral
+                            ? null
+                            : () => shareReferral(info.referralCode),
                         icon: const Icon(Icons.share_outlined),
                         label: Text(tr(context, 'shareReferral')),
                       ),

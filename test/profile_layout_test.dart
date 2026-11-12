@@ -9,6 +9,8 @@ class FakeProfileGateway implements ProfileGateway {
   final usernames = <String>['first'];
   int referralCount = 2;
   bool joined = false, signedOut = false, failLoad = false, pinSet = false;
+  String? downloadUrl = 'https://updates.example.test/releases/app.apk';
+  bool failDownload = false;
   @override
   Future<ProfileInfo> load(String uid) async {
     if (failLoad) throw StateError('offline');
@@ -51,6 +53,12 @@ class FakeProfileGateway implements ProfileGateway {
   @override
   Future<void> applyReferral(String code) async {
     if (code == 'other-code') joined = true;
+  }
+
+  @override
+  Future<String?> latestAppDownloadUrl() async {
+    if (failDownload) throw StateError('offline');
+    return downloadUrl;
   }
 
   @override
@@ -100,6 +108,60 @@ Future<void> showProfile(
 }
 
 void main() {
+  testWidgets('referral share contains the code and app download link', (
+    tester,
+  ) async {
+    String? shared;
+    final gateway = FakeProfileGateway();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: ProfileDetailsPage(
+          uid: 'user',
+          gateway: gateway,
+          accounts: false,
+          shareReferral: (text) async => shared = text,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Share referral code'));
+    await tester.tap(find.text('Share referral code'));
+    await tester.pumpAndSettle();
+    expect(shared, contains('Your referral code: invite-code'));
+    expect(shared, contains('Download Freelan Space: ${gateway.downloadUrl}'));
+  });
+
+  testWidgets('referral sharing reports an unavailable download link', (
+    tester,
+  ) async {
+    var shares = 0;
+    final gateway = FakeProfileGateway()..downloadUrl = null;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: ProfileDetailsPage(
+          uid: 'user',
+          gateway: gateway,
+          accounts: false,
+          shareReferral: (_) async {
+            shares++;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Share referral code'));
+    await tester.tap(find.text('Share referral code'));
+    await tester.pump();
+    expect(shares, 0);
+    expect(find.text(words['referralDownloadUnavailable']![0]), findsOneWidget);
+    gateway.failDownload = true;
+    await tester.tap(find.text('Share referral code'));
+    await tester.pump();
+    expect(shares, 0);
+  });
+
   testWidgets(
     'profile shows real summary and keeps coin history and PIN accessible',
     (tester) async {
