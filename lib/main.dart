@@ -661,9 +661,9 @@ ThemeData growthTheme() => ThemeData(
     ),
   ),
   cardTheme: CardThemeData(
-    elevation: 2,
-    shadowColor: const Color(0x22755dc2),
-    color: Colors.white,
+    elevation: 4,
+    shadowColor: const Color(0x557a52da),
+    color: const Color(0xfffaf8ff),
     surfaceTintColor: Colors.transparent,
     margin: const EdgeInsets.symmetric(vertical: 6),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -1864,6 +1864,7 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   Timer? _pushRetry;
   int selected = 0;
+  String taskType = 'all';
   @override
   void initState() {
     super.initState();
@@ -1920,14 +1921,25 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final pages = [
       Dashboard(
-        onBrowse: () => setState(() => selected = 1),
+        onBrowse: () => setState(() {
+          taskType = 'all';
+          selected = 1;
+        }),
+        onBrowseType: (type) => setState(() {
+          taskType = type;
+          selected = 1;
+        }),
         onCreate: () => Navigator.push(
           context,
           MaterialPageRoute<void>(builder: (_) => const CreateCampaign()),
         ),
         uid: widget.user.id,
       ),
-      TaskList(uid: widget.user.id),
+      TaskList(
+        key: ValueKey(taskType),
+        uid: widget.user.id,
+        initialType: taskType,
+      ),
       Campaigns(uid: widget.user.id),
       Profile(
         user: widget.user,
@@ -1984,72 +1996,98 @@ class _BalanceCardState extends State<BalanceCard> {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+    clipBehavior: Clip.antiAlias,
     decoration: BoxDecoration(
       gradient: growthGradient,
-      image: const DecorationImage(
-        image: AssetImage('assets/design/balance_background.png'),
-        fit: BoxFit.fill,
-      ),
       borderRadius: BorderRadius.circular(22),
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    child: Stack(
       children: [
-        Row(
-          children: [
-            const Icon(
-              Icons.account_balance_wallet_outlined,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                uf(context, 'Wallet', 'വാലറ്റ്'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: .55,
+              heightFactor: 1,
+              child: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Colors.transparent, Colors.white],
+                  stops: [0, .4],
+                ).createShader(bounds),
+                blendMode: BlendMode.dstIn,
+                child: Image.asset(
+                  'assets/design/wallet_reference.png',
+                  fit: BoxFit.cover,
+                  excludeFromSemantics: true,
                 ),
               ),
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: 12),
-        if (revealed)
-          StreamBuilder<List<Map<String, dynamic>>>(
-            stream: balances,
-            builder: (context, snapshot) => Text(
-              snapshot.hasError
-                  ? uf(
-                      context,
-                      'Unable to load balance. Try again later.',
-                      'Balance ലഭിച്ചില്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
-                    )
-                  : !snapshot.hasData
-                  ? tr(context, 'loading')
-                  : snapshot.data!.isEmpty
-                  ? uf(context, 'Balance unavailable', 'Balance ലഭ്യമല്ല')
-                  : '${snapshot.data!.first['balance']} ${tr(context, 'coins')}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      uf(context, 'Wallet', 'വാലറ്റ്'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 12),
+              if (revealed)
+                StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: balances,
+                  builder: (context, snapshot) => Text(
+                    snapshot.hasError
+                        ? uf(
+                            context,
+                            'Unable to load balance. Try again later.',
+                            'Balance ലഭിച്ചില്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+                          )
+                        : !snapshot.hasData
+                        ? tr(context, 'loading')
+                        : snapshot.data!.isEmpty
+                        ? uf(context, 'Balance unavailable', 'Balance ലഭ്യമല്ല')
+                        : '${snapshot.data!.first['balance']} ${tr(context, 'coins')}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              IconButton.filledTonal(
+                tooltip: revealed
+                    ? uf(context, 'Hide balance', 'Balance മറയ്ക്കുക')
+                    : uf(context, 'Check balance', 'Balance പരിശോധിക്കുക'),
+                style: IconButton.styleFrom(
+                  shape: const CircleBorder(),
+                  backgroundColor: Colors.white,
+                  foregroundColor: growthPurple,
+                ),
+                onPressed: () => setState(() => revealed = !revealed),
+                icon: Icon(
+                  revealed ? Icons.visibility_off_outlined : Icons.check,
+                ),
+              ),
+            ],
           ),
-        const SizedBox(height: 8),
-        IconButton.filledTonal(
-          tooltip: revealed
-              ? uf(context, 'Hide balance', 'Balance മറയ്ക്കുക')
-              : uf(context, 'Check balance', 'Balance പരിശോധിക്കുക'),
-          style: IconButton.styleFrom(
-            shape: const CircleBorder(),
-            backgroundColor: Colors.white,
-            foregroundColor: growthPurple,
-          ),
-          onPressed: () => setState(() => revealed = !revealed),
-          icon: Icon(revealed ? Icons.visibility_off_outlined : Icons.check),
         ),
       ],
     ),
@@ -2063,8 +2101,10 @@ class Dashboard extends StatelessWidget {
     required this.onCreate,
     required this.uid,
     this.balanceStream,
+    this.onBrowseType,
   });
   final Stream<List<Map<String, dynamic>>>? balanceStream;
+  final ValueChanged<String>? onBrowseType;
   final VoidCallback onBrowse, onCreate;
   final String uid;
   @override
@@ -2099,6 +2139,53 @@ class Dashboard extends StatelessWidget {
         style: const TextStyle(fontSize: 13, color: Color(0xff635b80)),
       ),
       const SizedBox(height: 14),
+      for (final type in ['like', 'comment', 'share', 'follow'])
+        Card(
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: const Color(0xffe9d9ff),
+              child: Icon(actionIcon(type), color: growthPurple),
+            ),
+            title: Text(
+              tr(context, type),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            subtitle: Text(switch (type) {
+              'like' => uf(
+                context,
+                'Like an Instagram post',
+                'Instagram post like ചെയ്യുക',
+              ),
+              'comment' => uf(
+                context,
+                'Leave a thoughtful comment',
+                'ഒരു comment നൽകുക',
+              ),
+              'share' => uf(
+                context,
+                'Share a post with friends',
+                'Post സുഹൃത്തുക്കളുമായി share ചെയ്യുക',
+              ),
+              _ => uf(
+                context,
+                'Follow an Instagram page',
+                'Instagram page follow ചെയ്യുക',
+              ),
+            }),
+            trailing: const Icon(Icons.chevron_right, color: growthPurple),
+            onTap: () {
+              if (onBrowseType != null) {
+                onBrowseType!(type);
+              } else {
+                onBrowse();
+              }
+            },
+          ),
+        ),
+      const SizedBox(height: 14),
+      Notice(),
+      const SizedBox(height: 12),
+      const GrowthArt('home_reference', height: 150),
       Column(
         children: [
           Card(
@@ -2127,10 +2214,6 @@ class Dashboard extends StatelessWidget {
           ),
         ],
       ),
-      const SizedBox(height: 14),
-      Notice(),
-      const SizedBox(height: 12),
-      const GrowthArt('gift', height: 150),
     ],
   );
 }
@@ -2625,7 +2708,9 @@ class TaskList extends StatefulWidget {
     this.campaignsStream,
     this.claimsStream,
     this.loadSavedIds,
+    this.initialType = 'all',
   });
+  final String initialType;
   final String uid;
   final Stream<List<Map<String, dynamic>>>? controlsStream,
       presenceStream,
@@ -2637,7 +2722,7 @@ class TaskList extends StatefulWidget {
 }
 
 class _TaskListState extends State<TaskList> {
-  String selectedType = 'all';
+  late String selectedType = widget.initialType;
   final saved = <String>{};
   bool savedOnly = false, savedLoading = true, savedError = false;
   final saving = <String>{};
@@ -2809,28 +2894,23 @@ class _TaskListState extends State<TaskList> {
           return AppListView(
             padding: const EdgeInsets.all(20),
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tr(context, 'earnTitle'),
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: growthInk,
-                              ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(tr(context, 'earnDesc')),
-                      ],
-                    ),
+              GrowthHero(
+                title: tr(context, 'earnTitle'),
+                subtitle: tr(context, 'earnDesc'),
+                icon: Icons.emoji_events_outlined,
+                art: 'task_header',
+                action: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: growthPurple,
+                    minimumSize: const Size(0, 36),
                   ),
-                  const SizedBox(width: 8),
-                  const GrowthArt('task_header', height: 100),
-                ],
+                  onPressed: () => setState(() {
+                    selectedType = 'all';
+                    savedOnly = false;
+                  }),
+                  child: Text(uf(context, 'Start earning', 'നേടിത്തുടങ്ങുക')),
+                ),
               ),
               const SizedBox(height: 16),
               const Notice(),
@@ -2918,7 +2998,7 @@ class _TaskListState extends State<TaskList> {
               const SizedBox(height: 12),
               if (filteredTasks.isEmpty)
                 GrowthEmpty(
-                  art: 'tasks',
+                  art: 'earn_reference',
                   title: tr(
                     context,
                     selectedType == 'all' ? 'emptyTasks' : 'noFilteredTasks',
@@ -3345,11 +3425,23 @@ class Campaigns extends StatelessWidget {
             ),
             icon: Icons.campaign_rounded,
             background: 'campaign_background',
+            action: TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: growthPurple,
+                minimumSize: const Size(0, 36),
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(builder: (_) => const CreateCampaign()),
+              ),
+              child: Text(tr(context, 'create')),
+            ),
           ),
           const SizedBox(height: 12),
-          if (docs.isEmpty)
+          if (docs.isEmpty) ...[
             GrowthEmpty(
-              art: 'campaigns',
+              art: 'campaign_reference',
               title: tr(context, 'emptyCampaigns'),
               subtitle: uf(
                 context,
@@ -3366,8 +3458,26 @@ class Campaigns extends StatelessWidget {
                 icon: Icons.add,
                 label: tr(context, 'create'),
               ),
-            )
-          else
+            ),
+            Card(
+              color: const Color(0xffe8dcfb),
+              child: ListTile(
+                leading: const GrowthIcon(Icons.bar_chart),
+                title: Text(
+                  uf(context, 'Track your impact', 'നിങ്ങളുടെ പുരോഗതി കാണുക'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(
+                  uf(
+                    context,
+                    'See progress on your campaigns.',
+                    'നിങ്ങളുടെ campaigns-ന്റെ പുരോഗതി കാണുക.',
+                  ),
+                ),
+                trailing: const Icon(Icons.trending_up, color: growthPurple),
+              ),
+            ),
+          ] else
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
@@ -3573,12 +3683,37 @@ class _CreateCampaignState extends State<CreateCampaign> {
                 panel: true,
                 padding: const EdgeInsets.all(20),
                 children: [
-                  Text(
-                    tr(context, 'create'),
-                    style: Theme.of(context).textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tr(context, 'create'),
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              uf(
+                                context,
+                                'Grow your Instagram presence with powerful campaigns.',
+                                'നിങ്ങളുടെ Instagram സാന്നിധ്യം വളർത്തുക.',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const GrowthArt('create_reference', height: 85),
+                    ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
                     initialValue: type,
@@ -3616,6 +3751,26 @@ class _CreateCampaignState extends State<CreateCampaign> {
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       labelText: tr(context, 'count'),
+                      prefixIcon: IconButton(
+                        tooltip: uf(context, 'Decrease', 'കുറയ്ക്കുക'),
+                        onPressed: busy
+                            ? null
+                            : () => setState(() {
+                                final n = int.tryParse(count.text) ?? 1;
+                                count.text = (n - 1).clamp(1, 100).toString();
+                              }),
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      suffixIcon: IconButton(
+                        tooltip: uf(context, 'Increase', 'കൂട്ടുക'),
+                        onPressed: busy
+                            ? null
+                            : () => setState(() {
+                                final n = int.tryParse(count.text) ?? 1;
+                                count.text = (n + 1).clamp(1, 100).toString();
+                              }),
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
                       helperText:
                           '$reward ${tr(context, 'coins')} ${tr(context, 'perTask')} · ${tr(context, 'cost')}',
                     ),
@@ -3627,17 +3782,29 @@ class _CreateCampaignState extends State<CreateCampaign> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    '${tr(context, 'totalCost')}: ${(int.tryParse(count.text) ?? 0) * reward} ${tr(context, 'coins')}',
+                  Card(
+                    color: const Color(0xffe8ddfc),
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.local_offer,
+                        color: growthPurple,
+                      ),
+                      title: Text(
+                        '${tr(context, 'totalCost')}: ${(int.tryParse(count.text) ?? 0) * reward} ${tr(context, 'coins')}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: growthPurple,
+                        ),
+                      ),
+                      trailing: const GrowthArt('coins', height: 52),
+                    ),
                   ),
                   const Notice(),
                   const SizedBox(height: 24),
-                  FilledButton(
+                  GrowthPrimaryButton(
                     onPressed: busy || !enabled ? null : () => submit(reward),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Text(tr(context, 'submit')),
-                    ),
+                    label: tr(context, 'submit'),
+                    icon: Icons.arrow_forward,
                   ),
                 ],
               ),
@@ -3949,38 +4116,53 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
     insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
     backgroundColor: const Color(0xfff8f5ff),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-    title: Column(
+    title: Stack(
       children: [
-        if (widget.setup)
-          Image.asset(
-            'assets/design/pin_shield.png',
-            height: 105,
-            excludeFromSemantics: true,
-          ),
-        Text(
-          tr(
-            context,
-            widget.setup
-                ? (widget.changing ? 'changePin' : 'setupPin')
-                : 'releasePin',
-          ),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: growthInk,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+        Column(
+          children: [
+            Image.asset(
+              'assets/design/pin_shield.png',
+              height: 105,
+              excludeFromSemantics: true,
+            ),
+            Text(
+              tr(
+                context,
+                widget.setup
+                    ? (widget.changing ? 'changePin' : 'setupPin')
+                    : 'releasePin',
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: growthInk,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (widget.setup)
+              Text(
+                uf(
+                  context,
+                  'Keep your account more secure',
+                  'നിങ്ങളുടെ account കൂടുതൽ സുരക്ഷിതമാക്കുക',
+                ),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+          ],
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          child: IconButton(
+            tooltip: tr(context, 'cancel'),
+            onPressed: busy ? null : () => Navigator.pop(context),
+            icon: const Icon(Icons.close),
           ),
         ),
-        if (widget.setup)
-          Text(
-            uf(
-              context,
-              'Keep your account more secure',
-              'നിങ്ങളുടെ account കൂടുതൽ സുരക്ഷിതമാക്കുക',
-            ),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-          ),
       ],
     ),
     content: SizedBox(
@@ -3989,8 +4171,6 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!widget.setup)
-              const Icon(Icons.shield_rounded, color: growthPurple, size: 54),
             const SizedBox(height: 8),
             if (!widget.setup) Text(tr(context, 'enterPin')),
             if (widget.setup) ...[
@@ -4364,27 +4544,29 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
             ? null
             : () async {
                 await Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => PersonalInformationPage(
-                    user: widget.user,
-                    publicId: details.data?.publicUserId,
-                    authorizeChange: widget.authorizeChange ?? () => confirmSecurityPin(context),
-                    gateway: SupabasePersonalInformationGateway(
-                      db,
-                      () => SupabaseClient(
-                        supabaseUrl,
-                        supabaseKey,
-                        authOptions: const AuthClientOptions(
-                          autoRefreshToken: false,
-                          authFlowType: AuthFlowType.implicit,
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => PersonalInformationPage(
+                      user: widget.user,
+                      publicId: details.data?.publicUserId,
+                      authorizeChange:
+                          widget.authorizeChange ??
+                          () => confirmSecurityPin(context),
+                      gateway: SupabasePersonalInformationGateway(
+                        db,
+                        () => SupabaseClient(
+                          supabaseUrl,
+                          supabaseKey,
+                          authOptions: const AuthClientOptions(
+                            autoRefreshToken: false,
+                            authFlowType: AuthFlowType.implicit,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              );
-              if (mounted) reload();
+                );
+                if (mounted) reload();
               },
         onAccounts: () => openDetails(true),
         onReferrals: () => openDetails(false),
@@ -4504,37 +4686,64 @@ class ProfileLayout extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
                   children: [
                     Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xffc5a8fa),
-                            width: 3,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: growthPurple.withValues(alpha: .12),
-                              blurRadius: 12,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xffc5a8fa),
+                                width: 3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: growthPurple.withValues(alpha: .12),
+                                  blurRadius: 12,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 36,
-                          backgroundColor: const Color(0xffc5f64b),
-                          backgroundImage: info?.photo == null ? null : MemoryImage(info!.photo!),
-                          child: info?.photo != null ? null : Text(
-                            profileInitials(name),
-                            style: const TextStyle(
-                              fontSize: 27,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xff171a13),
+                            child: CircleAvatar(
+                              radius: 36,
+                              backgroundColor: const Color(0xffc5f64b),
+                              backgroundImage: info?.photo == null
+                                  ? null
+                                  : MemoryImage(info!.photo!),
+                              child: info?.photo != null
+                                  ? null
+                                  : Text(
+                                      profileInitials(name),
+                                      style: const TextStyle(
+                                        fontSize: 27,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xff171a13),
+                                      ),
+                                    ),
                             ),
                           ),
-                        ),
+                          Positioned(
+                            right: -6,
+                            bottom: -4,
+                            child: IconButton.filled(
+                              constraints: const BoxConstraints.tightFor(
+                                width: 32,
+                                height: 32,
+                              ),
+                              padding: EdgeInsets.zero,
+                              tooltip: uf(
+                                context,
+                                'Edit profile',
+                                'Profile മാറ്റുക',
+                              ),
+                              onPressed: onPersonalInfo,
+                              icon: const Icon(Icons.edit, size: 16),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -4626,57 +4835,70 @@ class ProfileLayout extends StatelessWidget {
                         ),
                       ),
                     const SizedBox(height: 16),
-                    Material(
-                      color: const Color(0xff4314b9),
-                      borderRadius: BorderRadius.circular(18),
-                      child: InkWell(
-                        key: const Key('profile_referral_banner'),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: growthGradient,
                         borderRadius: BorderRadius.circular(18),
-                        onTap: onReferrals,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xff6840d6),
-                                  borderRadius: BorderRadius.circular(12),
+                        image: const DecorationImage(
+                          image: AssetImage(
+                            'assets/design/referral_background.png',
+                          ),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
+                        child: InkWell(
+                          key: const Key('profile_referral_banner'),
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: onReferrals,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xff6840d6),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.people_alt_outlined,
+                                    color: Color(0xffe5d9ff),
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.people_alt_outlined,
-                                  color: Color(0xffe5d9ff),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      tr(context, 'referrals'),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        tr(context, 'referrals'),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      tr(context, 'profileReferralDesc'),
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        tr(context, 'profileReferralDesc'),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const Icon(
-                                Icons.chevron_right,
-                                color: Colors.white70,
-                              ),
-                            ],
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.white70,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -4827,6 +5049,7 @@ class ProfileMenuTile extends StatelessWidget {
       enabled: onTap != null,
       onTap: onTap,
       dense: true,
+      visualDensity: const VisualDensity(vertical: -2),
       leading: Container(
         width: 38,
         height: 38,
@@ -4834,7 +5057,9 @@ class ProfileMenuTile extends StatelessWidget {
           color: const Color(0xffeee6ff),
           borderRadius: BorderRadius.circular(11),
         ),
-        child: Icon(icon, size: 19, color: growthPurple),
+        child: icon == Icons.alternate_email
+            ? const Center(child: InstagramLogo())
+            : Icon(icon, size: 19, color: growthPurple),
       ),
       title: Text(
         title,
@@ -4874,6 +5099,43 @@ class ProfileDetailsPage extends StatefulWidget {
 }
 
 class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
+  final referralCodeInput = TextEditingController();
+  bool applyingReferral = false;
+  @override
+  void dispose() {
+    referralCodeInput.dispose();
+    super.dispose();
+  }
+
+  Future<void> submitReferral() async {
+    final value = referralCodeInput.text.trim();
+    if (value.isEmpty || applyingReferral) return;
+    setState(() => applyingReferral = true);
+    try {
+      if (!await (widget.authorizeChange?.call() ??
+          confirmSecurityPin(context))) {
+        return;
+      }
+      if (!mounted) return;
+      await widget.gateway.applyReferral(value);
+      if (!mounted) return;
+      referralCodeInput.clear();
+      toast(context, tr(context, 'referralApplied'));
+      reload();
+    } catch (e) {
+      if (mounted) {
+        toast(
+          context,
+          e is PostgrestException && e.code == '23505'
+              ? tr(context, 'referralJoined')
+              : friendlyError(context, e),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => applyingReferral = false);
+    }
+  }
+
   late Future<ProfileInfo> data = widget.gateway.load(widget.uid);
   void reload() => setState(() {
     data = widget.gateway.load(widget.uid);
@@ -4885,7 +5147,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       builder: (_) => ProfileInputDialog(titleKey: title),
     );
     if (value == null || value.isEmpty || !mounted) return;
-    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) return;
+    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context)))
+      return;
     try {
       if (widget.accounts) {
         await widget.gateway.addAccount(value);
@@ -4914,7 +5177,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       builder: (_) => InstagramSearchDialog(gateway: widget.gateway),
     );
     if (username == null || !mounted) return;
-    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) return;
+    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context)))
+      return;
     try {
       await widget.gateway.addAccount(username);
       if (mounted) reload();
@@ -4931,7 +5195,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
   }
 
   Future<void> remove(String username) async {
-    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) return;
+    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context)))
+      return;
     try {
       await widget.gateway.removeAccount(username);
       if (mounted) reload();
@@ -4943,9 +5208,40 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(
-        tr(context, widget.accounts ? 'instagramAccounts' : 'referrals'),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr(context, widget.accounts ? 'instagramAccounts' : 'referrals'),
+          ),
+          Text(
+            widget.accounts
+                ? uf(
+                    context,
+                    'Manage your Instagram accounts',
+                    'Instagram accounts നിയന്ത്രിക്കുക',
+                  )
+                : uf(
+                    context,
+                    'Invite friends, earn rewards!',
+                    'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് rewards നേടുക!',
+                  ),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.normal,
+              color: growthInk,
+            ),
+          ),
+        ],
       ),
+      actions: widget.accounts
+          ? [
+              const Padding(
+                padding: EdgeInsets.only(right: 10),
+                child: GrowthArt('accounts', height: 55),
+              ),
+            ]
+          : null,
     ),
     body: FutureBuilder<ProfileInfo>(
       future: data,
@@ -5016,6 +5312,19 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                             textAlign: TextAlign.center,
                           ),
                         ),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              uf(context, 'OR', 'അല്ലെങ്കിൽ'),
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          const Expanded(child: Divider()),
+                        ],
+                      ),
                       TextButton.icon(
                         onPressed: input,
                         icon: const Icon(Icons.add_circle),
@@ -5052,19 +5361,124 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
               for (final username in info.usernames)
                 Card(
                   child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    horizontalTitleGap: 6,
+                    minLeadingWidth: 38,
                     leading: IconButton(
+                      constraints: const BoxConstraints.tightFor(
+                        width: 38,
+                        height: 40,
+                      ),
+                      padding: EdgeInsets.zero,
                       tooltip: 'Open @$username on Instagram',
                       icon: const InstagramLogo(),
                       onPressed: () => openInstagramProfile(context, username),
                     ),
-                    title: Text('@$username'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: tr(context, 'removeAccount'),
-                      onPressed: () => remove(username),
+                    title: Tooltip(
+                      message: '@$username',
+                      child: Text(
+                        '@$username',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (MediaQuery.sizeOf(context).width >= 360 &&
+                            MediaQuery.textScalerOf(context).scale(1) <= 1.2)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xffdcf6e9),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              uf(context, 'Saved', 'ചേർത്തു'),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Color(0xff16845c),
+                              ),
+                            ),
+                          ),
+                        IconButton(
+                          constraints: const BoxConstraints.tightFor(
+                            width: 34,
+                            height: 40,
+                          ),
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: tr(context, 'removeAccount'),
+                          onPressed: () => remove(username),
+                        ),
+                        PopupMenuButton<String>(
+                          tooltip: uf(
+                            context,
+                            'Account options',
+                            'Account options',
+                          ),
+                          child: const SizedBox(
+                            width: 32,
+                            height: 40,
+                            child: Icon(Icons.more_vert, size: 18),
+                          ),
+                          onSelected: (value) async {
+                            if (value == 'open') {
+                              await openInstagramProfile(context, username);
+                            } else if (value == 'copy') {
+                              await Clipboard.setData(
+                                ClipboardData(text: '@$username'),
+                              );
+                              if (context.mounted) {
+                                toast(context, tr(context, 'copied'));
+                              }
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'open',
+                              child: Text(
+                                uf(
+                                  context,
+                                  'Open Instagram',
+                                  'Instagram തുറക്കുക',
+                                ),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'copy',
+                              child: Text(
+                                uf(
+                                  context,
+                                  'Copy username',
+                                  'Username പകർത്തുക',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              Card(
+                color: const Color(0xffe4d6fa),
+                child: ListTile(
+                  leading: const Icon(Icons.verified_user, color: growthPurple),
+                  title: Text(uf(context, 'Total Accounts', 'ആകെ Accounts')),
+                  subtitle: Text(
+                    '${info.usernames.length}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: growthPurple,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+              ),
             ] else ...[
               Card(
                 child: Padding(
@@ -5106,12 +5520,36 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                                   : '${reward.key.split('_').last} invites · ${Localizations.localeOf(context).languageCode == 'ml' ? 'അധിക bonus' : 'extra bonus'}',
                               style: const TextStyle(fontSize: 12),
                             ),
-                            trailing: Text(
-                              '${reward.value} ${tr(context, 'coins')}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: growthPurple,
-                                fontWeight: FontWeight.w700,
+                            subtitle: Text(
+                              reward.key == 'invite'
+                                  ? uf(
+                                      context,
+                                      'Reward for each successful referral',
+                                      'ഓരോ referral-നും reward',
+                                    )
+                                  : uf(
+                                      context,
+                                      'Invite friends and get a bonus',
+                                      'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് bonus നേടുക',
+                                    ),
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffdfd0fb),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: Text(
+                                '🪙 ${reward.value} ${tr(context, 'coins')}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: growthPurple,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ),
@@ -5205,11 +5643,32 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                       ),
                       if (info.referralJoined)
                         Text(tr(context, 'referralJoined'))
-                      else
-                        TextButton(
-                          onPressed: input,
-                          child: Text(tr(context, 'referralEnter')),
+                      else ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: referralCodeInput,
+                                enabled: !applyingReferral,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(Icons.link),
+                                  hintText: tr(context, 'referralEnter'),
+                                  isDense: true,
+                                ),
+                                onSubmitted: (_) => submitReferral(),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            FilledButton(
+                              onPressed: applyingReferral
+                                  ? null
+                                  : submitReferral,
+                              child: Text(uf(context, 'Submit', 'നൽകുക')),
+                            ),
+                          ],
                         ),
+                      ],
                     ],
                   ),
                 ),
@@ -5239,11 +5698,55 @@ class _ProfileInputDialogState extends State<ProfileInputDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(tr(context, widget.titleKey)),
-    content: TextField(
-      controller: controller,
-      autofocus: true,
-      decoration: InputDecoration(labelText: tr(context, widget.titleKey)),
+    title: Row(
+      children: [
+        if (widget.titleKey == 'addAccount') ...[
+          const InstagramLogo(),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Text(
+            tr(context, widget.titleKey),
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: growthInk,
+            ),
+          ),
+        ),
+      ],
+    ),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.titleKey == 'addAccount') ...[
+          Text(
+            uf(
+              context,
+              'Enter the Instagram username you want to add manually to your account list.',
+              'Account പട്ടികയിൽ ചേർക്കാനുള്ള Instagram username നൽകുക.',
+            ),
+            style: const TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+        ],
+        TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            prefixIcon: Icon(
+              widget.titleKey == 'addAccount'
+                  ? Icons.alternate_email
+                  : Icons.link,
+            ),
+            labelText: widget.titleKey == 'addAccount'
+                ? uf(context, 'Instagram username', 'Instagram username')
+                : tr(context, widget.titleKey),
+            hintText: widget.titleKey == 'addAccount' ? '@username' : null,
+          ),
+        ),
+      ],
     ),
     actions: [
       TextButton(
@@ -5379,7 +5882,12 @@ class _InstagramSearchDialogState extends State<InstagramSearchDialog> {
 }
 
 class UserSettingsPage extends StatefulWidget {
-  const UserSettingsPage({super.key, this.enabledLoader, this.pushUpdater, this.authorizeChange});
+  const UserSettingsPage({
+    super.key,
+    this.enabledLoader,
+    this.pushUpdater,
+    this.authorizeChange,
+  });
   final Future<bool> Function()? authorizeChange;
   final Future<bool> Function()? enabledLoader;
   final Future<void> Function(bool)? pushUpdater;
@@ -5428,7 +5936,8 @@ class _UserSettingsPageState extends State<UserSettingsPage>
   }
 
   Future<void> changePush(bool value) async {
-    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) return;
+    if (!await (widget.authorizeChange?.call() ?? confirmSecurityPin(context)))
+      return;
     if (!mounted) return;
     setState(() => busy = true);
     try {
@@ -5485,47 +5994,133 @@ class _UserSettingsPageState extends State<UserSettingsPage>
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ'))),
-    body: AppListView(
-      children: [
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.system_update),
-            title: Text(uf(context, 'App updates', 'App updates')),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(builder: (_) => const AppUpdatePage()),
+    appBar: AppBar(
+      title: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ')),
+      actions: [const GrowthArt('settings_reference', height: 52)],
+    ),
+    body: LayoutBuilder(
+      builder: (context, constraints) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: (constraints.maxHeight - 40).clamp(
+                  0.0,
+                  double.infinity,
+                ),
+              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Card(
+                      child: ListTile(
+                        leading: const GrowthIcon(Icons.system_update),
+                        title: Text(uf(context, 'App updates', 'App updates')),
+                        subtitle: Text(
+                          uf(
+                            context,
+                            'Check for latest version',
+                            'പുതിയ പതിപ്പ് പരിശോധിക്കുക',
+                          ),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AppUpdatePage(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Card(
+                      child: SwitchListTile(
+                        secondary: const GrowthIcon(Icons.notifications_active),
+                        subtitle: Text(
+                          uf(
+                            context,
+                            'Get notified about important updates',
+                            'പ്രധാന updates അറിയുക',
+                          ),
+                        ),
+                        title: Text(
+                          uf(
+                            context,
+                            'Push notifications',
+                            'Push notifications',
+                          ),
+                        ),
+                        value: enabled,
+                        onChanged: loading || busy ? null : changePush,
+                      ),
+                    ),
+                    Card(
+                      child: ListTile(
+                        leading: const GrowthIcon(Icons.language),
+                        title: Text(uf(context, 'Language', 'ഭാഷ')),
+                        subtitle: Text(
+                          uf(
+                            context,
+                            'Choose your preferred language',
+                            'നിങ്ങളുടെ ഭാഷ തിരഞ്ഞെടുക്കുക',
+                          ),
+                        ),
+                        trailing: DropdownButton<String>(
+                          value: Localizations.localeOf(context).languageCode,
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'en',
+                              child: Text('English'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'ml',
+                              child: Text('മലയാളം'),
+                            ),
+                          ],
+                          onChanged: (value) async {
+                            if (value != null &&
+                                await (widget.authorizeChange?.call() ??
+                                    confirmSecurityPin(context)))
+                              language.value = Locale(value);
+                          },
+                        ),
+                      ),
+                    ),
+                    if (loading || busy) const LinearProgressIndicator(),
+                    const Spacer(),
+                    const SizedBox(height: 24),
+                    Card(
+                      color: const Color(0xffe8dcfb),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.verified_user_outlined,
+                          color: growthPurple,
+                        ),
+                        title: Text(
+                          uf(
+                            context,
+                            'Your data is safe and secure',
+                            'നിങ്ങളുടെ വിവരങ്ങൾ സുരക്ഷിതമാണ്',
+                          ),
+                        ),
+                        subtitle: Text(
+                          uf(
+                            context,
+                            'We value your privacy',
+                            'നിങ്ങളുടെ സ്വകാര്യത പ്രധാനമാണ്',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-        Card(
-          child: SwitchListTile(
-            title: Text(
-              uf(context, 'Push notifications', 'Push notifications'),
-            ),
-            value: enabled,
-            onChanged: loading || busy ? null : changePush,
-          ),
-        ),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(uf(context, 'Language', 'ഭാഷ')),
-            trailing: DropdownButton<String>(
-              value: Localizations.localeOf(context).languageCode,
-              items: const [
-                DropdownMenuItem(value: 'en', child: Text('English')),
-                DropdownMenuItem(value: 'ml', child: Text('മലയാളം')),
-              ],
-              onChanged: (value) async {
-                if (value != null && await (widget.authorizeChange?.call() ?? confirmSecurityPin(context))) language.value = Locale(value);
-              },
-            ),
-          ),
-        ),
-        if (loading || busy) const LinearProgressIndicator(),
-      ],
+      ),
     ),
   );
 }
@@ -5540,7 +6135,8 @@ Future<bool> confirmSecurityPin(BuildContext context) async {
     );
     if (pin == null || !context.mounted) return false;
     final result = await db.rpc('verify_security_pin', params: {'p_pin': pin});
-    if (result == 'ok' && userId != null && db.auth.currentUser?.id == userId) return true;
+    if (result == 'ok' && userId != null && db.auth.currentUser?.id == userId)
+      return true;
     if (context.mounted) toast(context, tr(context, result.toString()));
   } catch (error) {
     if (context.mounted) toast(context, friendlyError(context, error));
@@ -5551,39 +6147,67 @@ Future<bool> confirmSecurityPin(BuildContext context) async {
 Future<void> openInstagramProfile(BuildContext context, String username) async {
   if (!RegExp(r'^[A-Za-z0-9_.]{1,30}$').hasMatch(username)) return;
   try {
-    final native = Uri(scheme: 'instagram', host: 'user', queryParameters: {'username': username});
+    final native = Uri(
+      scheme: 'instagram',
+      host: 'user',
+      queryParameters: {'username': username},
+    );
     if (await launchUrl(native, mode: LaunchMode.externalApplication)) return;
-  } catch (_) { /* Fall back to the public profile when Instagram is absent. */ }
-  if (context.mounted) await openInstagram(context, 'https://www.instagram.com/$username/');
+  } catch (_) {
+    /* Fall back to the public profile when Instagram is absent. */
+  }
+  if (context.mounted)
+    await openInstagram(context, 'https://www.instagram.com/$username/');
 }
 
 class InstagramLogo extends StatelessWidget {
   const InstagramLogo({super.key});
   @override
   Widget build(BuildContext context) => Container(
-    width: 28, height: 28,
+    width: 28,
+    height: 28,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(8),
       gradient: const LinearGradient(
-        begin: Alignment.bottomLeft, end: Alignment.topRight,
+        begin: Alignment.bottomLeft,
+        end: Alignment.topRight,
         colors: [Color(0xffffc837), Color(0xffe1306c), Color(0xff833ab4)],
       ),
     ),
-    child: Center(child: Container(
-      width: 20, height: 20,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.white, width: 2),
-        borderRadius: BorderRadius.circular(6),
+    child: Center(
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white, width: 2),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+              ),
+            ),
+            const Positioned(
+              top: 2,
+              right: 2,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
+                child: SizedBox(width: 3, height: 3),
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Stack(children: [
-        Center(child: Container(width: 9, height: 9, decoration: BoxDecoration(
-          shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2),
-        ))),
-        const Positioned(top: 2, right: 2, child: DecoratedBox(
-          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white),
-          child: SizedBox(width: 3, height: 3),
-        )),
-      ]),
-    )),
+    ),
   );
 }

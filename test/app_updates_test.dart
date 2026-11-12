@@ -222,6 +222,38 @@ void main() {
       expect(find.text('Your app is up to date.'), findsOneWidget);
     },
   );
+  testWidgets(
+    'up to date screen shows installed version name and falls back to build code',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppUpdateView(
+              versionLoader: () async => 15,
+              versionNameLoader: () async => '1.1.7',
+              releaseLoader: () => Stream.value([]),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('1.1.7'), findsOneWidget);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppUpdateView(
+              key: const ValueKey('fallback'),
+              versionLoader: () async => 15,
+              versionNameLoader: () async => throw StateError('unavailable'),
+              releaseLoader: () => Stream.value([]),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('15'), findsOneWidget);
+    },
+  );
   testWidgets('installer receives the right R2 or legacy download URL', (
     tester,
   ) async {

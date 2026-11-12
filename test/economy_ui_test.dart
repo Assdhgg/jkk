@@ -141,6 +141,7 @@ void main() {
       await tester.ensureVisible(
         find.widgetWithText(FilledButton, 'Create campaign'),
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Create campaign'));
       await tester.pumpAndSettle();
       expect(calls, 1);
