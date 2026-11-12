@@ -88,6 +88,29 @@ void main() {
     });
   }
 
+  testWidgets('home action selects its matching task category', (tester) async {
+    String? selected;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: Scaffold(
+          body: Dashboard(
+            uid: 'sample',
+            balanceStream: Stream.value([
+              {'balance': 1},
+            ]),
+            onBrowse: () {},
+            onCreate: () {},
+            onBrowseType: (type) => selected = type,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Like').first);
+    expect(selected, 'like');
+  });
+
   testWidgets('shared page content stays centered on a wide window', (
     tester,
   ) async {

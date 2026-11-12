@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'support_page.dart';
+import 'design.dart';
 
 const updateChannel = MethodChannel('growth_circle/app_updates');
 const maxApkBytes = 209715200;
@@ -237,63 +238,70 @@ class _AppUpdateGateState extends State<AppUpdateGate>
         if (blocked)
           Positioned.fill(
             child: Material(
-              color: Colors.black87,
-              child: SafeArea(
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: Dialog(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
+              color: const Color(0xfff6f3ff),
+              child: GrowthBackdrop(
+                child: SafeArea(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    supportText(
+                                      context,
+                                      'Update required',
+                                      'App update ചെയ്യണം',
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 25,
+                                      fontWeight: FontWeight.bold,
+                                      color: growthInk,
+                                    ),
+                                  ),
+                                ),
+                                const GrowthArt(
+                                  'update_reference',
+                                  height: 105,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
                             Text(
                               supportText(
                                 context,
-                                required
-                                    ? 'Update required'
-                                    : 'Checking for updates',
-                                required
-                                    ? 'App update ചെയ്യണം'
-                                    : 'Updates പരിശോധിക്കുന്നു',
-                              ),
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
+                                'Install the latest version to continue using Freelan Space.',
+                                'Freelan Space ഉപയോഗിക്കാൻ പുതിയ version install ചെയ്യുക.',
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            if (required) ...[
-                              Text(
-                                supportText(
-                                  context,
-                                  'Install the latest version to continue using Freelan Space.',
-                                  'Freelan Space ഉപയോഗിക്കാൻ പുതിയ version install ചെയ്യുക.',
-                                ),
-                              ),
-                              AppUpdateView(
-                                key: ValueKey(latest!.versionCode),
-                                client: widget.client,
-                                releaseLoader: () => Stream.value([
-                                  {
-                                    'version_code': latest!.versionCode,
-                                    'version_name': latest!.versionName,
-                                    'apk_path': latest!.path,
-                                    'sha256': latest!.hash,
-                                    'size_bytes': latest!.size,
-                                    'notes': latest!.notes,
-                                    'download_url': latest!.downloadUrl,
-                                    'storage_provider':
-                                        latest!.downloadUrl == null
-                                        ? 'supabase'
-                                        : 'r2',
-                                  },
-                                ]),
-                                versionLoader: () async => installed,
-                                installer: widget.installer,
-                              ),
-                            ] else if (checking)
-                              const LinearProgressIndicator(),
+                            const SizedBox(height: 18),
+                            AppUpdateView(
+                              key: ValueKey(latest!.versionCode),
+                              client: widget.client,
+                              releaseLoader: () => Stream.value([
+                                {
+                                  'version_code': latest!.versionCode,
+                                  'version_name': latest!.versionName,
+                                  'apk_path': latest!.path,
+                                  'sha256': latest!.hash,
+                                  'size_bytes': latest!.size,
+                                  'notes': latest!.notes,
+                                  'download_url': latest!.downloadUrl,
+                                  'storage_provider':
+                                      latest!.downloadUrl == null
+                                      ? 'supabase'
+                                      : 'r2',
+                                },
+                              ]),
+                              versionLoader: () async => installed,
+                              installer: widget.installer,
+                            ),
                             if (failed)
                               Text(
                                 supportText(
@@ -302,17 +310,18 @@ class _AppUpdateGateState extends State<AppUpdateGate>
                                   'Updates പരിശോധിക്കാൻ internet connect ചെയ്ത് വീണ്ടും ശ്രമിക്കുക.',
                                 ),
                               ),
-                            if (failed || required)
-                              TextButton(
-                                onPressed: refresh,
-                                child: Text(
-                                  supportText(
-                                    context,
-                                    'Check again',
-                                    'വീണ്ടും പരിശോധിക്കുക',
-                                  ),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: refresh,
+                              icon: const Icon(Icons.refresh),
+                              label: Text(
+                                supportText(
+                                  context,
+                                  'Check again',
+                                  'വീണ്ടും പരിശോധിക്കുക',
                                 ),
                               ),
+                            ),
                           ],
                         ),
                       ),
@@ -348,12 +357,14 @@ class AppUpdateView extends StatefulWidget {
     this.client,
     this.releaseLoader,
     this.versionLoader,
+    this.versionNameLoader,
     this.installer,
   });
   final bool compact;
   final SupabaseClient? client;
   final Stream<List<Map<String, dynamic>>> Function()? releaseLoader;
   final Future<int?> Function()? versionLoader;
+  final Future<String?> Function()? versionNameLoader;
   final Future<String?> Function(AppRelease)? installer;
   @override
   State<AppUpdateView> createState() => _AppUpdateViewState();
@@ -362,6 +373,7 @@ class AppUpdateView extends StatefulWidget {
 class _AppUpdateViewState extends State<AppUpdateView>
     with WidgetsBindingObserver {
   late Future<int?> installed;
+  late Future<String?> installedName;
   Stream<List<Map<String, dynamic>>>? releases;
   bool busy = false;
   String? message;
@@ -379,6 +391,23 @@ class _AppUpdateViewState extends State<AppUpdateView>
         (!kIsWeb && defaultTargetPlatform == TargetPlatform.android
             ? updateChannel.invokeMethod<int>('installedVersion')
             : Future.value(null));
+    installedName = readVersionName();
+  }
+
+  Future<String?> readVersionName() async {
+    try {
+      if (widget.versionNameLoader != null) {
+        return await widget.versionNameLoader!();
+      }
+      if (widget.versionLoader == null &&
+          !kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.android) {
+        return await updateChannel.invokeMethod<String>('installedVersionName');
+      }
+    } catch (_) {
+      // The installed build code remains available on older native clients.
+    }
+    return null;
   }
 
   @override
@@ -506,12 +535,77 @@ class _AppUpdateViewState extends State<AppUpdateView>
           if (latest == null || latest.versionCode <= version.data!) {
             return widget.compact
                 ? const SizedBox.shrink()
-                : Text(
-                    supportText(
-                      context,
-                      'Your app is up to date.',
-                      'നിങ്ങളുടെ app ഏറ്റവും പുതിയ പതിപ്പാണ്.',
-                    ),
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 25),
+                      const GrowthArt('update_reference', height: 205),
+                      const SizedBox(height: 20),
+                      Text(
+                        supportText(
+                          context,
+                          'Your app is up to date.',
+                          'നിങ്ങളുടെ app ഏറ്റവും പുതിയ പതിപ്പാണ്.',
+                        ),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: growthInk,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        supportText(
+                          context,
+                          'You’re all set with the latest version!',
+                          'നിങ്ങൾ ഏറ്റവും പുതിയ പതിപ്പാണ് ഉപയോഗിക്കുന്നത്!',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 25),
+                      Card(
+                        child: ListTile(
+                          leading: const CircleAvatar(child: Icon(Icons.check)),
+                          title: Text(
+                            supportText(
+                              context,
+                              'Current version',
+                              'നിലവിലെ പതിപ്പ്',
+                            ),
+                          ),
+                          subtitle: FutureBuilder<String?>(
+                            future: installedName,
+                            builder: (context, name) => Text(
+                              name.data?.trim().isNotEmpty == true
+                                  ? name.data!
+                                  : '${version.data}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          trailing: Text(
+                            supportText(
+                              context,
+                              'Up to date',
+                              'ഏറ്റവും പുതിയത്',
+                            ),
+                            style: const TextStyle(color: Colors.green),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 25),
+                      GrowthPrimaryButton(
+                        onPressed: () => setState(load),
+                        label: supportText(
+                          context,
+                          'Check for updates',
+                          'Updates പരിശോധിക്കുക',
+                        ),
+                        icon: Icons.refresh,
+                      ),
+                    ],
                   );
           }
           final release = latest;

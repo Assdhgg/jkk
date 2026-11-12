@@ -30,4 +30,51 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+  testWidgets('initial action filter shows only matching tasks', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: Scaffold(
+          body: TaskList(
+            uid: 'preview',
+            initialType: 'follow',
+            controlsStream: Stream.value([
+              {'action_type': 'follow', 'enabled': true},
+              {'action_type': 'like', 'enabled': true},
+            ]),
+            presenceStream: Stream.value([]),
+            claimsStream: Stream.value([]),
+            campaignsStream: Stream.value([
+              {
+                'id': 'a',
+                'ownerId': 'other',
+                'status': 'active',
+                'type': 'follow',
+                'link': 'https://instagram.com/follow',
+                'reward_per_task': 2,
+              },
+              {
+                'id': 'b',
+                'ownerId': 'other',
+                'status': 'active',
+                'type': 'like',
+                'link': 'https://instagram.com/like',
+                'reward_per_task': 3,
+              },
+            ]),
+            loadSavedIds: () async => [],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('https://instagram.com/follow'), findsOneWidget);
+    expect(find.text('https://instagram.com/like'), findsNothing);
+    await tester.tap(find.text('Like').first);
+    await tester.pumpAndSettle();
+    expect(find.text('https://instagram.com/like'), findsOneWidget);
+    expect(find.text('https://instagram.com/follow'), findsNothing);
+  });
 }

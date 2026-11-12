@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'evidence_image.dart';
+import 'design.dart';
 
 String _t(BuildContext context, String english, String malayalam) =>
     Localizations.localeOf(context).languageCode == 'ml' ? malayalam : english;
@@ -178,7 +179,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       }
       final bytes = await file.readAsBytes();
       await validateEvidenceImage(bytes, maxBytes: maxProfilePhotoBytes);
-      if (widget.authorizeChange != null && !await widget.authorizeChange!()) return;
+      if (widget.authorizeChange != null && !await widget.authorizeChange!())
+        return;
       final mime = bytes[0] == 0x89 ? 'image/png' : 'image/jpeg';
       await widget.gateway.savePhoto(bytes, mime);
       if (mounted) setState(() => photo = bytes);
@@ -227,7 +229,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       ),
     );
     if (value == null || !mounted) return;
-    if (widget.authorizeChange != null && !await widget.authorizeChange!()) return;
+    if (widget.authorizeChange != null && !await widget.authorizeChange!())
+      return;
     if (!mounted) return;
     setState(() => busy = true);
     try {
@@ -260,7 +263,24 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
         : MaterialLocalizations.of(context).formatFullDate(created);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_t(context, 'Personal information', 'വ്യക്തിഗത വിവരങ്ങൾ')),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_t(context, 'Personal information', 'വ്യക്തിഗത വിവരങ്ങൾ')),
+            Text(
+              _t(
+                context,
+                'Manage your account details',
+                'നിങ്ങളുടെ account വിവരങ്ങൾ നിയന്ത്രിക്കുക',
+              ),
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.normal,
+                color: growthInk,
+              ),
+            ),
+          ],
+        ),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -269,13 +289,42 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
             padding: const EdgeInsets.all(20),
             children: [
               Center(
-                child: CircleAvatar(
-                  radius: 48,
-                  backgroundColor: const Color(0xffe5dafa),
-                  backgroundImage: photo == null ? null : MemoryImage(photo!),
-                  child: photo == null
-                      ? const Icon(Icons.person, size: 48)
-                      : null,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: growthPurple.withValues(alpha: .25),
+                            blurRadius: 18,
+                          ),
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: const Color(0xffe5dafa),
+                        backgroundImage: photo == null
+                            ? null
+                            : MemoryImage(photo!),
+                        child: photo == null
+                            ? const Icon(Icons.person, size: 48)
+                            : null,
+                      ),
+                    ),
+                    Positioned(
+                      right: -4,
+                      bottom: 0,
+                      child: IconButton.filledTonal(
+                        tooltip: _t(context, 'Change photo', 'ഫോട്ടോ മാറ്റുക'),
+                        onPressed: busy || loading ? null : choosePhoto,
+                        icon: const Icon(Icons.photo_camera, size: 18),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -290,84 +339,134 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                 Text(photoError!, textAlign: TextAlign.center),
               if (loading || busy) const LinearProgressIndicator(),
               const SizedBox(height: 16),
-              ListTile(
-                title: Text(_t(context, 'Name', 'പേര്')),
-                trailing: IconButton(
-                  tooltip: _t(context, 'Edit name', 'പേര് മാറ്റുക'),
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: busy ? null : editName,
-                ),
-                subtitle: Text(name.trim().isNotEmpty ? name : '—'),
-              ),
-              ListTile(
-                title: Text(_t(context, 'Email ID', 'ഇമെയിൽ')),
-                subtitle: Text(widget.user.email ?? '—'),
-                trailing: TextButton(
-                  onPressed:
-                      widget.emailChangeEnabled && widget.user.email != null
-                      ? () async {
-                          if (widget.authorizeChange != null && !await widget.authorizeChange!()) return;
-                          if (!context.mounted) return;
-                          await Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => EmailChangePage(
-                              currentEmail: widget.user.email!,
-                              gateway: widget.gateway,
+              Card(
+                child: ListTileTheme.merge(
+                  titleTextStyle: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xff67558f),
+                  ),
+                  subtitleTextStyle: const TextStyle(
+                    fontSize: 13,
+                    color: growthInk,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.person)),
+                        title: Text(_t(context, 'Name', 'പേര്')),
+                        trailing: IconButton(
+                          tooltip: _t(context, 'Edit name', 'പേര് മാറ്റുക'),
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: busy ? null : editName,
+                        ),
+                        subtitle: Text(name.trim().isNotEmpty ? name : '—'),
+                      ),
+                      const Divider(indent: 66, endIndent: 20, height: 1),
+                      ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.email)),
+                        title: Text(_t(context, 'Email ID', 'ഇമെയിൽ')),
+                        subtitle: Text(widget.user.email ?? '—'),
+                        trailing: TextButton(
+                          onPressed:
+                              widget.emailChangeEnabled &&
+                                  widget.user.email != null
+                              ? () async {
+                                  if (widget.authorizeChange != null &&
+                                      !await widget.authorizeChange!())
+                                    return;
+                                  if (!context.mounted) return;
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => EmailChangePage(
+                                        currentEmail: widget.user.email!,
+                                        gateway: widget.gateway,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          child: Text(_t(context, 'Change', 'മാറ്റുക')),
+                        ),
+                      ),
+                      if (!widget.emailChangeEnabled)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            _t(
+                              context,
+                              'Email change is not configured yet.',
+                              'Email മാറ്റാനുള്ള സംവിധാനം ഇതുവരെ സജ്ജമായിട്ടില്ല.',
                             ),
                           ),
-                        );
-                        }
-                      : null,
-                  child: Text(_t(context, 'Change', 'മാറ്റുക')),
+                        ),
+                      const Divider(indent: 66, endIndent: 20, height: 1),
+                      ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.badge)),
+                        title: Text(_t(context, 'User ID', 'User ID')),
+                        subtitle: SelectableText(widget.publicId ?? '—'),
+                        trailing: widget.publicId == null
+                            ? null
+                            : IconButton(
+                                tooltip: _t(
+                                  context,
+                                  'Copy user ID',
+                                  'User ID പകർത്തുക',
+                                ),
+                                icon: const Icon(Icons.copy),
+                                onPressed: () async {
+                                  await Clipboard.setData(
+                                    ClipboardData(text: widget.publicId!),
+                                  );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          _t(
+                                            context,
+                                            'User ID copied',
+                                            'User ID പകർത്തി',
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                      ),
+                      const Divider(indent: 66, endIndent: 20, height: 1),
+                      ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.calendar_month),
+                        ),
+                        title: Text(_t(context, 'Join date', 'ചേർന്ന തീയതി')),
+                        subtitle: Text(joined),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              if (!widget.emailChangeEnabled)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
+              const SizedBox(height: 12),
+              Card(
+                color: const Color(0xffe5d8fa),
+                child: ListTile(
+                  leading: const Icon(Icons.verified_user, color: growthPurple),
+                  title: Text(
                     _t(
                       context,
-                      'Email change is not configured yet.',
-                      'Email മാറ്റാനുള്ള സംവിധാനം ഇതുവരെ സജ്ജമായിട്ടില്ല.',
+                      'Your information is secure',
+                      'നിങ്ങളുടെ വിവരങ്ങൾ സുരക്ഷിതമാണ്',
+                    ),
+                  ),
+                  subtitle: Text(
+                    _t(
+                      context,
+                      'We keep your data safe and private.',
+                      'നിങ്ങളുടെ വിവരങ്ങൾ സ്വകാര്യമായി സൂക്ഷിക്കുന്നു.',
                     ),
                   ),
                 ),
-              ListTile(
-                title: Text(_t(context, 'User ID', 'User ID')),
-                subtitle: SelectableText(widget.publicId ?? '—'),
-                trailing: widget.publicId == null
-                    ? null
-                    : IconButton(
-                        tooltip: _t(
-                          context,
-                          'Copy user ID',
-                          'User ID പകർത്തുക',
-                        ),
-                        icon: const Icon(Icons.copy),
-                        onPressed: () async {
-                          await Clipboard.setData(
-                            ClipboardData(text: widget.publicId!),
-                          );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  _t(
-                                    context,
-                                    'User ID copied',
-                                    'User ID പകർത്തി',
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-              ),
-              ListTile(
-                title: Text(_t(context, 'Join date', 'ചേർന്ന തീയതി')),
-                subtitle: Text(joined),
               ),
             ],
           ),

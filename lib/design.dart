@@ -37,14 +37,20 @@ class _WavePainter extends CustomPainter {
       ..quadraticBezierTo(w * .91, h * .08, w, h * .16)
       ..lineTo(w, 0)
       ..close();
-    canvas.drawPath(top, Paint()..color = const Color(0xffe5dafa));
+    canvas.drawPath(top, Paint()..color = const Color(0xffc9a8fc));
     final topInner = Path()
       ..moveTo(w * .50, 0)
       ..quadraticBezierTo(w * .60, h * .09, w * .80, h * .075)
       ..quadraticBezierTo(w * .93, h * .07, w, h * .12)
       ..lineTo(w, 0)
       ..close();
-    canvas.drawPath(topInner, Paint()..color = const Color(0xffd3bdf8));
+    canvas.drawPath(
+      topInner,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xffb793ff), Color(0xff5c1af0)],
+        ).createShader(Offset.zero & size),
+    );
     final wave = Path()
       ..moveTo(0, h * .78)
       ..cubicTo(w * .18, h * .75, w * .33, h * .92, w * .54, h * .90)
@@ -73,18 +79,74 @@ class _WavePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+class GrowthIcon extends StatelessWidget {
+  const GrowthIcon(this.icon, {super.key});
+  final IconData icon;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 42,
+    height: 42,
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xfff3edff), Color(0xffd9c7ff)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(13),
+      boxShadow: [
+        BoxShadow(
+          color: growthPurple.withValues(alpha: .12),
+          blurRadius: 7,
+          offset: const Offset(0, 3),
+        ),
+      ],
+    ),
+    child: Icon(icon, color: growthPurple, size: 22),
+  );
+}
+
 class GrowthArt extends StatelessWidget {
   const GrowthArt(this.name, {super.key, this.height = 170});
   final String name;
   final double height;
   @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: Image.asset(
+  Widget build(BuildContext context) {
+    Widget art = Image.asset(
       'assets/design/$name.png',
       height: height,
       fit: BoxFit.contain,
-    ),
-  );
+    );
+    if (name.endsWith('_reference')) {
+      art = ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (bounds) => const LinearGradient(
+          colors: [
+            Colors.transparent,
+            Colors.white,
+            Colors.white,
+            Colors.transparent,
+          ],
+          stops: [0, .09, .91, 1],
+        ).createShader(bounds),
+        child: ShaderMask(
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (bounds) => const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              Colors.white,
+              Colors.white,
+              Colors.transparent,
+            ],
+            stops: [0, .09, .91, 1],
+          ).createShader(bounds),
+          child: art,
+        ),
+      );
+    }
+    return ExcludeSemantics(child: art);
+  }
 }
 
 class GrowthActionButton extends StatelessWidget {
@@ -187,7 +249,9 @@ class GrowthHero extends StatelessWidget {
     required this.icon,
     this.art,
     this.background,
+    this.action,
   });
+  final Widget? action;
   final String title, subtitle;
   final IconData icon;
   final String? art;
@@ -235,6 +299,7 @@ class GrowthHero extends StatelessWidget {
                   fontSize: 11,
                 ),
               ),
+              if (action != null) ...[const SizedBox(height: 8), action!],
             ],
           ),
         ),
@@ -311,7 +376,7 @@ class GrowthNavigation extends StatelessWidget {
                     child: Container(
                       height: 58,
                       decoration: BoxDecoration(
-                        gradient: selected == i && i == 0
+                        gradient: selected == i && i != 1
                             ? const LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
@@ -329,7 +394,7 @@ class GrowthNavigation extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: selected == i && i != 0
+                              color: selected == i && i == 1
                                   ? const Color(0xffd6bcff)
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(20),
@@ -338,7 +403,7 @@ class GrowthNavigation extends StatelessWidget {
                               selected == i ? active[i] : icons[i],
                               size: 23,
                               color: selected == i
-                                  ? (i == 0 ? Colors.white : growthPurple)
+                                  ? (i == 1 ? growthPurple : Colors.white)
                                   : growthInk,
                             ),
                           ),
@@ -352,7 +417,7 @@ class GrowthNavigation extends StatelessWidget {
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: selected == i
-                                    ? (i == 0 ? Colors.white : growthPurple)
+                                    ? (i == 1 ? growthPurple : Colors.white)
                                     : growthInk,
                               ),
                             ),

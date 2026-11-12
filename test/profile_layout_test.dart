@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/main.dart';
@@ -87,7 +88,11 @@ Future<void> showProfile(
     MaterialApp(
       theme: growthTheme(),
       home: Scaffold(
-        body: Profile(user: user, gateway: gateway, authorizeChange: () async => true),
+        body: Profile(
+          user: user,
+          gateway: gateway,
+          authorizeChange: () async => true,
+        ),
       ),
     ),
   );
@@ -152,12 +157,84 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('invite-code'), findsOneWidget);
     expect(find.text('People referred: 2'), findsOneWidget);
-    await tester.tap(find.text('Enter a referral code'));
+    await tester.ensureVisible(find.byType(TextField));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'other-code');
-    await tester.tap(find.text('Apply'));
+    await tester.tap(find.text('Submit'));
     await tester.pumpAndSettle();
     expect(find.text('Referral code already applied.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'inline referral submission still requires security confirmation',
+    (tester) async {
+      final gateway = FakeProfileGateway();
+      var confirmations = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: growthTheme(),
+          home: ProfileDetailsPage(
+            uid: 'user',
+            gateway: gateway,
+            accounts: false,
+            authorizeChange: () async {
+              confirmations++;
+              return false;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(TextField));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'other-code');
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+      expect(confirmations, 1);
+      expect(gateway.joined, isFalse);
+      expect(find.text('other-code'), findsOneWidget);
+    },
+  );
+
+  testWidgets('account menu copies the full username on a narrow screen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    String? copied;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+    final gateway = FakeProfileGateway()
+      ..usernames[0] = 'long.username.example';
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: ProfileDetailsPage(
+          uid: 'user',
+          gateway: gateway,
+          accounts: true,
+          authorizeChange: () async => true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Account options').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy username'));
+    await tester.pumpAndSettle();
+    expect(copied, '@long.username.example');
     expect(tester.takeException(), isNull);
   });
 

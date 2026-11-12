@@ -53,6 +53,7 @@ class MainActivity : FlutterActivity() {
                     } catch (_: Exception) { result.error("permission", "Unable to open notification settings.", null) }
                 }
                 "installedVersion" -> result.success(code(packageManager.getPackageInfo(packageName, 0)))
+                "installedVersionName" -> result.success(packageManager.getPackageInfo(packageName, 0).versionName)
                 "installUpdate" -> {
                     val url = call.argument<String>("url") ?: ""
                     val hash = call.argument<String>("sha256") ?: ""
