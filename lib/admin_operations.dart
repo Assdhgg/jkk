@@ -301,7 +301,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
     final v = await fields(
       op(context, 'Request coin correction', 'Coin correction അപേക്ഷ'),
       [
-        op(context, 'User ID', 'User ID'),
+        op(context, 'User ID (8 digits)', 'User ID (8 digits)'),
         op(context, 'Amount (+ or -)', 'Amount (+ or -)'),
         op(context, 'Reason', 'കാരണം'),
       ],
@@ -318,8 +318,8 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
       );
       return;
     }
-    await call('admin_request_adjustment', {
-      'p_user': v[0],
+    await call('admin_request_wallet_adjustment', {
+      'p_public_id': v[0].trim(),
       'p_amount': amount,
       'p_reason': v[2],
     });
@@ -469,7 +469,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
       'tickets': op(context, 'Support', 'സഹായം'),
       'inbox': op(context, 'Notifications', 'അറിയിപ്പുകൾ'),
       'reports': op(context, 'Campaign reports', 'Campaign reports'),
-      'coins': op(context, 'Coin requests', 'Coin അപേക്ഷകൾ'),
+      'coins': op(context, 'Wallet controls', 'Wallet controls'),
       'alerts': op(context, 'Alert settings', 'Alert settings'),
       'trends': op(context, 'Analytics', 'Analytics'),
       'notes': op(context, 'Admin notes', 'Admin notes'),

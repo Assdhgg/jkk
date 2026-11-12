@@ -9,7 +9,7 @@ String _t(BuildContext context, String en, String ml) =>
 
 abstract class AdminNotificationGateway {
   Future<List<Map<String, dynamic>>> search(String query, int offset);
-  Future<int> send(String requestId, String? target, String title, String body);
+  Future<int> send(String requestId, String? target, String title, String body, {bool inApp = true, bool push = true});
 }
 
 class SupabaseAdminNotificationGateway implements AdminNotificationGateway {
@@ -26,14 +26,16 @@ class SupabaseAdminNotificationGateway implements AdminNotificationGateway {
     String requestId,
     String? target,
     String title,
-    String body,
-  ) async => await client.rpc(
-    'admin_send_notification',
+    String body, {
+    bool inApp = true, bool push = true,
+  }) async => await client.rpc(
+    'admin_send_notification_v2',
     params: {
       'p_request_id': requestId,
       'p_target_user': target,
       'p_title': title,
       'p_body': body,
+      'p_in_app': inApp, 'p_push': push,
     },
   ) as int;
 }
@@ -65,6 +67,7 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
       title = TextEditingController(),
       body = TextEditingController();
   bool allUsers = false, loading = false, sending = false;
+  bool inApp = true, push = true;
   int offset = 0;
   String search = '';
   List<Map<String, dynamic>> users = [];
@@ -113,7 +116,7 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
 
   Future<void> send() async {
     final heading = title.text.trim(), message = body.text.trim();
-    if (!widget.canEdit ||
+    if ((!inApp && !push) || !widget.canEdit ||
         (!allUsers && selected == null) ||
         heading.isEmpty ||
         message.isEmpty ||
@@ -154,7 +157,7 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
     );
     if (confirmed != true || !mounted || sending) return;
     final target = allUsers ? null : selected!['id'] as String;
-    final payload = jsonEncode([target, heading, message]);
+    final payload = jsonEncode([target, heading, message, inApp, push]);
     if (lastPayload != payload) {
       lastPayload = payload;
       requestId = _requestId();
@@ -168,7 +171,7 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
         requestId!,
         target,
         heading,
-        message,
+        message, inApp: inApp, push: push,
       );
       if (!mounted) return;
       setState(() {
@@ -221,6 +224,10 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
                 'ഒരു user-നെയോ എല്ലാ active users-നെയോ തിരഞ്ഞെടുക്കുക. Push enable ചെയ്ത devices-ലാണ് notification ലഭിക്കുക.',
               ),
             ),
+            CheckboxListTile(title: const Text('In-app notification'), value: inApp,
+              onChanged: sending || !widget.canEdit ? null : (v) => setState(() => inApp = v!)),
+            CheckboxListTile(title: const Text('Push notification'), value: push,
+              onChanged: sending || !widget.canEdit ? null : (v) => setState(() => push = v!)),
             SwitchListTile(
               title: Text(_t(context, 'All users', 'എല്ലാ users')),
               value: allUsers,
