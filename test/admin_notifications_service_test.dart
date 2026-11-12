@@ -40,12 +40,13 @@ void main() {
         expect(await api.send('request-id', 'user-id', 'News', 'Hello'), 1);
         expect(requests[0]['path'], '/rest/v1/rpc/admin_notification_users');
         expect(requests[0]['body'], {'p_query': '12345678', 'p_offset': 25});
-        expect(requests[1]['path'], '/rest/v1/rpc/admin_send_notification');
+        expect(requests[1]['path'], '/rest/v1/rpc/admin_send_notification_v2');
         expect(requests[1]['body'], {
           'p_request_id': 'request-id',
           'p_target_user': 'user-id',
           'p_title': 'News',
           'p_body': 'Hello',
+          'p_in_app': true, 'p_push': true,
         });
       } finally {
         await client.dispose();

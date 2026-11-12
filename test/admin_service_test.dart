@@ -39,7 +39,7 @@ void main() {
                 ])
               : r.uri.path.endsWith('/admin_is_admin')
               ? 'true'
-              : r.uri.path.endsWith('/admin_list_users')
+              : r.uri.path.endsWith('/admin_list_users_v2')
               ? jsonEncode([
                   {
                     'id': '1',

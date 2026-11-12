@@ -26,8 +26,8 @@ class FakeNotifications implements AdminNotificationGateway {
     String requestId,
     String? target,
     String title,
-    String body,
-  ) async {
+    String body, {bool inApp = true, bool push = true,
+  }) async {
     calls.add({
       'request': requestId,
       'target': target,
