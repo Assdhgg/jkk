@@ -787,7 +787,10 @@ class _AuthGateState extends State<AuthGate> {
         if (!mounted) return;
         setState(() {
           if (state.event == AuthChangeEvent.passwordRecovery) recovery = true;
-          if (state.event == AuthChangeEvent.signedOut) recovery = false;
+          if (state.event == AuthChangeEvent.signedOut) {
+            recovery = false;
+            unawaited(PushCoordinator.instance.stop(db));
+          }
         });
       },
       onError: (Object error, StackTrace stackTrace) {
@@ -1885,7 +1888,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void dispose() {
     _pushRetry?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    unawaited(PushCoordinator.instance.stop(db));
+    // Rebuilding the signed-in shell must not revoke background push delivery.
+    if (db.auth.currentUser?.id == widget.user.id) {
+      unawaited(PushCoordinator.instance.detach());
+    } else {
+      unawaited(PushCoordinator.instance.stop(db));
+    }
     super.dispose();
   }
 
