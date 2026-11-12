@@ -37,6 +37,12 @@ class DesktopControls(unittest.TestCase):
         sql(f"select public.admin_send_notification_v2(gen_random_uuid(),'{U}','Empty','None',false,false)",E,fails=True)
         sql(f"select public.admin_send_notification_v2('96000000-0000-4000-9000-000000000001','{U}','Desktop 1','Message',false,true)",E,fails=True)
 
+    def test_no_device_push_is_reported_and_rejected(self):
+        self.assertEqual(sql(f"select public.admin_push_readiness('{E}')->>'devices'",E),'0')
+        sql(f"select public.admin_push_readiness('{U}')",V,fails=True)
+        sql(f"select public.admin_send_notification_v2(gen_random_uuid(),'{E}','No devices','Message',false,true)",E,fails=True)
+        self.assertEqual(sql(f"select public.admin_push_readiness('{U}')->>'devices'",E),'1')
+
     def test_public_ids_and_wallet_approval(self):
         public_id = sql(f"select public_id from growth_internal.user_identifiers where user_id='{U}'")
         self.assertEqual(sql(f"select public_id from public.admin_list_users_v2('{public_id}')",E),public_id)

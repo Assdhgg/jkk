@@ -93,10 +93,12 @@ class PushCoordinator {
       return false;
     }
     await _initialize();
-    if (_testPermission != null) return _testPermission!();
-    final settings = await FirebaseMessaging.instance.getNotificationSettings();
-    return settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional;
+    final granted = _testPermission != null
+        ? await _testPermission!() : await _hasPermission();
+    if (!granted) return false;
+    // Permission and saved preference alone do not prove server registration.
+    await _register(client);
+    return client.auth.currentUser?.id == id;
   }
 
   Future<void> disable(SupabaseClient client) async {
@@ -210,6 +212,13 @@ class PushCoordinator {
     final settings = await FirebaseMessaging.instance.requestPermission();
     return settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional;
+  }
+
+  Future<void> detach() async {
+    ++_generation;
+    final subscription = _refresh;
+    _refresh = null;
+    await subscription?.cancel();
   }
 
   Future<void> stop(SupabaseClient client) async {

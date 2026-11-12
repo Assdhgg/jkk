@@ -22,6 +22,8 @@ class FakeNotifications implements AdminNotificationGateway {
     },
   ];
   @override
+  Future<Map<String, dynamic>> pushReadiness(String? target) async => {'devices': 1, 'users_with_devices': 1};
+  @override
   Future<int> send(
     String requestId,
     String? target,

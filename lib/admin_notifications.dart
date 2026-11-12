@@ -9,6 +9,7 @@ String _t(BuildContext context, String en, String ml) =>
 
 abstract class AdminNotificationGateway {
   Future<List<Map<String, dynamic>>> search(String query, int offset);
+  Future<Map<String, dynamic>> pushReadiness(String? target);
   Future<int> send(String requestId, String? target, String title, String body, {bool inApp = true, bool push = true});
 }
 
@@ -21,6 +22,10 @@ class SupabaseAdminNotificationGateway implements AdminNotificationGateway {
         'admin_notification_users',
         params: {'p_query': query, 'p_offset': offset},
       ) as List).map((row) => Map<String, dynamic>.from(row as Map)).toList();
+  @override
+  Future<Map<String, dynamic>> pushReadiness(String? target) async =>
+      Map<String, dynamic>.from(await client.rpc('admin_push_readiness',
+        params: {'p_target_user': target}) as Map);
   @override
   Future<int> send(
     String requestId,
@@ -131,6 +136,21 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
       );
       return;
     }
+    Map<String, dynamic>? readiness;
+    if (push) {
+      setState(() => sending = true);
+      try {
+        readiness = await widget.gateway.pushReadiness(allUsers ? null : selected!['id'] as String);
+      } catch (_) {
+        if (mounted) setState(() => error = 'Could not check push registrations. Retry.');
+        return;
+      } finally { if (mounted) setState(() => sending = false); }
+      if (!mounted) return;
+      if ((readiness['devices'] as num) == 0 && !inApp) {
+        setState(() => error = 'No push-enabled devices for this audience. Ask users to sign in and enable Push notifications in Settings.');
+        return;
+      }
+    }
     final destination = allUsers
         ? _t(context, 'all active users', 'എല്ലാ active users')
         : (selected!['email'] as String? ?? '');
@@ -141,7 +161,8 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
           _t(context, 'Send notification?', 'Notification അയയ്ക്കണോ?'),
         ),
         content: Text(
-          _t(context, 'Send to $destination?', '$destination-ന് അയയ്ക്കണോ?'),
+          _t(context, 'Send to $destination?', '$destination-ന് അയയ്ക്കണോ?') +
+              (readiness == null ? '' : '\nPush registered: ${readiness['users_with_devices']} users, ${readiness['devices']} devices. Other users will not receive push.'),
         ),
         actions: [
           TextButton(
@@ -196,7 +217,7 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
         setState(
           () => error = _t(
             context,
-            'Could not confirm sending. Retry without changing the message.',
+            'Could not confirm sending. Check that recipients enabled push, then retry without changing the message.',
             'അയച്ചത് സ്ഥിരീകരിക്കാനായില്ല. Message മാറ്റാതെ വീണ്ടും ശ്രമിക്കുക.',
           ),
         );

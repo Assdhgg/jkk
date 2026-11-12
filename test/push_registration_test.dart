@@ -88,6 +88,12 @@ void main() {
       expect(await push.enable(client), true);
       expect(writes, ['synthetic-cached-fcm-token']);
       expect(await push.isEnabled(client), true);
+      fail = true;
+      await expectLater(push.isEnabled(client), throwsA(isA<PostgrestException>()));
+      fail = false;
+      await push.detach();
+      await push.restore(client);
+      expect(await push.isEnabled(client), true);
       allowed = false;
       expect(await push.isEnabled(client), false);
       allowed = true;
