@@ -24,8 +24,11 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(DataTable), findsOneWidget);
+      await tester.ensureVisible(find.text('Details').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Details').last);
       await tester.pumpAndSettle();
+      expect(find.textContaining('Referrals: 1'), findsOneWidget);
       expect(find.widgetWithText(ListTile, 'Reports & CSV'), findsOneWidget);
       await tester.tap(find.widgetWithText(ListTile, 'Reports & CSV'));
       await tester.pumpAndSettle();

@@ -22,13 +22,18 @@ class FakeNotifications implements AdminNotificationGateway {
     },
   ];
   @override
-  Future<Map<String, dynamic>> pushReadiness(String? target) async => {'devices': 1, 'users_with_devices': 1};
+  Future<Map<String, dynamic>> pushReadiness(String? target) async => {
+    'devices': 1,
+    'users_with_devices': 1,
+  };
   @override
   Future<int> send(
     String requestId,
     String? target,
     String title,
-    String body, {bool inApp = true, bool push = true,
+    String body, {
+    bool inApp = true,
+    bool push = true,
   }) async {
     calls.add({
       'request': requestId,
@@ -47,6 +52,8 @@ Future<void> confirm(WidgetTester tester) async {
     200,
     scrollable: find.byType(Scrollable).first,
   );
+  await tester.ensureVisible(find.byKey(const Key('submit_notification')));
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('submit_notification')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Send').last);
@@ -70,6 +77,12 @@ void main() {
       await tester.tap(find.byTooltip('Search'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Alice').last);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('notification_body')),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('notification_title')),
         'News',

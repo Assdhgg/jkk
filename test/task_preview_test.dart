@@ -26,7 +26,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('View all submissions'), findsOneWidget);
     expect(find.text('No tasks available yet.'), findsOneWidget);
-    await tester.tap(find.text('Follow').first);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Follow'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
@@ -72,7 +72,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('https://instagram.com/follow'), findsOneWidget);
     expect(find.text('https://instagram.com/like'), findsNothing);
-    await tester.tap(find.text('Like').first);
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Like'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Like'));
     await tester.pumpAndSettle();
     expect(find.text('https://instagram.com/like'), findsOneWidget);
     expect(find.text('https://instagram.com/follow'), findsNothing);
