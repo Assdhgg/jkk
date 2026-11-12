@@ -144,7 +144,13 @@ void main() {
     expect(find.text('@first'), findsOneWidget);
     await tester.tap(find.text('Add Instagram username manually'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '@second');
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      '@second',
+    );
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(find.text('@second'), findsOneWidget);
@@ -281,6 +287,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
   testWidgets(
+    'inline Instagram search carries the query and still requires confirmation',
+    (tester) async {
+      final gateway = FakeProfileGateway();
+      await showProfile(tester, gateway);
+      await tester.ensureVisible(find.text('Instagram accounts'));
+      await tester.tap(find.text('Instagram accounts'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'business');
+      await tester.tap(find.byTooltip('Search Instagram username'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ListTile, '@business'), findsOneWidget);
+      expect(gateway.usernames, ['first']);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(gateway.usernames, ['first']);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
     'in-app lookup adds only a selected real result and preserves manual entry',
     (tester) async {
       final gateway = FakeProfileGateway();
@@ -288,7 +313,7 @@ void main() {
       await tester.ensureVisible(find.text('Instagram accounts'));
       await tester.tap(find.text('Instagram accounts'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Search Instagram username'));
+      await tester.tap(find.byTooltip('Search Instagram username'));
       await tester.pumpAndSettle();
       expect(find.text(words['instagramSearchHelp']![0]), findsOneWidget);
       expect(
@@ -299,16 +324,34 @@ void main() {
             .onPressed,
         isNull,
       );
-      await tester.enterText(find.byType(TextField), 'unknown');
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'unknown',
+      );
       await tester.tap(find.text('Search'));
       await tester.pumpAndSettle();
       expect(find.text(words['instagramSearchNotFound']![0]), findsOneWidget);
-      await tester.enterText(find.byType(TextField), '@business');
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        '@business',
+      );
       await tester.tap(find.text('Search'));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(ListTile, '@business'), findsOneWidget);
       expect(find.text(words['instagramSearchOwnership']![0]), findsOneWidget);
-      await tester.enterText(find.byType(TextField), 'other');
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'other',
+      );
       await tester.pump();
       expect(
         tester
@@ -318,7 +361,13 @@ void main() {
             .onPressed,
         isNull,
       );
-      await tester.enterText(find.byType(TextField), 'business');
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'business',
+      );
       await tester.tap(find.text('Search'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Add account'));

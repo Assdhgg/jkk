@@ -260,15 +260,15 @@ class _AppUpdateGateState extends State<AppUpdateGate>
                                       'App update ചെയ്യണം',
                                     ),
                                     style: const TextStyle(
-                                      fontSize: 25,
+                                      fontSize: 28,
                                       fontWeight: FontWeight.bold,
                                       color: growthInk,
                                     ),
                                   ),
                                 ),
                                 const GrowthArt(
-                                  'update_reference',
-                                  height: 105,
+                                  'mandatory_reference',
+                                  height: 145,
                                 ),
                               ],
                             ),
@@ -618,7 +618,7 @@ class _AppUpdateViewState extends State<AppUpdateView>
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.system_update, color: Colors.deepPurple),
+                      const GrowthIcon(Icons.system_update),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -630,25 +630,38 @@ class _AppUpdateViewState extends State<AppUpdateView>
                   ),
                   if (!widget.compact && release.notes.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    Text(release.notes),
+                    Container(
+                      margin: const EdgeInsets.only(left: 54),
+                      padding: const EdgeInsets.only(left: 12),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          left: BorderSide(color: growthPurple, width: 3),
+                        ),
+                      ),
+                      child: Text(
+                        release.notes,
+                        style: const TextStyle(
+                          fontStyle: FontStyle.italic,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 8),
-                  FilledButton.icon(
+                  GrowthPrimaryButton(
                     onPressed: busy ? null : () => install(release),
-                    icon: const Icon(Icons.download),
-                    label: Text(
-                      busy
-                          ? supportText(
-                              context,
-                              'Downloading & verifying…',
-                              'Download പരിശോധിക്കുന്നു…',
-                            )
-                          : supportText(
-                              context,
-                              'Update app',
-                              'App update ചെയ്യുക',
-                            ),
-                    ),
+                    icon: Icons.download,
+                    label: busy
+                        ? supportText(
+                            context,
+                            'Downloading & verifying…',
+                            'Download പരിശോധിക്കുന്നു…',
+                          )
+                        : supportText(
+                            context,
+                            'Update app',
+                            'App update ചെയ്യുക',
+                          ),
                   ),
                   if (busy) const LinearProgressIndicator(),
                   if (message != null)

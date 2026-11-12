@@ -20,6 +20,18 @@ class GrowthBackdrop extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         const IgnorePointer(child: CustomPaint(painter: _WavePainter())),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: Image.asset(
+              'assets/design/bottom_waves.png',
+              fit: BoxFit.fitWidth,
+              excludeFromSemantics: true,
+            ),
+          ),
+        ),
         child,
       ],
     ),
@@ -30,48 +42,52 @@ class _WavePainter extends CustomPainter {
   const _WavePainter();
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    final top = Path()
-      ..moveTo(w * .34, 0)
-      ..quadraticBezierTo(w * .44, h * .13, w * .72, h * .10)
-      ..quadraticBezierTo(w * .91, h * .08, w, h * .16)
-      ..lineTo(w, 0)
-      ..close();
-    canvas.drawPath(top, Paint()..color = const Color(0xffc9a8fc));
-    final topInner = Path()
-      ..moveTo(w * .50, 0)
-      ..quadraticBezierTo(w * .60, h * .09, w * .80, h * .075)
-      ..quadraticBezierTo(w * .93, h * .07, w, h * .12)
-      ..lineTo(w, 0)
-      ..close();
-    canvas.drawPath(
-      topInner,
+    final w = size.width;
+    final bounds = Offset.zero & size;
+    canvas.drawRect(
+      bounds,
       Paint()
-        ..shader = const LinearGradient(
-          colors: [Color(0xffb793ff), Color(0xff5c1af0)],
-        ).createShader(Offset.zero & size),
+        ..shader = const RadialGradient(
+          center: Alignment.topRight,
+          radius: 1.25,
+          colors: [Color(0xffe8d9fc), Color(0xfff5efff), Color(0xfff5efff)],
+          stops: [0, .5, 1],
+        ).createShader(bounds),
     );
-    final wave = Path()
-      ..moveTo(0, h * .78)
-      ..cubicTo(w * .18, h * .75, w * .33, h * .92, w * .54, h * .90)
-      ..cubicTo(w * .75, h * .88, w * .89, h * .79, w, h * .79)
-      ..lineTo(w, h)
-      ..lineTo(0, h)
-      ..close();
-    canvas.drawPath(wave, Paint()..color = const Color(0xffe7dbfb));
-    final lower = Path()
-      ..moveTo(0, h * .84)
-      ..cubicTo(w * .20, h * .80, w * .34, h * .98, w * .56, h * .94)
-      ..cubicTo(w * .79, h * .90, w * .89, h * .84, w, h * .85)
-      ..lineTo(w, h)
-      ..lineTo(0, h)
+    final outer = Path()
+      ..moveTo(w * .32, 0)
+      ..cubicTo(w * .49, w * .44, w * .80, w * .04, w, w * .34)
+      ..lineTo(w, 0)
       ..close();
     canvas.drawPath(
-      lower,
+      outer,
       Paint()
         ..shader = const LinearGradient(
-          colors: [Color(0xffb89af8), Color(0xff8f5cf4), Color(0xffcab5fb)],
-        ).createShader(Offset.zero & size),
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xffe5d5ff), Color(0xffc8a3fa), Color(0xffa074f3)],
+        ).createShader(Rect.fromLTWH(w * .32, 0, w * .68, w * .34)),
+    );
+    final inner = Path()
+      ..moveTo(w * .52, 0)
+      ..cubicTo(w * .65, w * .26, w * .89, w * .14, w, w * .12)
+      ..lineTo(w, 0)
+      ..close();
+    canvas.drawPath(
+      inner,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment.topRight,
+          radius: 1.1,
+          colors: [Color(0xff4810d2), Color(0xff7d3bf0), Color(0xffc8a1ff)],
+        ).createShader(Rect.fromLTWH(w * .52, -w * .10, w * .48, w * .38)),
+    );
+    canvas.drawPath(
+      inner,
+      Paint()
+        ..color = const Color(0x88ffffff)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
     );
   }
 
@@ -250,14 +266,17 @@ class GrowthHero extends StatelessWidget {
     this.art,
     this.background,
     this.action,
+    this.minHeight = 0,
   });
   final Widget? action;
+  final double minHeight;
   final String title, subtitle;
   final IconData icon;
   final String? art;
   final String? background;
   @override
   Widget build(BuildContext context) => Container(
+    constraints: BoxConstraints(minHeight: minHeight),
     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
     decoration: BoxDecoration(
       gradient: growthGradient,
@@ -286,7 +305,7 @@ class GrowthHero extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -349,7 +368,7 @@ class GrowthNavigation extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -374,7 +393,7 @@ class GrowthNavigation extends StatelessWidget {
                     onTap: () => onSelected(i),
                     borderRadius: BorderRadius.circular(30),
                     child: Container(
-                      height: 58,
+                      height: 46,
                       decoration: BoxDecoration(
                         gradient: selected == i && i != 1
                             ? const LinearGradient(
@@ -401,7 +420,7 @@ class GrowthNavigation extends StatelessWidget {
                             ),
                             child: Icon(
                               selected == i ? active[i] : icons[i],
-                              size: 23,
+                              size: 21,
                               color: selected == i
                                   ? (i == 1 ? growthPurple : Colors.white)
                                   : growthInk,
@@ -450,7 +469,7 @@ class GrowthEmpty extends StatelessWidget {
   final double artHeight;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
     child: Column(
       children: [
         GrowthArt(art, height: artHeight),
@@ -460,7 +479,7 @@ class GrowthEmpty extends StatelessWidget {
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: growthInk,
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -469,7 +488,11 @@ class GrowthEmpty extends StatelessWidget {
           Text(
             subtitle!,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xff696184), height: 1.4),
+            style: const TextStyle(
+              color: Color(0xff696184),
+              height: 1.4,
+              fontSize: 11,
+            ),
           ),
         ],
         if (action != null) ...[const SizedBox(height: 18), action!],

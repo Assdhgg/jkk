@@ -6,6 +6,39 @@ import 'package:growth_circle/design.dart';
 
 void main() {
   tearDown(() => language.value = const Locale('en'));
+  testWidgets('all task categories share one row at reference phone width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    String? selected;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(14),
+            child: TaskTypePicker(
+              selected: 'all',
+              onSelected: (value) => selected = value,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final chips = find.byType(ChoiceChip);
+    expect(chips, findsNWidgets(5));
+    final y = tester.getCenter(chips.first).dy;
+    for (var i = 1; i < 5; i++) {
+      expect((tester.getCenter(chips.at(i)).dy - y).abs(), lessThan(1));
+    }
+    await tester.tap(chips.last);
+    expect(selected, 'share');
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('rounded navigation remains usable on a narrow screen', (
     tester,
   ) async {

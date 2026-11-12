@@ -9,8 +9,6 @@ import 'admin_login_tools.dart';
 import 'package:flutter/services.dart';
 import 'admin_design.dart';
 
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -703,12 +701,7 @@ class _AdminAppState extends State<AdminApp> with WidgetsBindingObserver {
           activity();
           return KeyEventResult.ignored;
         },
-        child: Stack(children: [
-          AdminBackdrop(child: child!),
-          if (authorized) Positioned(right: 16, bottom: 16,
-            child: FloatingActionButton.small(tooltip: 'Session settings',
-              onPressed: () => sessionSettings(navigator.currentState!.overlay!.context), child: const Icon(Icons.timer_outlined))),
-        ]),
+        child: AdminBackdrop(child: child!),
       ),
     ),
     home: gateway == null
@@ -718,17 +711,32 @@ class _AdminAppState extends State<AdminApp> with WidgetsBindingObserver {
           )
         : authorized
         ? LayoutBuilder(
-            builder: (context, constraints) => constraints.maxWidth >= 1100
-                ? AdminDesktopConsole(
-                    gateway: gateway!,
-                    onLogout: logout,
-                    onLanguage: changeLanguage,
-                  )
-                : AdminDashboard(
-                    gateway: gateway!,
-                    onLogout: logout,
-                    onLanguage: changeLanguage,
+            builder: (context, constraints) => Stack(
+              children: [
+                Positioned.fill(
+                  child: constraints.maxWidth >= 1100
+                      ? AdminDesktopConsole(
+                          gateway: gateway!,
+                          onLogout: logout,
+                          onLanguage: changeLanguage,
+                        )
+                      : AdminDashboard(
+                          gateway: gateway!,
+                          onLogout: logout,
+                          onLanguage: changeLanguage,
+                        ),
+                ),
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: FloatingActionButton.small(
+                    tooltip: 'Session settings',
+                    onPressed: () => sessionSettings(context),
+                    child: const Icon(Icons.timer_outlined),
                   ),
+                ),
+              ],
+            ),
           )
         : AdminSignIn(
             gateway: gateway!,
@@ -1218,8 +1226,10 @@ class _AdminSignInState extends State<AdminSignIn> {
             await savedLogin?.forget();
           }
         } catch (_) {
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Signed in, but Windows could not save the login securely.')));
+          }
         }
         if (!mounted) return;
         password.clear();
