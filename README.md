@@ -138,7 +138,13 @@ Only a database owner can provision administrators. The admin UI cannot block ad
 
 <!-- coderabbit-ai-generated-section:v1:31b97719c787e6520a754072963f17bfc3206fb5b4bd351aa51ad9f3b2d0de0e -->
 
-On Windows with Flutter 3.47.9 and Visual Studio C++ tools, run `flutter pub get` and `flutter build windows --release -t lib/admin_main.dart`. Run `build\windows\x64\runner\Release\growth_circle_admin.exe` with the entire Release directory. A GitHub Actions workflow also produces a Windows ZIP artifact. On first launch enter the project URL and publishable/anon key, then sign in as the provisioned admin. The public project configuration is stored locally; passwords and service-role keys are not stored by the app. Supabase SQL deployment and a real Windows build must be verified on the target environment.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:70b042161d85705e27ad0cfed458b21254052dc2006112a5ccee454cab9da524 -->
+
+On Windows with Flutter 3.47.9 and Visual Studio C++ tools, run `flutter pub get` and `flutter build windows --release -t lib/admin_main.dart`. Run `build\windows\x64\runner\Release\growth_circle_admin.exe` with the entire Release directory. A GitHub Actions workflow also produces a Windows ZIP artifact. On first launch enter the project URL and publishable/anon key, then sign in as the provisioned admin. The public project configuration is stored locally. When Save login is selected, the administrator login is stored using Windows secure storage; no service-role key is stored by the app. Supabase SQL deployment and a real Windows build must be verified on the target environment.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 For the admin workspace, reports, alert thresholds and viewer/editor roles, see [Admin workspace](docs/ADMIN_WORKSPACE.md).
 

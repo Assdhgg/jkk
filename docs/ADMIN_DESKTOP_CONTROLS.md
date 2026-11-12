@@ -26,4 +26,10 @@ Wallet controls opens the existing coin correction workflow. Enter the eight-dig
 
 ## Verification
 
-The migration and disposable PostgreSQL tests passed for channel isolation, legacy send compatibility, request idempotency, permissions, public ID lookup, wallet approval and balance protection. Dart source syntax parsed successfully. Flutter analysis/tests and a Windows build remain blocked by the missing Flutter SDK in this Linux sandbox; Windows secure storage, saved autofill, real email delivery, session dialogs and the desktop layout require a Windows acceptance check.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:71b8d04cf05628e144705b1bdda559edd23bec91d14e82af4789dc72f36a1c4d -->
+
+All 25 repository migrations are applied to project `stpxbshwdiupigymakfy`, including mandatory administrator MFA. Disposable PostgreSQL tests cover channel isolation, legacy send compatibility, request idempotency, permissions, public ID lookup, wallet approval and balance protection. The preceding app validation passed all 111 Flutter tests, Flutter analysis and Android debug compilation; this deployment audit does not change Dart code. Windows secure storage, saved autofill, real email delivery and the desktop layout still require a Windows acceptance check. The recovery email template above cannot be inspected or updated through the connected tools; verify it in the Supabase Dashboard.
+
+<!-- /coderabbit-ai-generated:v1 -->

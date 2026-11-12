@@ -18,7 +18,13 @@ An editor can request a nonzero correction between -10,000 and 10,000 coins with
 
 ## Administrator MFA and sessions
 
-Admin operations supports authenticator-app enrollment and signing out other sessions. Once a verified factor exists, admin RPCs require an `aal2` session; users must enter a factor code at admin sign-in. Older administrator clients cannot complete this challenge, so update the administrator app before enrolling MFA. Supabase MFA must be enabled for the project and authenticator enrollment and recovery should be tested with the real provider before relying on it. The app does not log or store the displayed TOTP enrollment secret. Accounts without a verified factor continue using password sign-in until enrolled.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:4b493f45a6d2e397111ac49acc62da65cea89166a433a36946d2e2364ab43f4e -->
+
+Administrator business APIs require a verified authenticator factor and an `aal2` session after `20261112134353_require_admin_mfa.sql`. Password sign-in and MFA enrollment remain available before enrollment; enroll and verify a factor before opening the console. This tightens the original optional-enrollment policy. Older administrator clients cannot complete the challenge, so distribute the updated administrator app. Supabase MFA must be enabled for the project, and enrollment and recovery need a real-provider acceptance check. The app does not log or store the displayed TOTP enrollment secret.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Local verification
 
