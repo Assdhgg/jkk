@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHandler} from './handler.mjs';
+import {preventDestinationOverwrite} from './r2_destination.mjs';
 
 const user = '12345678-1234-4234-8234-123456789abc';
 const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -34,9 +35,38 @@ test('prepare signs a bounded staging upload owned by the editor', async () => {
 test('publication copies first to a separate immutable release key', async () => {
   const {handler, calls} = fixture();
   assert.equal((await handler(request(metadata))).status, 200);
-  assert.deepEqual(calls[0], ['copy', key, `releases/${id}.apk`, 100, {sha256: metadata.sha256, versionCode: 8, versionName: '1.2.0'}]);
-  assert.equal(calls[1][1].downloadUrl, `https://releases.example.test/releases/${id}.apk`);
+  assert.deepEqual(calls[0], ['copy', key, 'releases/freelan-space-v1.2.0-8.apk', 100, {sha256: metadata.sha256, versionCode: 8, versionName: '1.2.0'}]);
+  assert.equal(calls[1][1].downloadUrl, 'https://releases.example.test/releases/freelan-space-v1.2.0-8.apk');
+  assert.equal(calls[1][1].name, `${id}.apk`);
   assert.equal(calls[1][1].userId, user);
+});
+test('version names cannot escape the object path and metadata stays correct', async () => {
+  const {handler, calls} = fixture();
+  assert.equal((await handler(request({...metadata, versionName: ' 1.2.0/../beta ' }))).status, 200);
+  assert.equal(calls[0][2], 'releases/freelan-space-v1.2.0-..-beta-8.apk');
+  assert.equal(calls[0][4].versionName, '1.2.0/../beta');
+  assert.equal(calls[1][1].data.versionName, '1.2.0/../beta');
+});
+test('build number distinguishes releases and existing objects are not published', async () => {
+  const objects = new Set();
+  const {handler, calls} = fixture({copyUpload: async (_source, target) => {
+    if (objects.has(target)) throw Error('destination exists');
+    objects.add(target);
+  }});
+  assert.equal((await handler(request(metadata))).status, 200);
+  assert.equal((await handler(request(metadata))).status, 503);
+  assert.equal((await handler(request({...metadata, versionCode: 9}))).status, 200);
+  assert.deepEqual([...objects], ['releases/freelan-space-v1.2.0-8.apk', 'releases/freelan-space-v1.2.0-9.apk']);
+  assert.equal(calls.filter(c => c[0] === 'publish').length, 2);
+});
+test('R2 copy signs a destination condition that rejects overwrites', async () => {
+  let middleware, options;
+  const command = {middlewareStack: {add: (fn, config) => {middleware = fn; options = config;}}};
+  assert.equal(preventDestinationOverwrite(command), command);
+  assert.equal(options.step, 'build');
+  const request = {headers: {'existing': 'value'}};
+  await middleware(async args => {assert.equal(args.request.headers['cf-copy-destination-if-none-match'], '*'); return args;})({request});
+  assert.equal(request.headers.existing, 'value');
 });
 test('rejects foreign staging paths, invalid metadata and failed copies', async () => {
   const {handler, calls} = fixture({copyUpload: async () => {throw Error('copy failed');}});

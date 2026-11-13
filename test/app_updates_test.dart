@@ -153,6 +153,16 @@ void main() {
       url,
     );
     expect(AppRelease.fromJson(release(8)).downloadUrl, isNull);
+    const versionedUrl =
+        'https://releases.example.test/releases/freelan-space-v1.2.0-8.apk';
+    expect(
+      AppRelease.fromJson({
+        ...release(8),
+        'storage_provider': 'r2',
+        'download_url': versionedUrl,
+      }).downloadUrl,
+      versionedUrl,
+    );
     for (final row in [
       {
         ...release(8),

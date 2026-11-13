@@ -29,6 +29,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
       notes = TextEditingController();
   XFile? apk;
   bool busy = false;
+  int referralRevision = 0;
   String? error;
   late Future<List<Map<String, dynamic>>> releases;
   @override
@@ -178,6 +179,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
           name.clear();
           notes.clear();
           load();
+          referralRevision++;
         });
       }
     } catch (_) {
@@ -186,6 +188,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
         setState(() {
           error = 'Unable to confirm publication. Refresh releases before retrying. Check increasing version code, editor access, R2 setup and connection.';
           load();
+          referralRevision++;
         });
       }
     } finally {
@@ -297,7 +300,12 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
       subtitle: 'Manage app updates and release history.',
       actions: [
         IconButton(
-          onPressed: busy ? null : () => setState(load),
+          onPressed: busy
+              ? null
+              : () => setState(() {
+                  load();
+                  referralRevision++;
+                }),
           tooltip: 'Refresh releases',
           icon: const Icon(Icons.refresh),
         ),
@@ -321,6 +329,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
             ),
             const SizedBox(height: 20),
             AdminReferralDownloadCard(
+              key: ValueKey(referralRevision),
               gateway: ReferralDownloadGateway(widget.client),
               canEdit: widget.canEdit,
             ),
