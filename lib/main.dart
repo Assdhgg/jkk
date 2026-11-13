@@ -9,6 +9,7 @@ import 'user_features.dart';
 import 'push_notifications.dart';
 import 'personal_information.dart';
 import 'secure_auth_storage.dart';
+import 'referral_download.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -56,6 +57,10 @@ const words = <String, List<String>>{
   'referralDownloadUnavailable': [
     'Could not get the app download link. Please try again later.',
     'App download link ലഭിച്ചില്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
+  ],
+  'referralDownloadNotPublished': [
+    'The app download link is not available yet. Please contact support.',
+    'App download link ഇതുവരെ ലഭ്യമല്ല. Support-നെ ബന്ധപ്പെടുക.',
   ],
   'rejectionReason': [
     'Reason for rejection (optional)',
@@ -4472,17 +4477,8 @@ class SupabaseProfileGateway implements ProfileGateway {
   const SupabaseProfileGateway(this.client);
   final SupabaseClient client;
   @override
-  Future<String?> latestAppDownloadUrl() async {
-    final rows = await client
-        .from('app_releases')
-        .select()
-        .order('version_code', ascending: false)
-        .limit(1);
-    if (rows.isEmpty) return null;
-    final release = AppRelease.fromJson(rows.first);
-    return release.downloadUrl ??
-        client.storage.from('app-releases').getPublicUrl(release.path);
-  }
+  Future<String?> latestAppDownloadUrl() =>
+      ReferralDownloadGateway(client).load();
 
   @override
   Future<ProfileInfo> load(String uid) async {
@@ -5319,7 +5315,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       }
       if (!mounted) return;
       if (url == null) {
-        toast(context, tr(context, 'referralDownloadUnavailable'));
+        toast(context, tr(context, 'referralDownloadNotPublished'));
         return;
       }
       final text =
