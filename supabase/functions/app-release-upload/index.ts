@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand } from 'npm:@aws-sdk/client-s3@3.899.0';
 import { getSignedUrl } from 'npm:@aws-sdk/s3-request-presigner@3.899.0';
 import { createHandler } from './handler.mjs';
+import { preventDestinationOverwrite } from './r2_destination.mjs';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -41,11 +42,11 @@ Deno.serve(createHandler({
     if (!verification.ok) throw new Error('Invalid APK');
     const result = await verification.json();
     if (result.sha256 !== metadata.sha256 || result.size !== size || result.versionCode !== metadata.versionCode) throw new Error('Invalid APK verification');
-    await s3.send(new CopyObjectCommand({Bucket: bucket, Key: target, CopySource: `${bucket}/${source}`, CopySourceIfMatch: head.ETag}));
+    await s3.send(preventDestinationOverwrite(new CopyObjectCommand({Bucket: bucket, Key: target, CopySource: `${bucket}/${source}`, CopySourceIfMatch: head.ETag})));
   },
   publish: async ({userId, name, downloadUrl, data}: {userId: string; name: string; downloadUrl: string; data: Record<string, unknown>}) => {
     // Recheck the editor's current session after the potentially slow upload/copy.
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/publish_r2_app_release`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/publish_r2_app_release_with_referral`, {
       method: 'POST', headers: {apikey: serviceKey, authorization: `Bearer ${serviceKey}`, 'content-type': 'application/json'},
       body: JSON.stringify({p_user_id: userId, p_version_code: data.versionCode, p_version_name: data.versionName, p_path: name, p_sha256: data.sha256, p_size: data.size, p_notes: data.notes, p_url: downloadUrl}), signal: AbortSignal.timeout(15000),
     });

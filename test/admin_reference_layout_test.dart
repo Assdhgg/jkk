@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/admin_app_releases.dart';
@@ -7,6 +9,40 @@ import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  testWidgets('refresh displays a link changed by a release publication', (
+    tester,
+  ) async {
+    var link = 'https://updates.example.test/old.apk';
+    final client = SupabaseClient(
+      'https://example.test',
+      'synthetic',
+      authOptions: const AuthClientOptions(autoRefreshToken: false),
+      httpClient: MockClient(
+        (request) async => http.Response(
+          request.url.path.endsWith('referral_download_link')
+              ? jsonEncode([
+                  {'url': link},
+                ])
+              : '[]',
+          200,
+          headers: {'content-type': 'application/json'},
+          request: request,
+        ),
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: AdminAppReleasesPage(client: client, canEdit: false)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(link), findsOneWidget);
+    link = 'https://updates.example.test/freelan-space-v1.2.3-21.apk';
+    await tester.tap(find.byTooltip('Refresh releases'));
+    await tester.pumpAndSettle();
+    expect(find.text(link), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    client.dispose();
+  });
+
   for (final width in [1100.0, 1536.0]) {
     testWidgets('desktop operations navigation works at $width', (
       tester,

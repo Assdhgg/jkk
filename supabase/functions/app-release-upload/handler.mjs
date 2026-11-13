@@ -47,12 +47,16 @@ export function createHandler({authorize, signUpload, copyUpload, publish, publi
       if (!file.endsWith('.apk') || !uuid.test(file.slice(0, -4)) || !Number.isSafeInteger(data.versionCode) || data.versionCode < 1 || data.versionCode > 2100000000 || typeof data.versionName !== 'string' || data.versionName.trim().length < 1 || data.versionName.length > 60 || typeof data.notes !== 'string' || data.notes.length > 4000 || typeof data.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(data.sha256)) return json(400, {error: 'invalid_request'});
       const base = new URL(publicBase);
       if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash) throw new Error('invalid public base');
+      // Keep the opaque release identifier for existing clients while the
+      // public object name carries the version and build number.
       const name = `${randomUUID()}.apk`;
-      const target = `releases/${name}`;
+      const slug = data.versionName.trim().replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+      const version = /[A-Za-z0-9]/.test(slug) ? slug : 'version';
+      const target = `releases/freelan-space-v${version}-${data.versionCode}.apk`;
       await copyUpload(data.key, target, data.size, {sha256: data.sha256, versionCode: data.versionCode, versionName: data.versionName.trim()});
       if (await authorize(authorization) !== userId) return json(403, {error: 'access_denied'});
       const downloadUrl = `${base.href.replace(/\/$/, '')}/${target}`;
-      await publish({userId, name, downloadUrl, data});
+      await publish({userId, name, downloadUrl, data: {...data, versionName: data.versionName.trim()}});
       return json(200, {published: true});
     } catch {
       // Publication may have committed even if the response was lost.

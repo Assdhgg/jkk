@@ -56,4 +56,26 @@ class Updates(unittest.TestCase):
         self.assertEqual(sql("select count(*) from public.notifications where kind='app_update'",USER),'3')
         sql('set role service_role; '+call,fails=True)
 
+    def test_z_r2_publication_updates_referral_link_atomically(self):
+        def publish_with_referral(code, path, url):
+            return f"select public.publish_r2_app_release_with_referral('{EDITOR}',{code},'1.4.0','{path}','{'c'*64}',100,'R2 release','{url}')"
+        manual = 'https://downloads.example.test/manual.apk'
+        sql(f"select public.admin_set_referral_download_link('{manual}')",EDITOR)
+        path = '12345678-1234-1234-1234-123456789abf.apk'
+        good = 'https://updates.example.test/releases/freelan-space-v1.4.0-11.apk'
+        sql(publish_with_referral(11,path,good),USER,fails=True)
+        sql(publish_with_referral(11,path,good),VIEWER,fails=True)
+        sql(publish_with_referral(11,path,good),EDITOR,fails=True)
+        # The release insert and notifications must roll back if the link is invalid.
+        sql('set role service_role; '+publish_with_referral(11,path,'https://updates.example.test/bad path.apk'),fails=True)
+        self.assertEqual(sql('select max(version_code) from public.app_releases'),'10')
+        self.assertEqual(sql('select url from public.referral_download_link',USER),manual)
+        self.assertTrue(sql('set role service_role; '+publish_with_referral(11,path,good)))
+        self.assertEqual(sql('select url from public.referral_download_link',USER),good)
+        self.assertEqual(sql('select download_url from public.app_releases where version_code=11',USER),good)
+        sql('set role service_role; '+publish_with_referral(11,path,good),fails=True)
+        self.assertEqual(sql('select url from public.referral_download_link',USER),good)
+        sql('select public.admin_set_referral_download_link(null)',EDITOR)
+        self.assertEqual(sql('select count(*) from public.referral_download_link',USER),'0')
+
 if __name__ == '__main__': unittest.main()

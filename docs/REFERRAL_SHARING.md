@@ -22,11 +22,25 @@ Migrations `20261113023807_referral_download_link.sql` and `20261113024352_refer
 
 <!-- /coderabbit-ai-generated:v1 -->
 
-<!-- /coderabbit-ai-generated:v1 --> The migration starts without a link. An editor administrator opens **App releases**, enters a public HTTPS APK URL under **Referral app download link**, then selects **Save link**. The same field edits the link; **Delete link** removes it. Viewers can read but cannot change it. Server authorization requires editor access and administrator MFA.
+<!-- /coderabbit-ai-generated:v1 --> <!-- coderabbit-ai-generated:v1 -->
 
-New user apps fetch the current administrator link when sharing a referral. After deletion, sharing reports that the link is unavailable until an editor adds another. A failed request shows a retry message. The link should work without signing in and must contain no credentials. Verify the signed APK and test the link separately. This setting does not upload an APK, publish an app release, or trigger mandatory updates.
+<!-- coderabbit-ai-generated-section:v1:2443270d6cbaa2a9509765b487e0a030c53b843f34111ef3dc6b59368666f584 -->
 
-This replaces automatic referral selection of the latest published release and any build-time fallback. Older installed app versions retain their earlier behavior until updated. Editing or deleting the link does not remove previously shared messages or delete hosted APK files.
+An editor administrator can add or change a public HTTPS APK URL under **App releases → Referral app download link → Save link**, or remove it using **Delete link**. Viewers can read but cannot change it; server authorization requires editor access and MFA. The link must work without signing in and must contain no credentials.
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:f0d067071c3ffcc483e2fbf93ecfaaaafad7bd8e7bd000a53c14ca1e5f83258d -->
+
+Migration `20261113040028_publish_referral_download.sql` has been applied to project `stpxbshwdiupigymakfy`; apply it after the preceding migrations on other projects. Once the updated `app-release-upload` function is deployed with JWT verification enabled, a successful R2 publication replaces the current referral link in the same transaction as the release.
+
+<!-- /coderabbit-ai-generated:v1 --> The URL includes a safe version name and build number, such as `freelan-space-v1.2.2-20.apk`. Each version keeps its own immutable object. R2 destination conditions reject an existing key; reconcile release history before removing any orphan from a failed upload. Direct R2 edits bypass validation and must not overwrite published objects.
+
+Administrators may manually change or delete the link afterward. Deletion disables sharing until another link is added or another release is published. Older app versions retain their earlier behavior, and existing releases and shared messages are not changed. The legacy Supabase Storage publication RPC does not update the referral link; use the current R2 administrator publishing flow.
+
+Before deploying the updated function, the production APK validator described in `SECURITY_HARDENING.md` must be configured and verified. The previously deployed function lacks this validator; deploying the updated function without it would block publishing. Verify the real hosted upload, public link and device installation after deployment.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 
