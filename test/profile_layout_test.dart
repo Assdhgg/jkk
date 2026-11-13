@@ -155,7 +155,10 @@ void main() {
     await tester.tap(find.text('Share referral code'));
     await tester.pump();
     expect(shares, 0);
-    expect(find.text(words['referralDownloadUnavailable']![0]), findsOneWidget);
+    expect(
+      find.text(words['referralDownloadNotPublished']![0]),
+      findsOneWidget,
+    );
     gateway.failDownload = true;
     await tester.tap(find.text('Share referral code'));
     await tester.pump();

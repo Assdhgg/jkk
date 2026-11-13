@@ -8,6 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_operations.dart';
 import 'admin_design.dart';
 import 'app_updates.dart';
+import 'admin_referral_download.dart';
+import 'referral_download.dart';
 
 class AdminAppReleasesPage extends StatefulWidget {
   const AdminAppReleasesPage({
@@ -318,6 +320,10 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
               'Upload a signed universal APK with a higher version code. Users receive an update notification and confirm installation in Android.',
             ),
             const SizedBox(height: 20),
+            AdminReferralDownloadCard(
+              gateway: ReferralDownloadGateway(widget.client),
+              canEdit: widget.canEdit,
+            ),
             if (widget.canEdit)
               releaseForm(MediaQuery.sizeOf(context).width >= 1100),
             if (error != null)
